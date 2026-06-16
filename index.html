@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Requirement Intake · Use Case Details</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark">RI</div>
+        <div>
+          <div class="brand-title">Requirement Intake</div>
+          <div class="brand-subtitle">Use case first workflow</div>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <span id="saveState">Draft saved just now</span>
+        <button class="btn small secondary">Export JSON</button>
+      </div>
+    </header>
+
+    <main class="page">
+      <section class="page-header">
+        <div>
+          <h1>Create messaging use case</h1>
+          <p id="headerSubtitle">Requirement captured · Choose a reference use case and complete the details below.</p>
+        </div>
+        <div class="progress-pills">
+          <span class="progress-pill done">Requirement captured</span>
+          <span class="progress-pill active" id="referenceProgress">Select reference</span>
+          <span class="progress-pill active" id="detailsProgress">Use case details</span>
+          <span class="progress-pill">Acceptance criteria</span>
+        </div>
+      </section>
+
+      <div class="main-layout">
+        <section class="left-workspace">
+          <section class="card requirement-card">
+            <div class="card-header compact">
+              <div>
+                <h2>Requirement</h2>
+                <p>The requirement is used to retrieve related historical use cases and prefill the form.</p>
+              </div>
+              <button class="btn small secondary">Edit requirement</button>
+            </div>
+
+            <div class="card-body">
+              <div class="requirement-text" id="requirementText"></div>
+
+              <div class="insight-grid">
+                <div class="insight">
+                  <strong id="detectedDept">-</strong>
+                  <span>Detected department</span>
+                </div>
+                <div class="insight">
+                  <strong id="topChannel">-</strong>
+                  <span>Common matched channel</span>
+                </div>
+                <div class="insight">
+                  <strong id="detectedLob">-</strong>
+                  <span>Likely line of business</span>
+                </div>
+                <div class="insight">
+                  <strong id="candidateCount">-</strong>
+                  <span>Use case candidates</span>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="card" id="candidateSection">
+            <div class="card-header">
+              <div>
+                <h2>Reference use case candidates</h2>
+                <p>Select a historical use case as reference, confirm it directly, or start a brand-new use case.</p>
+              </div>
+              <button class="btn small secondary" id="startNewTop">Start new use case</button>
+            </div>
+            <div class="card-body">
+              <div class="candidate-grid" id="candidateGrid"></div>
+            </div>
+          </section>
+
+          <section class="card details-card" id="detailsSection">
+            <div class="reference-bar">
+              <div class="reference-main">
+                <div class="reference-icon" id="referenceIcon">R</div>
+                <div>
+                  <div class="reference-title" id="referenceTitle">Recommended reference use case: RDP 004</div>
+                  <div class="reference-meta" id="referenceMeta">use_case_id: M1004 · source_system: PEGA · LOB: WPB · similarity 0.86</div>
+                </div>
+              </div>
+              <div class="reference-actions">
+                <button class="btn small secondary" id="changeReference">Change reference</button>
+                <button class="btn small secondary" id="startNewUseCase">Start new use case</button>
+              </div>
+            </div>
+
+            <div class="form-shell" id="formShell">
+              <aside class="module-sidebar" id="moduleSidebar">
+                <div class="sidebar-top">
+                  <span class="sidebar-title">Modules</span>
+                  <button class="collapse-btn" id="toggleSidebar" title="Collapse sidebar">‹</button>
+                </div>
+
+                <button class="module-item active" data-module="business" title="Business Context">
+                  <span class="module-label">Business Context</span>
+                  <span class="module-short">Business</span>
+                  <span class="module-count" id="count-business">0</span>
+                </button>
+                <button class="module-item" data-module="audience" title="Audience & Trigger">
+                  <span class="module-label">Audience & Trigger</span>
+                  <span class="module-short">Audience</span>
+                  <span class="module-count" id="count-audience">0</span>
+                </button>
+                <button class="module-item" data-module="channel" title="Channel & Content">
+                  <span class="module-label">Channel & Content</span>
+                  <span class="module-short">Channel</span>
+                  <span class="module-count" id="count-channel">0</span>
+                </button>
+                <button class="module-item" data-module="compliance" title="Compliance & Launch">
+                  <span class="module-label">Compliance & Launch</span>
+                  <span class="module-short">Launch</span>
+                  <span class="module-count" id="count-compliance">0</span>
+                </button>
+              </aside>
+
+              <div class="form-area">
+                <div class="form-toolbar">
+                  <div>
+                    <h3 id="moduleTitle">Business Context</h3>
+                    <p id="moduleSubtitle">Confirm basic use case information, source system, and ownership.</p>
+                  </div>
+                  <div class="toolbar-actions">
+                    <button class="btn small secondary">Show all fields</button>
+                    <button class="btn small primary">Validate module</button>
+                  </div>
+                </div>
+
+                <div class="form-table-wrap">
+                  <table class="form-table">
+                    <colgroup>
+                      <col class="col-field" />
+                      <col class="col-value" />
+                      <col class="col-help" />
+                      <col class="col-status" />
+                      <col class="col-action" />
+                    </colgroup>
+                    <thead>
+                      <tr>
+                        <th>Field</th>
+                        <th>Value</th>
+                        <th>Help</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                      </tr>
+                    </thead>
+                    <tbody id="fieldTableBody"></tbody>
+                  </table>
+                </div>
+
+                <div class="form-footer">
+                  <span id="moduleFooter">Review fields in this module.</span>
+                  <div class="footer-actions">
+                    <button class="btn secondary">Save draft</button>
+                    <button class="btn primary">Continue to AC input</button>
+                  </div>
+                </div>
+
+                <div class="ac-preview">
+                  <div class="ac-preview-title">AC generation input preview</div>
+                  <div class="ac-preview-box" id="acPreview">
+                    Confirmed use case semantics will be passed to AC generation after required fields are completed.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+        </section>
+
+        <aside class="assistant-panel">
+          <section class="card">
+            <div class="card-header compact">
+              <div>
+                <h2>Assistant</h2>
+                <p>Follow the guided conversation to complete this use case.</p>
+              </div>
+            </div>
+
+            <div class="assistant-body" id="assistantBody"></div>
+
+            <div class="assistant-input">
+              <div class="assistant-input-note">You can answer the questions in one sentence, for example: “Target customers are wealth product holders maturing soon. Send email only.”</div>
+              <textarea id="assistantInput" placeholder="Reply to the assistant, ask about a field, or describe what you want to change"></textarea>
+              <div class="assistant-actions">
+                <button class="btn primary" id="sendAssistant">Send</button>
+                <button class="btn secondary" id="showMissing">Show missing fields</button>
+              </div>
+            </div>
+          </section>
+        </aside>
+      </div>
+    </main>
+
+    <div class="modal-backdrop" id="helpModal">
+      <div class="modal">
+        <div class="modal-header">
+          <h3 id="helpTitle">Field help</h3>
+          <button class="btn small secondary" id="closeHelp">Close</button>
+        </div>
+        <div class="modal-body">
+          <p id="helpDescription"></p>
+          <div class="hint" id="helpHint"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="./app.js"></script>
+</body>
+</html>
