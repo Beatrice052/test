@@ -1,0 +1,1437 @@
+{
+  "rules_version": "v1.0-draft",
+  "source": {
+    "type": "manually_structured_from_business_metadata",
+    "notes": [
+      "This file uses a simple rule DSL. Implementers may adapt effect names to Python enums.",
+      "Rules marked recommendation should not auto-apply without confidence/user confirmation unless product design allows defaulting.",
+      "Rules marked dependency/applicability should update field applicability, required_now, blocked_by_fields and InternalImpactPlan.",
+      "User-facing Action Preview should show only direct business updates; dependent changes should stay in InternalImpactPlan."
+    ]
+  },
+  "dsl": {
+    "condition_operators": [
+      "equals",
+      "equals_any",
+      "contains",
+      "intersects",
+      "is_not_empty"
+    ],
+    "effect_types": [
+      "SET_APPLICABLE",
+      "SET_REQUIRED_NOW",
+      "SET_VALUE",
+      "SET_EDITABLE",
+      "SET_OPTION_SET",
+      "FILTER_OPTIONS_BY_CONTEXT",
+      "RECOMMEND",
+      "RECOMMEND_BY_DELIVERY_MODE",
+      "RECOMMEND_BY_CONTEXT_FLAG",
+      "RECOMMEND_CHANNEL_RULES",
+      "SUGGEST_DEFAULT",
+      "SET_CONTEXTUAL_MEANING",
+      "SUPPRESS_OPTIONS",
+      "SUPPRESS_LEGACY_OPTIONS_BY_DEFAULT",
+      "CREATE_OR_UPDATE_ITEMS_FROM_SELECTED_CHANNELS",
+      "HIDE_FROM_BUSINESS_UI",
+      "KEEP_IN_INTERNAL_IMPACT_PLAN",
+      "EXCLUDE_FROM_USER_FACING_ACTION_PREVIEW"
+    ]
+  },
+  "rule_execution_order": [
+    "domain_transform",
+    "dependency",
+    "recommendation",
+    "hint",
+    "ui_internal_impact"
+  ],
+  "rules": [
+    {
+      "rule_id": "LOB_CREATE_MODE_EDITABLE",
+      "rule_type": "dependency",
+      "description": "Line of business is editable in create mode and can be inherited in edit-reference mode.",
+      "priority": "LOW",
+      "when": {
+        "all": [
+          {
+            "field": "mode",
+            "operator": "equals",
+            "value": "CREATE_NEW"
+          }
+        ]
+      },
+      "then": [
+        {
+          "field": "line_of_business",
+          "effect": "SET_EDITABLE",
+          "value": true
+        }
+      ],
+      "else": [],
+      "trace": {
+        "source": "metadata_excel.depends_on",
+        "business_reason": "Depends on: create mode editable."
+      }
+    },
+    {
+      "rule_id": "CHANNEL_SELECTION_CREATES_CHANNEL_RULES",
+      "rule_type": "domain_transform",
+      "description": "Selected delivery channels should be represented as useCaseChannelRuleList items.",
+      "priority": "CRITICAL",
+      "when": {
+        "all": [
+          {
+            "field": "channel",
+            "operator": "is_not_empty",
+            "value": true
+          }
+        ]
+      },
+      "then": [
+        {
+          "field": "useCaseChannelRuleList",
+          "effect": "CREATE_OR_UPDATE_ITEMS_FROM_SELECTED_CHANNELS",
+          "reason": "Channel, priority, router, route, tag, sender and traffic split are channel-rule-level fields."
+        }
+      ],
+      "else": [],
+      "trace": {
+        "source": "business_remark",
+        "business_reason": "Delivery Channel fields are related and should be organized as useCaseChannelRuleList."
+      }
+    },
+    {
+      "rule_id": "PRIORITY_REQUIRED_FOR_SELECTED_CHANNEL",
+      "rule_type": "dependency",
+      "description": "Priority is required for each selected channel.",
+      "priority": "HIGH",
+      "when": {
+        "all": [
+          {
+            "field": "channel",
+            "operator": "is_not_empty",
+            "value": true
+          }
+        ]
+      },
+      "then": [
+        {
+          "field": "priority",
+          "effect": "SET_APPLICABLE",
+          "value": true
+        },
+        {
+          "field": "priority",
+          "effect": "SET_REQUIRED_NOW",
+          "value": true
+        }
+      ],
+      "else": [],
+      "trace": {
+        "source": "metadata_excel.required",
+        "business_reason": "Priority is required when channel selected."
+      }
+    },
+    {
+      "rule_id": "ROUTER_REQUIRED_FOR_SELECTED_CHANNEL",
+      "rule_type": "dependency",
+      "description": "Router/vendor path is usually required when channel is selected.",
+      "priority": "HIGH",
+      "when": {
+        "all": [
+          {
+            "field": "channel",
+            "operator": "is_not_empty",
+            "value": true
+          }
+        ]
+      },
+      "then": [
+        {
+          "field": "router",
+          "effect": "SET_APPLICABLE",
+          "value": true
+        },
+        {
+          "field": "router",
+          "effect": "SET_REQUIRED_NOW",
+          "value": true
+        }
+      ],
+      "else": [],
+      "trace": {
+        "source": "metadata_excel.required",
+        "business_reason": "Router is usually required when channel selected."
+      }
+    },
+    {
+      "rule_id": "PUSH_REQUIRES_APP_NAME",
+      "rule_type": "dependency",
+      "description": "PUSH channel requires app name.",
+      "priority": "HIGH",
+      "when": {
+        "all": [
+          {
+            "field": "channel",
+            "operator": "contains",
+            "value": "PUSH"
+          }
+        ]
+      },
+      "then": [
+        {
+          "field": "app_name",
+          "effect": "SET_APPLICABLE",
+          "value": true
+        },
+        {
+          "field": "app_name",
+          "effect": "SET_REQUIRED_NOW",
+          "value": true
+        }
+      ],
+      "else": [
+        {
+          "field": "app_name",
+          "effect": "SET_APPLICABLE",
+          "value": false
+        }
+      ],
+      "trace": {
+        "source": "metadata_excel.depends_on",
+        "business_reason": "App Name is only needed for PUSH channel."
+      }
+    },
+    {
+      "rule_id": "PUSH_APP_NAME_CONTROLS_ROUTER",
+      "rule_type": "dependency",
+      "description": "PUSH app name controls router recommendation.",
+      "priority": "HIGH",
+      "when": {
+        "all": [
+          {
+            "field": "channel",
+            "operator": "contains",
+            "value": "PUSH"
+          }
+        ]
+      },
+      "then": [
+        {
+          "field": "router",
+          "effect": "FILTER_OPTIONS_BY_CONTEXT",
+          "reason": "PUSH router depends on app_name.",
+          "context_fields": [
+            "channel",
+            "app_name"
+          ]
+        }
+      ],
+      "else": [],
+      "trace": {
+        "source": "metadata_excel.depends_on",
+        "business_reason": "PUSH depends on the app name."
+      }
+    },
+    {
+      "rule_id": "PUSH_DAASC_ROUTER_RECOMMENDATION",
+      "rule_type": "recommendation",
+      "description": "For PUSH with DaaSC, create three routes and do not choose ICCM related routers.",
+      "priority": "HIGH",
+      "when": {
+        "all": [
+          {
+            "field": "app_name",
+            "operator": "equals_any",
+            "value": [
+              "DaaSC",
+              "Dassc"
+            ]
+          }
+        ]
+      },
+      "then": [
+        {
+          "field": "useCaseChannelRuleList",
+          "effect": "RECOMMEND_CHANNEL_RULES",
+          "value": [
+            {
+              "channel": "PUSH",
+              "router": "AWS_SG_SNS_PUSH",
+              "route": "AWS_SNS_PUSH",
+              "tag": "IOS"
+            },
+            {
+              "channel": "PUSH",
+              "router": "AWS_SG_SNS_PUSH",
+              "route": "AWS_SNS_PUSH",
+              "tag": "AOS"
+            },
+            {
+              "channel": "PUSH",
+              "router": "AURORA_PUSH",
+              "route": "AURORA_PUSH",
+              "tag": "AOS"
+            }
+          ],
+          "reason": "DaaSC requires IOS with AWS-SG, AOS with AWS-SG, and AOS with AURORA."
+        },
+        {
+          "field": "router",
+          "effect": "SUPPRESS_OPTIONS",
+          "value": [
+            "ICCM_VM_SVC_RT_GEN_PUSH",
+            "ICCM_VM_SVC_BAT_PUSH"
+          ],
+          "reason": "Business note says DaaSC would NOT choose ICCM related router."
+        }
+      ],
+      "else": [],
+      "trace": {
+        "source": "metadata_excel.depends_on",
+        "business_reason": "When app name = DaaSC, 3 routers need to create."
+      }
+    },
+    {
+      "rule_id": "PUSH_INVESTEX_DBB_ROUTER_RECOMMENDATION",
+      "rule_type": "recommendation",
+      "description": "For PUSH with InvestEx or DBB, create one AWS-SG route.",
+      "priority": "HIGH",
+      "when": {
+        "all": [
+          {
+            "field": "app_name",
+            "operator": "equals_any",
+            "value": [
+              "InvestEx",
+              "Investex",
+              "DBB"
+            ]
+          }
+        ]
+      },
+      "then": [
+        {
+          "field": "useCaseChannelRuleList",
+          "effect": "RECOMMEND_CHANNEL_RULES",
+          "value": [
+            {
+              "channel": "PUSH",
+              "router": "AWS_SG_SNS_PUSH",
+              "route": "AWS_SNS_PUSH"
+            }
+          ],
+          "reason": "InvestEx or DBB uses one AWS-SG route."
+        },
+        {
+          "field": "router",
+          "effect": "SUPPRESS_OPTIONS",
+          "value": [
+            "ICCM_VM_SVC_RT_GEN_PUSH",
+            "ICCM_VM_SVC_BAT_PUSH"
+          ],
+          "reason": "Business note says InvestEx/DBB should use AWS-SG rather than ICCM related router."
+        }
+      ],
+      "else": [],
+      "trace": {
+        "source": "metadata_excel.depends_on",
+        "business_reason": "When app name = InvestEx or DBB, 1 router needs to create, AWS-SG."
+      }
+    },
+    {
+      "rule_id": "PUSH_DAASC_TAG_OPTIONS",
+      "rule_type": "dependency",
+      "description": "For PUSH DaaSC, tag options are IOS and AOS.",
+      "priority": "MEDIUM",
+      "when": {
+        "all": [
+          {
+            "field": "app_name",
+            "operator": "equals_any",
+            "value": [
+              "DaaSC",
+              "Dassc"
+            ]
+          }
+        ]
+      },
+      "then": [
+        {
+          "field": "tag",
+          "effect": "SET_OPTION_SET",
+          "value": "PUSH_DAASC",
+          "reason": "PUSH DaaSC tag options are IOS and AOS."
+        }
+      ],
+      "else": [],
+      "trace": {
+        "source": "metadata_excel.options",
+        "business_reason": "PUSH when appName=DAASC has IOS/AOS tag options."
+      }
+    },
+    {
+      "rule_id": "PUSH_REQUIRES_BOUNCE_BACK_CALLBACK",
+      "rule_type": "dependency",
+      "description": "PUSH channel requires bounce back callback section.",
+      "priority": "HIGH",
+      "when": {
+        "all": [
+          {
+            "field": "channel",
+            "operator": "contains",
+            "value": "PUSH"
+          }
+        ]
+      },
+      "then": [
+        {
+          "field": "bounce_back",
+          "effect": "SET_APPLICABLE",
+          "value": true
+        },
+        {
+          "field": "bounce_back",
+          "effect": "SET_REQUIRED_NOW",
+          "value": true
+        }
+      ],
+      "else": [
+        {
+          "field": "bounce_back",
+          "effect": "SET_APPLICABLE",
+          "value": false
+        }
+      ],
+      "trace": {
+        "source": "metadata_excel.depends_on",
+        "business_reason": "bounce_back depends on PUSH Channel."
+      }
+    },
+    {
+      "rule_id": "SMS_REQUIRES_COST_CENTER_ID",
+      "rule_type": "dependency",
+      "description": "SMS requires SMS cost center id.",
+      "priority": "HIGH",
+      "when": {
+        "all": [
+          {
+            "field": "channel",
+            "operator": "contains",
+            "value": "SMS"
+          }
+        ]
+      },
+      "then": [
+        {
+          "field": "cost_center_id",
+          "effect": "SET_APPLICABLE",
+          "value": true
+        },
+        {
+          "field": "cost_center_id",
+          "effect": "SET_REQUIRED_NOW",
+          "value": true
+        }
+      ],
+      "else": [
+        {
+          "field": "cost_center_id",
+          "effect": "SET_APPLICABLE",
+          "value": false
+        }
+      ],
+      "trace": {
+        "source": "metadata_excel.depends_on",
+        "business_reason": "Cost center id is required only when SMS is selected."
+      }
+    },
+    {
+      "rule_id": "SMS_REQUIRES_SEND_TO_CHINA_FLAG",
+      "rule_type": "dependency",
+      "description": "SMS requires Send_to_China flag.",
+      "priority": "HIGH",
+      "when": {
+        "all": [
+          {
+            "field": "channel",
+            "operator": "contains",
+            "value": "SMS"
+          }
+        ]
+      },
+      "then": [
+        {
+          "field": "Send_to_China_flag",
+          "effect": "SET_APPLICABLE",
+          "value": true
+        },
+        {
+          "field": "Send_to_China_flag",
+          "effect": "SET_REQUIRED_NOW",
+          "value": true
+        }
+      ],
+      "else": [
+        {
+          "field": "Send_to_China_flag",
+          "effect": "SET_APPLICABLE",
+          "value": false
+        }
+      ],
+      "trace": {
+        "source": "metadata_excel.required",
+        "business_reason": "Send_to_China_flag is Required for SMS."
+      }
+    },
+    {
+      "rule_id": "SMS_REQUIRES_SENDER",
+      "rule_type": "dependency",
+      "description": "SMS requires sender as SMS sender id number.",
+      "priority": "HIGH",
+      "when": {
+        "all": [
+          {
+            "field": "channel",
+            "operator": "contains",
+            "value": "SMS"
+          }
+        ]
+      },
+      "then": [
+        {
+          "field": "sender",
+          "effect": "SET_APPLICABLE",
+          "value": true
+        },
+        {
+          "field": "sender",
+          "effect": "SET_REQUIRED_NOW",
+          "value": true
+        },
+        {
+          "field": "sender",
+          "effect": "SET_CONTEXTUAL_MEANING",
+          "value": "SMS sender id number"
+        }
+      ],
+      "else": [],
+      "trace": {
+        "source": "metadata_excel.depends_on",
+        "business_reason": "For SMS, sender means sender id number."
+      }
+    },
+    {
+      "rule_id": "SMS_TAG_OPTIONS",
+      "rule_type": "dependency",
+      "description": "For SMS, tag options are HK and CN.",
+      "priority": "MEDIUM",
+      "when": {
+        "all": [
+          {
+            "field": "channel",
+            "operator": "contains",
+            "value": "SMS"
+          }
+        ]
+      },
+      "then": [
+        {
+          "field": "tag",
+          "effect": "SET_OPTION_SET",
+          "value": "SMS",
+          "reason": "SMS tag options are HK and CN."
+        }
+      ],
+      "else": [],
+      "trace": {
+        "source": "metadata_excel.options",
+        "business_reason": "SMS tag options include HK and CN."
+      }
+    },
+    {
+      "rule_id": "SMS_CHINA_ROUTE_RECOMMENDATION",
+      "rule_type": "recommendation",
+      "description": "If SMS needs to send to China, choose CM and LX routes with CM 100% and LX 0%.",
+      "priority": "HIGH",
+      "when": {
+        "all": [
+          {
+            "field": "Send_to_China_flag",
+            "operator": "equals",
+            "value": "Y"
+          }
+        ]
+      },
+      "then": [
+        {
+          "field": "useCaseChannelRuleList",
+          "effect": "RECOMMEND_CHANNEL_RULES",
+          "value": [
+            {
+              "channel": "SMS",
+              "router": "CM_HTTP_SMS",
+              "route": "CM_HTTP_SMS",
+              "traffic_percentage": 100
+            },
+            {
+              "channel": "SMS",
+              "router": "LX_SVC_RT_SMS",
+              "route": "LX_SVC_RT_SMS",
+              "traffic_percentage": 0
+            }
+          ],
+          "reason": "If need to send to CN, choose LX and CM routers, primary 100% CM and 0% LX."
+        }
+      ],
+      "else": [],
+      "trace": {
+        "source": "metadata_excel.depends_on",
+        "business_reason": "If need to send to CN, choose LX and CM routes."
+      }
+    },
+    {
+      "rule_id": "SMS_HIGH_RISK_TRAFFIC_DEFAULT",
+      "rule_type": "recommendation",
+      "description": "High-risk SMS should use dual vendor HTCL and CSL, with HTCL 100% and CSL 0%.",
+      "priority": "HIGH",
+      "when": {
+        "all": [
+          {
+            "field": "channel",
+            "operator": "contains",
+            "value": "SMS"
+          },
+          {
+            "field": "high_risk_flag",
+            "operator": "equals",
+            "value": "Y"
+          }
+        ]
+      },
+      "then": [
+        {
+          "field": "useCaseChannelRuleList",
+          "effect": "RECOMMEND_CHANNEL_RULES",
+          "value": [
+            {
+              "channel": "SMS",
+              "router": "HTCL_SVC_RT_SMS",
+              "route": "HTCL_SVC_RT_SMS",
+              "traffic_percentage": 100
+            },
+            {
+              "channel": "SMS",
+              "router": "CSL_SVC_RT_SMS",
+              "route": "CSL_SVC_RT_SMS",
+              "traffic_percentage": 0
+            }
+          ],
+          "reason": "High-risk SMS uses dual vendor HTCL and CSL for resilience."
+        }
+      ],
+      "else": [],
+      "trace": {
+        "source": "metadata_excel.business_description",
+        "business_reason": "High-risk real-time message: HTCL-100%, CSL-0%."
+      }
+    },
+    {
+      "rule_id": "SMS_TC_OTP_TRAFFIC_DEFAULT",
+      "rule_type": "recommendation",
+      "description": "Time Critical one-time-password SMS should use HTCL 70% and CSL 30%.",
+      "priority": "HIGH",
+      "when": {
+        "all": [
+          {
+            "field": "channel",
+            "operator": "contains",
+            "value": "SMS"
+          },
+          {
+            "field": "delivery_mode",
+            "operator": "equals",
+            "value": "TIMECRITICAL"
+          }
+        ]
+      },
+      "then": [
+        {
+          "field": "useCaseChannelRuleList",
+          "effect": "RECOMMEND_CHANNEL_RULES",
+          "value": [
+            {
+              "channel": "SMS",
+              "router": "HTCL_SVC_TC_SMS",
+              "route": "HTCL_SVC_TC_SMS",
+              "traffic_percentage": 70
+            },
+            {
+              "channel": "SMS",
+              "router": "CSL_SVC_TC_SMS",
+              "route": "CSL_SVC_TC_SMS",
+              "traffic_percentage": 30
+            }
+          ],
+          "reason": "Time Critical OTP uses HTCL 70% and CSL 30% for resilience."
+        }
+      ],
+      "else": [],
+      "trace": {
+        "source": "metadata_excel.business_description",
+        "business_reason": "TC one-time-password: HTCL-70%, CSL-30%."
+      }
+    },
+    {
+      "rule_id": "SMS_NORMAL_ROUTER_RECOMMENDATION",
+      "rule_type": "recommendation",
+      "description": "For non-high-risk SMS, choose HTCL based on delivery mode.",
+      "priority": "HIGH",
+      "when": {
+        "all": [
+          {
+            "field": "channel",
+            "operator": "contains",
+            "value": "SMS"
+          },
+          {
+            "field": "high_risk_flag",
+            "operator": "equals",
+            "value": "N"
+          }
+        ]
+      },
+      "then": [
+        {
+          "field": "router",
+          "effect": "RECOMMEND_BY_DELIVERY_MODE",
+          "value": {
+            "TIMECRITICAL": "HTCL_SVC_TC_SMS",
+            "REALTIME": "HTCL_SVC_RT_SMS",
+            "BATCH": "HTCL_SVC_BAT_SMS"
+          },
+          "reason": "For non-high-risk SMS, priority choose HTCL; delivery mode decides TC/RT/BAT router."
+        },
+        {
+          "field": "traffic_percentage",
+          "effect": "RECOMMEND_DEFAULT",
+          "value": 100,
+          "reason": "Real-time / batch message normally HTCL 100%."
+        }
+      ],
+      "else": [],
+      "trace": {
+        "source": "metadata_excel.depends_on",
+        "business_reason": "If message is non-highrisk, priority choose HTCL based on delivery mode."
+      }
+    },
+    {
+      "rule_id": "TRAFFIC_PERCENTAGE_APPLICABILITY",
+      "rule_type": "dependency",
+      "description": "Traffic percentage is applicable for SMS/EMAIL multi-path and can be shown for PUSH DaaSC path.",
+      "priority": "MEDIUM",
+      "when": {
+        "all": [
+          {
+            "field": "channel",
+            "operator": "intersects",
+            "value": [
+              "SMS",
+              "EMAIL",
+              "PUSH"
+            ]
+          }
+        ]
+      },
+      "then": [
+        {
+          "field": "traffic_percentage",
+          "effect": "SET_APPLICABLE",
+          "value": true
+        }
+      ],
+      "else": [
+        {
+          "field": "traffic_percentage",
+          "effect": "SET_APPLICABLE",
+          "value": false
+        }
+      ],
+      "trace": {
+        "source": "metadata_excel.required",
+        "business_reason": "Traffic percentage required for SMS/EMAIL multi-path; PUSH DAASC path can show it."
+      }
+    },
+    {
+      "rule_id": "EMAIL_SENDER_APPLICABLE",
+      "rule_type": "dependency",
+      "description": "EMAIL channel makes sender applicable as email sender domain/address.",
+      "priority": "HIGH",
+      "when": {
+        "all": [
+          {
+            "field": "channel",
+            "operator": "contains",
+            "value": "EMAIL"
+          }
+        ]
+      },
+      "then": [
+        {
+          "field": "sender",
+          "effect": "SET_APPLICABLE",
+          "value": true
+        },
+        {
+          "field": "sender",
+          "effect": "SET_CONTEXTUAL_MEANING",
+          "value": "Email sender domain/address; only self-identifiable part can be customized."
+        }
+      ],
+      "else": [],
+      "trace": {
+        "source": "metadata_excel.depends_on",
+        "business_reason": "For EMAIL, sender means sender domain/address, e.g. hangseng@mail.test.hangseng.com."
+      }
+    },
+    {
+      "rule_id": "EMAIL_ROUTER_RECOMMENDATION",
+      "rule_type": "recommendation",
+      "description": "For new Email, external setup should choose PFP_EU and internal setup should choose INT.",
+      "priority": "MEDIUM",
+      "when": {
+        "all": [
+          {
+            "field": "channel",
+            "operator": "contains",
+            "value": "EMAIL"
+          }
+        ]
+      },
+      "then": [
+        {
+          "field": "router",
+          "effect": "RECOMMEND_BY_CONTEXT_FLAG",
+          "value": {
+            "email_audience_scope=EXTERNAL": "PFP_EU_EMAIL",
+            "email_audience_scope=INTERNAL": "INT_EMAIL"
+          },
+          "reason": "If new & external choose PFP_EU; if new & internal choose INT."
+        }
+      ],
+      "else": [],
+      "trace": {
+        "source": "metadata_excel.depends_on",
+        "business_reason": "Email: if new & external, choose PFP_EU; if new & internal, choose INT."
+      }
+    },
+    {
+      "rule_id": "EMAIL_PFP_REQUIRES_SENDER_NAME",
+      "rule_type": "dependency",
+      "description": "EMAIL router containing PFP requires sender_name.",
+      "priority": "HIGH",
+      "when": {
+        "all": [
+          {
+            "field": "router",
+            "operator": "contains",
+            "value": "PFP"
+          }
+        ]
+      },
+      "then": [
+        {
+          "field": "sender_name",
+          "effect": "SET_APPLICABLE",
+          "value": true
+        },
+        {
+          "field": "sender_name",
+          "effect": "SET_REQUIRED_NOW",
+          "value": true
+        }
+      ],
+      "else": [],
+      "trace": {
+        "source": "metadata_excel.depends_on",
+        "business_reason": "IF EMAIL router contains PFP then sender_name is required."
+      }
+    },
+    {
+      "rule_id": "EMAIL_SENDER_NAME_DEFAULT_HINT",
+      "rule_type": "hint",
+      "description": "Email sender name can default to Hang Seng Bank / 恒生银行 in many HASE cases.",
+      "priority": "LOW",
+      "when": {
+        "all": [
+          {
+            "field": "channel",
+            "operator": "contains",
+            "value": "EMAIL"
+          }
+        ]
+      },
+      "then": [
+        {
+          "field": "sender_name",
+          "effect": "SUGGEST_DEFAULT",
+          "value": [
+            "Hang Seng Bank",
+            "恒生银行"
+          ],
+          "reason": "Most HASE cases use 恒生银行 / Hang Seng Bank."
+        }
+      ],
+      "else": [],
+      "trace": {
+        "source": "metadata_excel.depends_on",
+        "business_reason": "Most HASE cases use 恒生银行 / Hang Seng Bank."
+      }
+    },
+    {
+      "rule_id": "LETTER_ROUTER_RECOMMENDATION",
+      "rule_type": "recommendation",
+      "description": "LETTER router depends on auto/manual trigger.",
+      "priority": "MEDIUM",
+      "when": {
+        "all": [
+          {
+            "field": "channel",
+            "operator": "contains",
+            "value": "LETTER"
+          }
+        ]
+      },
+      "then": [
+        {
+          "field": "router",
+          "effect": "RECOMMEND_BY_CONTEXT_FLAG",
+          "value": {
+            "letter_trigger=AUTO": "OTX_BAT_LETTER",
+            "letter_trigger=MANUAL": "OTX_BAT_HTML_LETTER"
+          },
+          "reason": "Auto trigger chooses OTX_BAT_LETTER; manual trigger chooses OTX_BAT_HTML_LETTER."
+        }
+      ],
+      "else": [],
+      "trace": {
+        "source": "metadata_excel.depends_on",
+        "business_reason": "Letter: auto trigger choose OTX_BATCH/OTX_BAT_LETTER; manual trigger choose OTX_BAT_HTML_LETTER."
+      }
+    },
+    {
+      "rule_id": "TWOWAYSMS_ROUTER_RECOMMENDATION",
+      "rule_type": "recommendation",
+      "description": "TWOWAYSMS should choose HTCL_2WAY_SMS.",
+      "priority": "MEDIUM",
+      "when": {
+        "all": [
+          {
+            "field": "channel",
+            "operator": "contains",
+            "value": "TWOWAYSMS"
+          }
+        ]
+      },
+      "then": [
+        {
+          "field": "router",
+          "effect": "RECOMMEND",
+          "value": "HTCL_2WAY_SMS",
+          "reason": "Business note says 2WAYSMS choose HTCL_2WAY_SMS."
+        }
+      ],
+      "else": [],
+      "trace": {
+        "source": "metadata_excel.depends_on",
+        "business_reason": "2WAYSMS chooses HTCL_2WAY_SMS."
+      }
+    },
+    {
+      "rule_id": "MMS_ROUTER_RECOMMENDATION",
+      "rule_type": "recommendation",
+      "description": "MMS should use HTCL_MKT_MMS.",
+      "priority": "LOW",
+      "when": {
+        "all": [
+          {
+            "field": "channel",
+            "operator": "contains",
+            "value": "MMS"
+          }
+        ]
+      },
+      "then": [
+        {
+          "field": "router",
+          "effect": "RECOMMEND",
+          "value": "HTCL_MKT_MMS"
+        }
+      ],
+      "else": [],
+      "trace": {
+        "source": "router_catalog",
+        "business_reason": "Only MMS router option captured is HTCL_MKT_MMS."
+      }
+    },
+    {
+      "rule_id": "WHATSAPP_ROUTER_RECOMMENDATION",
+      "rule_type": "recommendation",
+      "description": "WHATSAPP should use HARO_RT_WHATSAPP.",
+      "priority": "LOW",
+      "when": {
+        "all": [
+          {
+            "field": "channel",
+            "operator": "contains",
+            "value": "WHATSAPP"
+          }
+        ]
+      },
+      "then": [
+        {
+          "field": "router",
+          "effect": "RECOMMEND",
+          "value": "HARO_RT_WHATSAPP"
+        }
+      ],
+      "else": [],
+      "trace": {
+        "source": "router_catalog",
+        "business_reason": "Only WHATSAPP router option captured is HARO_RT_WHATSAPP."
+      }
+    },
+    {
+      "rule_id": "WECHAT_ROUTER_RECOMMENDATION",
+      "rule_type": "recommendation",
+      "description": "WECHAT should use TENCENT_WECHAT.",
+      "priority": "LOW",
+      "when": {
+        "all": [
+          {
+            "field": "channel",
+            "operator": "contains",
+            "value": "WECHAT"
+          }
+        ]
+      },
+      "then": [
+        {
+          "field": "router",
+          "effect": "RECOMMEND",
+          "value": "TENCENT_WECHAT"
+        }
+      ],
+      "else": [],
+      "trace": {
+        "source": "router_catalog",
+        "business_reason": "Only WECHAT router option captured is TENCENT_WECHAT."
+      }
+    },
+    {
+      "rule_id": "OPT_IN_MASTER_GENERATED_BY_CHANNEL",
+      "rule_type": "dependency",
+      "description": "Opt-in master flag is generated by selected channel.",
+      "priority": "MEDIUM",
+      "when": {
+        "all": [
+          {
+            "field": "channel",
+            "operator": "intersects",
+            "value": [
+              "SMS",
+              "MMS",
+              "EMAIL",
+              "WECHAT",
+              "PUSH"
+            ]
+          }
+        ]
+      },
+      "then": [
+        {
+          "field": "push_optin_flag",
+          "effect": "SET_VALUE",
+          "value": "Y",
+          "reason": "If SMS/MMS/EMAIL/WECHAT/PUSH is selected, opt-in master flag is Y."
+        }
+      ],
+      "else": [
+        {
+          "field": "push_optin_flag",
+          "effect": "SET_VALUE",
+          "value": "N",
+          "reason": "If none of SMS/MMS/EMAIL/WECHAT/PUSH is selected, opt-in master flag is N."
+        }
+      ],
+      "trace": {
+        "source": "metadata_excel.options_or_remark",
+        "business_reason": "如果选了SMS/MMS/EMAIL/WECHAT/PUSH这些Channel则为Y，否则为N."
+      }
+    },
+    {
+      "rule_id": "PUSH_BOUNCE_BACK_PERIOD_APPLICABILITY",
+      "rule_type": "dependency",
+      "description": "Push bounce back period is applicable when PUSH is selected and bounce_back is Y.",
+      "priority": "MEDIUM",
+      "when": {
+        "all": [
+          {
+            "field": "channel",
+            "operator": "contains",
+            "value": "PUSH"
+          },
+          {
+            "field": "bounce_back",
+            "operator": "equals",
+            "value": "Y"
+          }
+        ]
+      },
+      "then": [
+        {
+          "field": "push_bounce_back_period",
+          "effect": "SET_APPLICABLE",
+          "value": true
+        },
+        {
+          "field": "push_bounce_back_period",
+          "effect": "SUGGEST_DEFAULT",
+          "value": 15
+        }
+      ],
+      "else": [
+        {
+          "field": "push_bounce_back_period",
+          "effect": "SET_APPLICABLE",
+          "value": false
+        }
+      ],
+      "trace": {
+        "source": "metadata_excel.business_description",
+        "business_reason": "Push bounce back period triggers next channel if no mobile callback after preset period, e.g. 15 mins."
+      }
+    },
+    {
+      "rule_id": "LETTER_BOUNCE_BACK_SUCCESS_FLAG_APPLICABILITY",
+      "rule_type": "dependency",
+      "description": "Letter bounce back success flag is applicable for LETTER / eStatement / eAdvice cases.",
+      "priority": "LOW",
+      "when": {
+        "all": [
+          {
+            "field": "channel",
+            "operator": "contains",
+            "value": "LETTER"
+          }
+        ]
+      },
+      "then": [
+        {
+          "field": "letter_bounce_back_success_flag",
+          "effect": "SET_APPLICABLE",
+          "value": true
+        }
+      ],
+      "else": [
+        {
+          "field": "letter_bounce_back_success_flag",
+          "effect": "SET_APPLICABLE",
+          "value": false
+        }
+      ],
+      "trace": {
+        "source": "metadata_excel.business_description",
+        "business_reason": "For INHK eStatement/eAdvice case."
+      }
+    },
+    {
+      "rule_id": "BOUNCE_BACK_NEXT_CHANNEL_CONTROLS_UNKNOWN_STATUS_AREA",
+      "rule_type": "dependency",
+      "description": "bounce_back_next_channel controls unknown bounce back status area.",
+      "priority": "MEDIUM",
+      "when": {
+        "all": [
+          {
+            "field": "bounce_back_next_channel",
+            "operator": "equals",
+            "value": "Y"
+          }
+        ]
+      },
+      "then": [
+        {
+          "field": "unknown_bounce_back_status",
+          "effect": "SET_APPLICABLE",
+          "value": true
+        },
+        {
+          "field": "unknown_bounce_back_status",
+          "effect": "SET_REQUIRED_NOW",
+          "value": true
+        }
+      ],
+      "else": [
+        {
+          "field": "unknown_bounce_back_status",
+          "effect": "SET_APPLICABLE",
+          "value": false
+        }
+      ],
+      "trace": {
+        "source": "metadata_excel.depends_on",
+        "business_reason": "bounce_back_next_channel controls unknownBounceBackStatus area."
+      }
+    },
+    {
+      "rule_id": "UNKNOWN_BOUNCE_BACK_STATUS_APPLICABILITY",
+      "rule_type": "dependency",
+      "description": "unknown_bounce_back_status is applicable only when next-channel bounce back is enabled.",
+      "priority": "MEDIUM",
+      "when": {
+        "all": [
+          {
+            "field": "bounce_back_next_channel",
+            "operator": "equals",
+            "value": "Y"
+          }
+        ]
+      },
+      "then": [
+        {
+          "field": "unknown_bounce_back_status",
+          "effect": "SET_APPLICABLE",
+          "value": true
+        }
+      ],
+      "else": [
+        {
+          "field": "unknown_bounce_back_status",
+          "effect": "SET_APPLICABLE",
+          "value": false
+        }
+      ],
+      "trace": {
+        "source": "metadata_excel.depends_on",
+        "business_reason": "unknown_bounce_back_status depends on bounce_back_next_channel."
+      }
+    },
+    {
+      "rule_id": "SMS_BOUNCE_BACK_PERIOD_APPLICABILITY",
+      "rule_type": "dependency",
+      "description": "SMS bounce back period is applicable when SMS is selected and unknown bounce-back handling is enabled.",
+      "priority": "LOW",
+      "when": {
+        "all": [
+          {
+            "field": "channel",
+            "operator": "contains",
+            "value": "SMS"
+          },
+          {
+            "field": "unknown_bounce_back_status",
+            "operator": "is_not_empty",
+            "value": true
+          }
+        ]
+      },
+      "then": [
+        {
+          "field": "sms_bounce_back_period",
+          "effect": "SET_APPLICABLE",
+          "value": true
+        }
+      ],
+      "else": [
+        {
+          "field": "sms_bounce_back_period",
+          "effect": "SET_APPLICABLE",
+          "value": false
+        }
+      ],
+      "trace": {
+        "source": "metadata_excel.depends_on",
+        "business_reason": "SMS bounce back period depends on unknown_bounce_back_status."
+      }
+    },
+    {
+      "rule_id": "EMAIL_BOUNCE_BACK_PERIOD_APPLICABILITY",
+      "rule_type": "dependency",
+      "description": "Email bounce back period is applicable when EMAIL is selected and unknown bounce-back handling is enabled.",
+      "priority": "LOW",
+      "when": {
+        "all": [
+          {
+            "field": "channel",
+            "operator": "contains",
+            "value": "EMAIL"
+          },
+          {
+            "field": "unknown_bounce_back_status",
+            "operator": "is_not_empty",
+            "value": true
+          }
+        ]
+      },
+      "then": [
+        {
+          "field": "email_bounce_back_period",
+          "effect": "SET_APPLICABLE",
+          "value": true
+        }
+      ],
+      "else": [
+        {
+          "field": "email_bounce_back_period",
+          "effect": "SET_APPLICABLE",
+          "value": false
+        }
+      ],
+      "trace": {
+        "source": "metadata_excel.depends_on",
+        "business_reason": "Email bounce back period depends on unknown_bounce_back_status."
+      }
+    },
+    {
+      "rule_id": "LETTER_BOUNCE_BACK_PERIOD_APPLICABILITY",
+      "rule_type": "dependency",
+      "description": "Letter bounce back period is applicable when LETTER is selected and unknown bounce-back handling is enabled.",
+      "priority": "LOW",
+      "when": {
+        "all": [
+          {
+            "field": "channel",
+            "operator": "contains",
+            "value": "LETTER"
+          },
+          {
+            "field": "unknown_bounce_back_status",
+            "operator": "is_not_empty",
+            "value": true
+          }
+        ]
+      },
+      "then": [
+        {
+          "field": "letter_bounce_back_period",
+          "effect": "SET_APPLICABLE",
+          "value": true
+        }
+      ],
+      "else": [
+        {
+          "field": "letter_bounce_back_period",
+          "effect": "SET_APPLICABLE",
+          "value": false
+        }
+      ],
+      "trace": {
+        "source": "metadata_excel.depends_on",
+        "business_reason": "Letter bounce back period depends on unknown_bounce_back_status. For LETTER, business wording mentions successful FAILED status."
+      }
+    },
+    {
+      "rule_id": "WECHAT_BOUNCE_BACK_PERIOD_APPLICABILITY",
+      "rule_type": "dependency",
+      "description": "Wechat bounce back period is applicable when WECHAT is selected and unknown bounce-back handling is enabled.",
+      "priority": "LOW",
+      "when": {
+        "all": [
+          {
+            "field": "channel",
+            "operator": "contains",
+            "value": "WECHAT"
+          },
+          {
+            "field": "unknown_bounce_back_status",
+            "operator": "is_not_empty",
+            "value": true
+          }
+        ]
+      },
+      "then": [
+        {
+          "field": "wechat_bounce_back_period",
+          "effect": "SET_APPLICABLE",
+          "value": true
+        }
+      ],
+      "else": [
+        {
+          "field": "wechat_bounce_back_period",
+          "effect": "SET_APPLICABLE",
+          "value": false
+        }
+      ],
+      "trace": {
+        "source": "metadata_excel.depends_on",
+        "business_reason": "Wechat bounce back period depends on unknown_bounce_back_status."
+      }
+    },
+    {
+      "rule_id": "NON_APPLICABLE_FIELD_CLEANUP",
+      "rule_type": "ui_internal_impact",
+      "description": "When a field becomes not applicable, hide it from business UI and do not show dependent changes in Action Preview.",
+      "priority": "CRITICAL",
+      "when": {
+        "all": [
+          {
+            "field": "field.applicable",
+            "operator": "equals",
+            "value": false
+          }
+        ]
+      },
+      "then": [
+        {
+          "field": "*",
+          "effect": "HIDE_FROM_BUSINESS_UI",
+          "value": true
+        },
+        {
+          "field": "*",
+          "effect": "KEEP_IN_INTERNAL_IMPACT_PLAN",
+          "value": true
+        },
+        {
+          "field": "*",
+          "effect": "EXCLUDE_FROM_USER_FACING_ACTION_PREVIEW",
+          "value": true
+        }
+      ],
+      "else": [],
+      "trace": {
+        "source": "product_design",
+        "business_reason": "Dependent changes are internal impacts and should not be shown directly to business users."
+      }
+    },
+    {
+      "rule_id": "LEGACY_ROUTER_REFERENCE_ALLOWED_NOT_RECOMMENDED",
+      "rule_type": "recommendation",
+      "description": "Legacy ICCM/HUTCHISON routers can be retained from reference use case but should not be recommended for new use case unless explicitly selected.",
+      "priority": "MEDIUM",
+      "when": {
+        "all": [
+          {
+            "field": "mode",
+            "operator": "equals",
+            "value": "CREATE_NEW"
+          }
+        ]
+      },
+      "then": [
+        {
+          "field": "router",
+          "effect": "SUPPRESS_LEGACY_OPTIONS_BY_DEFAULT",
+          "value": true,
+          "reason": "New use cases usually do not use ICCM/HUTCHISON related routers."
+        }
+      ],
+      "else": [],
+      "trace": {
+        "source": "metadata_excel.depends_on",
+        "business_reason": "New use cases can ignore ICCM related routers and HUTCHISON_GW related router, while historical use cases may still contain them."
+      }
+    }
+  ]
+}

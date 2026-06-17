@@ -1,0 +1,2376 @@
+{
+  "metadata_version": "v1.0-draft",
+  "field_count": 33,
+  "source": {
+    "type": "business_metadata_from_screenshots",
+    "status": "manually_structured_from_business_excel",
+    "notes": [
+      "This metadata intentionally models channel-related fields as useCaseChannelRuleList instead of flat fields.",
+      "Business descriptions and answer guidance are preserved to support AI question hints.",
+      "Some items need later business confirmation: push_optin_flag semantic meaning, OTX_BATCH_LETTER vs OTX_BAT_LETTER, and exact PUSH DaaSC tag/route combination."
+    ]
+  },
+  "domain_objects": {
+    "use_case_master": {
+      "description": "Top-level use case fields stored mainly in tbl_use_case.",
+      "scope": "single",
+      "fields": [
+        "line_of_business",
+        "use_case_name",
+        "project_name",
+        "source_system",
+        "delivery_mode"
+      ]
+    },
+    "use_case_extension": {
+      "description": "Ownership, business line, risk and trigger fields stored mainly in tbl_use_case_ext.",
+      "scope": "single",
+      "fields": [
+        "depart_head",
+        "team_head",
+        "message_owner",
+        "business_line_1st_level",
+        "business_line_2nd_level",
+        "delivery_schedule",
+        "high_risk_flag",
+        "message_trigger_conditions"
+      ]
+    },
+    "use_case_channel_rule_list": {
+      "description": "Repeated channel rule object. Each selected delivery channel may create one or more channel rule items with priority, router, route, tag, sender and routing strategy.",
+      "scope": "repeated",
+      "item_key": "channel_rule_id",
+      "db_table": "tbl_use_case_channel_rule",
+      "fields": [
+        "channel",
+        "priority",
+        "router",
+        "tag",
+        "Send_to_China_flag",
+        "traffic_percentage",
+        "sender",
+        "sender_name",
+        "app_name",
+        "cost_center_id"
+      ],
+      "example": [
+        {
+          "channel": "EMAIL",
+          "priority": 0,
+          "router": "PFP_EU_EMAIL",
+          "route": "PFP_EU_EMAIL",
+          "sender": "noreply.wealth@hase.com.hk"
+        },
+        {
+          "channel": "PUSH",
+          "priority": 1,
+          "router": "AWS_SG_SNS_PUSH",
+          "route": "AWS_SNS_PUSH",
+          "tag": "AOS"
+        }
+      ]
+    },
+    "opt_in_policy": {
+      "description": "Opt-in master flag / generated consent indicator. Raw field name is push_optin_flag but business wording suggests master opt-in flag.",
+      "scope": "single",
+      "fields": [
+        "push_optin_flag"
+      ]
+    },
+    "bounce_back_policy": {
+      "description": "Bounce-back and next-channel fallback policy.",
+      "scope": "single",
+      "fields": [
+        "bounce_back",
+        "letter_bounce_back_success_flag",
+        "push_bounce_back_period",
+        "sms_bounce_back_period",
+        "email_bounce_back_period",
+        "letter_bounce_back_period",
+        "wechat_bounce_back_period",
+        "bounce_back_next_channel",
+        "unknown_bounce_back_status"
+      ]
+    }
+  },
+  "option_sets": {
+    "line_of_business": [
+      {
+        "label": "WPB",
+        "value": "WPB"
+      },
+      {
+        "label": "CMB",
+        "value": "CMB"
+      }
+    ],
+    "delivery_mode": [
+      {
+        "label": "Time Critical",
+        "value": "TIMECRITICAL",
+        "description": "For OTP only"
+      },
+      {
+        "label": "Realtime",
+        "value": "REALTIME"
+      },
+      {
+        "label": "Batch",
+        "value": "BATCH"
+      }
+    ],
+    "yes_no": [
+      {
+        "label": "Y",
+        "value": "Y"
+      },
+      {
+        "label": "N",
+        "value": "N"
+      }
+    ],
+    "delivery_channel": [
+      {
+        "label": "PUSH",
+        "value": "PUSH"
+      },
+      {
+        "label": "SMS",
+        "value": "SMS"
+      },
+      {
+        "label": "MMS",
+        "value": "MMS"
+      },
+      {
+        "label": "EMAIL",
+        "value": "EMAIL"
+      },
+      {
+        "label": "LETTER",
+        "value": "LETTER"
+      },
+      {
+        "label": "WHATSAPP",
+        "value": "WHATSAPP"
+      },
+      {
+        "label": "WECHAT",
+        "value": "WECHAT"
+      },
+      {
+        "label": "TWOWAYSMS",
+        "value": "TWOWAYSMS"
+      }
+    ],
+    "channel_priority": [
+      {
+        "label": "Mandatory send",
+        "value": "0",
+        "description": "0 indicates must send / mandatory routing"
+      },
+      {
+        "label": "1",
+        "value": "1",
+        "description": "1 indicates channel delivery priority"
+      },
+      {
+        "label": "2",
+        "value": "2",
+        "description": "2 indicates channel delivery priority"
+      },
+      {
+        "label": "3",
+        "value": "3",
+        "description": "3 indicates channel delivery priority"
+      },
+      {
+        "label": "4",
+        "value": "4",
+        "description": "4 indicates channel delivery priority"
+      },
+      {
+        "label": "5",
+        "value": "5",
+        "description": "5 indicates channel delivery priority"
+      },
+      {
+        "label": "6",
+        "value": "6",
+        "description": "6 indicates channel delivery priority"
+      },
+      {
+        "label": "7",
+        "value": "7",
+        "description": "7 indicates channel delivery priority"
+      },
+      {
+        "label": "8",
+        "value": "8",
+        "description": "8 indicates channel delivery priority"
+      },
+      {
+        "label": "Optional / may not send",
+        "value": "99",
+        "description": "99 indicates optional / may not send"
+      },
+      {
+        "label": "M",
+        "value": "0",
+        "description": "Business sheet includes M as equivalent/label for mandatory"
+      }
+    ],
+    "app_name": [
+      {
+        "label": "Dassc",
+        "value": "DaaSC"
+      },
+      {
+        "label": "Investex",
+        "value": "InvestEx"
+      },
+      {
+        "label": "DBB",
+        "value": "DBB"
+      }
+    ],
+    "conditional_tag_options": {
+      "SMS": [
+        {
+          "label": "HK",
+          "value": "HK"
+        },
+        {
+          "label": "CN",
+          "value": "CN"
+        }
+      ],
+      "PUSH_DAASC": [
+        {
+          "label": "IOS",
+          "value": "IOS"
+        },
+        {
+          "label": "AOS",
+          "value": "AOS"
+        }
+      ]
+    },
+    "unknown_bounce_back_status": [
+      {
+        "label": "Unknown status as failed",
+        "value": "0"
+      },
+      {
+        "label": "Unknown status as successful",
+        "value": "1"
+      }
+    ],
+    "router_catalog": [
+      {
+        "channel": "PUSH",
+        "router": "AWS_SG_SNS_PUSH",
+        "route": "AWS_SNS_PUSH",
+        "is_legacy": false
+      },
+      {
+        "channel": "PUSH",
+        "router": "AWS_HK_SNS_PUSH",
+        "route": "AWS_HK_SNS_PUSH",
+        "is_legacy": false
+      },
+      {
+        "channel": "PUSH",
+        "router": "ICCM_VM_SVC_RT_GEN_PUSH",
+        "route": "VM1_RT_SVC_PUSH",
+        "is_legacy": true
+      },
+      {
+        "channel": "PUSH",
+        "router": "ICCM_VM_SVC_BAT_PUSH",
+        "route": "VM3_BAT_SVC_PUSH",
+        "is_legacy": true
+      },
+      {
+        "channel": "PUSH",
+        "router": "AURORA_PUSH",
+        "route": "AURORA_PUSH",
+        "is_legacy": false
+      },
+      {
+        "channel": "SMS",
+        "router": "HTCL_SVC_TC_SMS",
+        "route": "HTCL_SVC_TC_SMS",
+        "vendor": "HTCL",
+        "delivery_mode_hint": "TIMECRITICAL",
+        "is_legacy": false
+      },
+      {
+        "channel": "SMS",
+        "router": "HTCL_SVC_RT_SMS",
+        "route": "HTCL_SVC_RT_SMS",
+        "vendor": "HTCL",
+        "delivery_mode_hint": "REALTIME",
+        "is_legacy": false
+      },
+      {
+        "channel": "SMS",
+        "router": "CM_HTTP_SMS",
+        "route": "CM_HTTP_SMS",
+        "vendor": "CM",
+        "region_hint": "CN",
+        "is_legacy": false
+      },
+      {
+        "channel": "SMS",
+        "router": "HTCL_SVC_RT_GEN_SMS",
+        "route": "HUTCHISON_GW_SMS",
+        "vendor": "HTCL/HUTCHISON_GW",
+        "is_legacy": true
+      },
+      {
+        "channel": "SMS",
+        "router": "HTCL_SVC_RT_HR_SMS",
+        "route": "HUTCHISON_GW_SMS",
+        "vendor": "HTCL/HUTCHISON_GW",
+        "risk_hint": "HIGH_RISK",
+        "is_legacy": true
+      },
+      {
+        "channel": "SMS",
+        "router": "HTCL_SVC_BAT_SMS",
+        "route": "HUTCHISON_GW_SMS",
+        "vendor": "HTCL/HUTCHISON_GW",
+        "delivery_mode_hint": "BATCH",
+        "is_legacy": true
+      },
+      {
+        "channel": "SMS",
+        "router": "CSL_SVC_RT_SMS",
+        "route": "CSL_SVC_RT_SMS",
+        "vendor": "CSL",
+        "risk_hint": "HIGH_RISK",
+        "is_legacy": false
+      },
+      {
+        "channel": "SMS",
+        "router": "ICCM_VM_SVC_RT_GEN_SMS",
+        "route": "VM1_RT_SVC_SMS",
+        "is_legacy": true
+      },
+      {
+        "channel": "SMS",
+        "router": "ICCM_VM_SVC_BAT_SMS",
+        "route": "VM3_BAT_SVC_SMS",
+        "is_legacy": true
+      },
+      {
+        "channel": "SMS",
+        "router": "ICCM_SHP_SVC_RT_GEN_SMS",
+        "route": "SHP1_RT_SVC_SMS",
+        "is_legacy": true
+      },
+      {
+        "channel": "SMS",
+        "router": "ICCM_SHP_SVC_TC_SMS",
+        "route": "SHP1_TC_SVC_SMS",
+        "delivery_mode_hint": "TIMECRITICAL",
+        "is_legacy": true
+      },
+      {
+        "channel": "SMS",
+        "router": "ICCM_SHP_SVC_RT_HR_SMS",
+        "route": "SHP1_HS_SVC_SMS",
+        "risk_hint": "HIGH_RISK",
+        "is_legacy": true
+      },
+      {
+        "channel": "SMS",
+        "router": "LX_SVC_RT_SMS",
+        "route": "LX_SVC_RT_SMS",
+        "vendor": "LX",
+        "region_hint": "CN",
+        "is_legacy": false
+      },
+      {
+        "channel": "SMS",
+        "router": "LX_SVC_TC_SMS",
+        "route": "LX_SVC_TC_SMS",
+        "vendor": "LX",
+        "region_hint": "CN",
+        "delivery_mode_hint": "TIMECRITICAL",
+        "is_legacy": false
+      },
+      {
+        "channel": "SMS",
+        "router": "SINCH_SVC_RT_SMS",
+        "route": "SINCH_SVC_RT_SMS",
+        "vendor": "SINCH",
+        "is_legacy": false
+      },
+      {
+        "channel": "SMS",
+        "router": "CSL_SVC_TC_SMS",
+        "route": "CSL_SVC_TC_SMS",
+        "vendor": "CSL",
+        "delivery_mode_hint": "TIMECRITICAL",
+        "risk_hint": "HIGH_RISK",
+        "is_legacy": false
+      },
+      {
+        "channel": "MMS",
+        "router": "HTCL_MKT_MMS",
+        "route": "HTCL_MKT_MMS",
+        "is_legacy": false
+      },
+      {
+        "channel": "EMAIL",
+        "router": "ICCM_VM_SVC_RT_GEN_EMAIL",
+        "route": "VM1_RT_SVC_EMAIL",
+        "is_legacy": true
+      },
+      {
+        "channel": "EMAIL",
+        "router": "ICCM_VM_SVC_BAT_EMAIL",
+        "route": "VM3_BAT_SVC_EMAIL",
+        "delivery_mode_hint": "BATCH",
+        "is_legacy": true
+      },
+      {
+        "channel": "EMAIL",
+        "router": "ICCM_SHP_SVC_RT_GEN_EMAIL",
+        "route": "SHP1_RT_SVC_EMAIL",
+        "is_legacy": true
+      },
+      {
+        "channel": "EMAIL",
+        "router": "ICCM_SHP_SVC_BAT_EMAIL",
+        "route": "SHP1_BAT_SVC_EMAIL",
+        "delivery_mode_hint": "BATCH",
+        "is_legacy": true
+      },
+      {
+        "channel": "EMAIL",
+        "router": "ICCM_SHP_SVC_TC_EMAIL",
+        "route": "SHP1_TC_SVC_EMAIL",
+        "delivery_mode_hint": "TIMECRITICAL",
+        "is_legacy": true
+      },
+      {
+        "channel": "EMAIL",
+        "router": "ICCM_SHP_SVC_RT_HR_EMAIL",
+        "route": "SHP1_HS_SVC_EMAIL",
+        "risk_hint": "HIGH_RISK",
+        "is_legacy": true
+      },
+      {
+        "channel": "EMAIL",
+        "router": "SFMC_BAT_EMAIL",
+        "route": "SFMC_BAT_EMAIL",
+        "delivery_mode_hint": "BATCH",
+        "is_legacy": false
+      },
+      {
+        "channel": "EMAIL",
+        "router": "PFP_US_EMAIL",
+        "route": "PFP_US_EMAIL",
+        "scope_hint": "EXTERNAL",
+        "is_legacy": false
+      },
+      {
+        "channel": "EMAIL",
+        "router": "PFP_EU_EMAIL",
+        "route": "PFP_EU_EMAIL",
+        "scope_hint": "EXTERNAL",
+        "is_legacy": false
+      },
+      {
+        "channel": "EMAIL",
+        "router": "INT_EMAIL",
+        "route": "INT_EMAIL",
+        "scope_hint": "INTERNAL",
+        "is_legacy": false
+      },
+      {
+        "channel": "LETTER",
+        "router": "OTX_RT_LETTER",
+        "route": "OTX_RT_LETTER",
+        "trigger_hint": "REALTIME",
+        "is_legacy": false
+      },
+      {
+        "channel": "LETTER",
+        "router": "OTX_BAT_LETTER",
+        "route": "OTX_BAT_LETTER",
+        "trigger_hint": "AUTO_TRIGGER_OR_BATCH",
+        "is_legacy": false,
+        "note": "Business note also mentions OTX_BATCH_LETTER; confirm whether it is the same value as OTX_BAT_LETTER."
+      },
+      {
+        "channel": "LETTER",
+        "router": "OTX_BAT_HTML_LETTER",
+        "route": "OTX_BAT_HTML_LETTER",
+        "trigger_hint": "MANUAL_TRIGGER",
+        "is_legacy": false
+      },
+      {
+        "channel": "WHATSAPP",
+        "router": "HARO_RT_WHATSAPP",
+        "route": "HARO_RT_WHATSAPP",
+        "is_legacy": false
+      },
+      {
+        "channel": "WECHAT",
+        "router": "TENCENT_WECHAT",
+        "route": "TENCENT_WECHAT",
+        "is_legacy": false
+      },
+      {
+        "channel": "TWOWAYSMS",
+        "router": "HTCL_SVC_RT_GEN_SMS",
+        "route": "HUTCHISON_GW_SMS",
+        "is_legacy": true
+      },
+      {
+        "channel": "TWOWAYSMS",
+        "router": "HTCL_TWOWAY_SMS",
+        "route": "HUTCHISON_GW_SMS",
+        "is_legacy": true
+      },
+      {
+        "channel": "TWOWAYSMS",
+        "router": "HTCL_2WAY_SMS",
+        "route": "HTCL_2WAY_SMS",
+        "is_legacy": false
+      }
+    ]
+  },
+  "question_groups": [
+    {
+      "group_id": "qg_basic_context",
+      "title": "Basic use case context",
+      "fields": [
+        "line_of_business",
+        "use_case_name",
+        "source_system",
+        "delivery_mode"
+      ],
+      "business_goal": "Understand what the use case is and how messages are sent.",
+      "ask_stage": "early"
+    },
+    {
+      "group_id": "qg_business_trigger",
+      "title": "Business trigger and risk",
+      "fields": [
+        "message_trigger_conditions",
+        "high_risk_flag",
+        "delivery_schedule"
+      ],
+      "business_goal": "Understand when the message is triggered and whether it is high risk or 7*24.",
+      "ask_stage": "early"
+    },
+    {
+      "group_id": "qg_channel_selection",
+      "title": "Delivery channel",
+      "fields": [
+        "channel",
+        "priority"
+      ],
+      "business_goal": "Select the delivery channels and priority before asking channel-specific details.",
+      "ask_stage": "early",
+      "planner_priority": "critical"
+    },
+    {
+      "group_id": "qg_channel_routing",
+      "title": "Routing and vendor path",
+      "fields": [
+        "router",
+        "tag",
+        "Send_to_China_flag",
+        "traffic_percentage",
+        "app_name"
+      ],
+      "business_goal": "Confirm router, route, tags and traffic split for selected channels.",
+      "ask_stage": "after_channel_selected"
+    },
+    {
+      "group_id": "qg_sender_setup",
+      "title": "Sender setup",
+      "fields": [
+        "sender",
+        "sender_name",
+        "cost_center_id"
+      ],
+      "business_goal": "Collect channel-specific sender information.",
+      "ask_stage": "after_channel_selected"
+    },
+    {
+      "group_id": "qg_bounce_back",
+      "title": "Bounce-back and fallback",
+      "fields": [
+        "bounce_back",
+        "bounce_back_next_channel",
+        "unknown_bounce_back_status",
+        "push_bounce_back_period",
+        "sms_bounce_back_period",
+        "email_bounce_back_period",
+        "letter_bounce_back_period",
+        "wechat_bounce_back_period",
+        "letter_bounce_back_success_flag"
+      ],
+      "business_goal": "Configure callback, failed/unknown status handling and next-channel fallback.",
+      "ask_stage": "after_channel_selected"
+    },
+    {
+      "group_id": "qg_ownership",
+      "title": "Ownership and governance",
+      "fields": [
+        "depart_head",
+        "team_head",
+        "message_owner",
+        "business_line_1st_level",
+        "business_line_2nd_level",
+        "project_name"
+      ],
+      "business_goal": "Confirm ownership and governance fields.",
+      "ask_stage": "final_review"
+    }
+  ],
+  "fields": [
+    {
+      "field_name": "line_of_business",
+      "display_name": "Line Of Business",
+      "module": "Basic Info",
+      "domain_object": "use_case_master",
+      "scope": "use_case",
+      "business_description": "Line of business.",
+      "required_level": "Required",
+      "field_type": "single_select",
+      "options_ref": "line_of_business",
+      "options": null,
+      "db_table": "tbl_use_case",
+      "provided_by": [
+        "Business"
+      ],
+      "raw_depends_on": "create mode editable",
+      "dependency_rule_refs": [
+        "LOB_CREATE_MODE_EDITABLE"
+      ],
+      "aliases": [
+        "LOB",
+        "business line",
+        "line of business"
+      ],
+      "answer_guidance": {
+        "business_hint": "Select the owning line of business for this use case.",
+        "assistant_hint": "Can be prefilled by checking department / user access information, then ask user to confirm only if uncertain."
+      },
+      "example_answers": [
+        "WPB",
+        "CMB"
+      ],
+      "ai_behavior": {
+        "can_extract_from_requirement": true,
+        "can_prefill_from_reference": true,
+        "should_ask_user": true,
+        "ask_priority": "MEDIUM",
+        "collection_stage": "BASIC_CONTEXT",
+        "is_generated": false
+      },
+      "ui_behavior": {
+        "hide_when_not_applicable": false,
+        "show_source_label": true,
+        "show_help": true,
+        "allow_manual_edit": true
+      },
+      "export_mapping": {
+        "target": "tbl_use_case.line_of_business"
+      },
+      "notes": [],
+      "source_confidence": "HIGH"
+    },
+    {
+      "field_name": "use_case_name",
+      "display_name": "Use Case Name",
+      "module": "Basic Info",
+      "domain_object": "use_case_master",
+      "scope": "use_case",
+      "business_description": "The business scenario for the message triggering. It is used for users to check the related message delivery information in MDC MI report.",
+      "required_level": "Required",
+      "field_type": "text",
+      "options_ref": null,
+      "options": null,
+      "db_table": "tbl_use_case",
+      "provided_by": [
+        "Business"
+      ],
+      "raw_depends_on": null,
+      "dependency_rule_refs": [],
+      "aliases": [
+        "use case name",
+        "scenario name",
+        "message scenario"
+      ],
+      "answer_guidance": {
+        "business_hint": "Provide a short business scenario name that users can recognize in MDC MI report.",
+        "assistant_hint": "Generate a concise candidate name from requirement and ask user to confirm."
+      },
+      "example_answers": [
+        "Wealth Product Maturity Reminder",
+        "OTP Login Verification"
+      ],
+      "ai_behavior": {
+        "can_extract_from_requirement": true,
+        "can_prefill_from_reference": true,
+        "should_ask_user": true,
+        "ask_priority": "MEDIUM",
+        "collection_stage": "BASIC_CONTEXT",
+        "is_generated": false
+      },
+      "ui_behavior": {
+        "hide_when_not_applicable": false,
+        "show_source_label": true,
+        "show_help": true,
+        "allow_manual_edit": true
+      },
+      "export_mapping": {
+        "target": "tbl_use_case.use_case_name"
+      },
+      "notes": [],
+      "source_confidence": "HIGH"
+    },
+    {
+      "field_name": "project_name",
+      "display_name": "Project Name",
+      "module": "Basic Info",
+      "domain_object": "use_case_master",
+      "scope": "use_case",
+      "business_description": "Project name.",
+      "required_level": "Required",
+      "field_type": "text",
+      "options_ref": null,
+      "options": null,
+      "db_table": "tbl_use_case",
+      "provided_by": [
+        "Business",
+        "IT PM"
+      ],
+      "raw_depends_on": null,
+      "dependency_rule_refs": [],
+      "aliases": [
+        "project",
+        "project name",
+        "initiative name"
+      ],
+      "answer_guidance": {
+        "business_hint": "Provide the related project name.",
+        "assistant_hint": "Ask later if not found in requirement; do not interrupt core channel/trigger decisions early."
+      },
+      "example_answers": [
+        "WPB Wealth Maturity Notification Project"
+      ],
+      "ai_behavior": {
+        "can_extract_from_requirement": true,
+        "can_prefill_from_reference": true,
+        "should_ask_user": true,
+        "ask_priority": "LOW",
+        "collection_stage": "FINAL_REVIEW",
+        "is_generated": false
+      },
+      "ui_behavior": {
+        "hide_when_not_applicable": false,
+        "show_source_label": true,
+        "show_help": true,
+        "allow_manual_edit": true
+      },
+      "export_mapping": {
+        "target": "tbl_use_case.project_name"
+      },
+      "notes": [],
+      "source_confidence": "HIGH"
+    },
+    {
+      "field_name": "source_system",
+      "display_name": "Source System",
+      "module": "Basic Info",
+      "domain_object": "use_case_master",
+      "scope": "use_case",
+      "business_description": "Source system name that will pass the notification request to MDC.",
+      "required_level": "Required",
+      "field_type": "text",
+      "options_ref": null,
+      "options": null,
+      "db_table": "tbl_use_case",
+      "provided_by": [
+        "Business",
+        "IT PM",
+        "Source System IT"
+      ],
+      "raw_depends_on": null,
+      "dependency_rule_refs": [],
+      "aliases": [
+        "source system",
+        "upstream system",
+        "requesting system"
+      ],
+      "answer_guidance": {
+        "business_hint": "Provide the upstream system that sends the notification request to MDC.",
+        "assistant_hint": "If missing, ask as an integration question after basic business scenario is clear."
+      },
+      "example_answers": [
+        "PEGA",
+        "CMS",
+        "Mobile App",
+        "Source System A"
+      ],
+      "ai_behavior": {
+        "can_extract_from_requirement": true,
+        "can_prefill_from_reference": true,
+        "should_ask_user": true,
+        "ask_priority": "HIGH",
+        "collection_stage": "BASIC_CONTEXT",
+        "is_generated": false
+      },
+      "ui_behavior": {
+        "hide_when_not_applicable": false,
+        "show_source_label": true,
+        "show_help": true,
+        "allow_manual_edit": true
+      },
+      "export_mapping": {
+        "target": "tbl_use_case.source_system"
+      },
+      "notes": [],
+      "source_confidence": "HIGH"
+    },
+    {
+      "field_name": "delivery_mode",
+      "display_name": "Delivery Mode",
+      "module": "Basic Info",
+      "domain_object": "use_case_master",
+      "scope": "use_case_ext",
+      "business_description": "Delivery mode. Time Critical is for OTP only. Other values include Realtime and Batch.",
+      "required_level": "Required",
+      "field_type": "single_select",
+      "options_ref": "delivery_mode",
+      "options": null,
+      "db_table": "tbl_use_case_ext",
+      "provided_by": [
+        "ITPM",
+        "Source System IT"
+      ],
+      "raw_depends_on": null,
+      "dependency_rule_refs": [],
+      "aliases": [
+        "delivery mode",
+        "send mode",
+        "time critical",
+        "realtime",
+        "batch"
+      ],
+      "answer_guidance": {
+        "business_hint": "Choose Time Critical only for OTP. Choose Realtime for immediate event-driven messages, or Batch for scheduled/batch messages.",
+        "assistant_hint": "This field affects router recommendation and traffic percentage strategy, especially for SMS."
+      },
+      "example_answers": [
+        "TIMECRITICAL",
+        "REALTIME",
+        "BATCH"
+      ],
+      "ai_behavior": {
+        "can_extract_from_requirement": true,
+        "can_prefill_from_reference": true,
+        "should_ask_user": true,
+        "ask_priority": "HIGH",
+        "collection_stage": "BASIC_CONTEXT",
+        "is_generated": false
+      },
+      "ui_behavior": {
+        "hide_when_not_applicable": false,
+        "show_source_label": true,
+        "show_help": true,
+        "allow_manual_edit": true
+      },
+      "export_mapping": {
+        "target": "tbl_use_case_ext.delivery_mode"
+      },
+      "notes": [],
+      "source_confidence": "HIGH"
+    },
+    {
+      "field_name": "depart_head",
+      "display_name": "Depart Head",
+      "module": "Extension Info",
+      "domain_object": "use_case_extension",
+      "scope": "use_case_ext",
+      "business_description": "Department head, MD or GCB 2.",
+      "required_level": "Required by UI",
+      "field_type": "text",
+      "options_ref": null,
+      "options": null,
+      "db_table": "tbl_use_case_ext",
+      "provided_by": [
+        "Business"
+      ],
+      "raw_depends_on": null,
+      "dependency_rule_refs": [],
+      "aliases": [
+        "department head",
+        "depart head",
+        "MD",
+        "GCB2"
+      ],
+      "answer_guidance": {
+        "business_hint": "Provide the department head. This may be derived from department access information.",
+        "assistant_hint": "Prefer prefill from user profile or department information; ask in final review if missing."
+      },
+      "example_answers": [],
+      "ai_behavior": {
+        "can_extract_from_requirement": false,
+        "can_prefill_from_reference": true,
+        "should_ask_user": true,
+        "ask_priority": "LOW",
+        "collection_stage": "FINAL_REVIEW",
+        "is_generated": false
+      },
+      "ui_behavior": {
+        "hide_when_not_applicable": true,
+        "show_source_label": true,
+        "show_help": true,
+        "allow_manual_edit": true
+      },
+      "export_mapping": {
+        "target": "tbl_use_case_ext.depart_head"
+      },
+      "notes": [],
+      "source_confidence": "HIGH"
+    },
+    {
+      "field_name": "team_head",
+      "display_name": "Team Head",
+      "module": "Extension Info",
+      "domain_object": "use_case_extension",
+      "scope": "use_case_ext",
+      "business_description": "Team head, GCB 3.",
+      "required_level": "Required by UI",
+      "field_type": "text",
+      "options_ref": null,
+      "options": null,
+      "db_table": "tbl_use_case_ext",
+      "provided_by": [
+        "Business"
+      ],
+      "raw_depends_on": null,
+      "dependency_rule_refs": [],
+      "aliases": [
+        "team head",
+        "GCB3"
+      ],
+      "answer_guidance": {
+        "business_hint": "Provide the team head.",
+        "assistant_hint": "Prefer prefill from user profile or department information; ask in final review if missing."
+      },
+      "example_answers": [],
+      "ai_behavior": {
+        "can_extract_from_requirement": false,
+        "can_prefill_from_reference": true,
+        "should_ask_user": true,
+        "ask_priority": "LOW",
+        "collection_stage": "FINAL_REVIEW",
+        "is_generated": false
+      },
+      "ui_behavior": {
+        "hide_when_not_applicable": true,
+        "show_source_label": true,
+        "show_help": true,
+        "allow_manual_edit": true
+      },
+      "export_mapping": {
+        "target": "tbl_use_case_ext.team_head"
+      },
+      "notes": [],
+      "source_confidence": "HIGH"
+    },
+    {
+      "field_name": "message_owner",
+      "display_name": "Message Owner",
+      "module": "Extension Info",
+      "domain_object": "use_case_extension",
+      "scope": "use_case_ext",
+      "business_description": "Message owner, GCB 5 or above.",
+      "required_level": "Required",
+      "field_type": "text",
+      "options_ref": null,
+      "options": null,
+      "db_table": "tbl_use_case_ext",
+      "provided_by": [
+        "Business"
+      ],
+      "raw_depends_on": null,
+      "dependency_rule_refs": [],
+      "aliases": [
+        "message owner",
+        "owner",
+        "business owner"
+      ],
+      "answer_guidance": {
+        "business_hint": "Provide the business owner responsible for the message, GCB 5 or above.",
+        "assistant_hint": "Important for governance; ask after main business/channel decisions if not prefilled."
+      },
+      "example_answers": [],
+      "ai_behavior": {
+        "can_extract_from_requirement": false,
+        "can_prefill_from_reference": true,
+        "should_ask_user": true,
+        "ask_priority": "MEDIUM",
+        "collection_stage": "OWNERSHIP",
+        "is_generated": false
+      },
+      "ui_behavior": {
+        "hide_when_not_applicable": true,
+        "show_source_label": true,
+        "show_help": true,
+        "allow_manual_edit": true
+      },
+      "export_mapping": {
+        "target": "tbl_use_case_ext.message_owner"
+      },
+      "notes": [],
+      "source_confidence": "HIGH"
+    },
+    {
+      "field_name": "business_line_1st_level",
+      "display_name": "Business Line 1st Level",
+      "module": "Extension Info",
+      "domain_object": "use_case_extension",
+      "scope": "use_case_ext",
+      "business_description": "Business line first level, the department of the department head.",
+      "required_level": "Required by UI",
+      "field_type": "text",
+      "options_ref": null,
+      "options": null,
+      "db_table": "tbl_use_case_ext",
+      "provided_by": [
+        "Business"
+      ],
+      "raw_depends_on": null,
+      "dependency_rule_refs": [],
+      "aliases": [
+        "business line first level",
+        "first level department"
+      ],
+      "answer_guidance": {
+        "business_hint": "Provide the first-level business line / department of the department head.",
+        "assistant_hint": "Prefer prefill from department access information."
+      },
+      "example_answers": [],
+      "ai_behavior": {
+        "can_extract_from_requirement": false,
+        "can_prefill_from_reference": true,
+        "should_ask_user": true,
+        "ask_priority": "LOW",
+        "collection_stage": "FINAL_REVIEW",
+        "is_generated": false
+      },
+      "ui_behavior": {
+        "hide_when_not_applicable": true,
+        "show_source_label": true,
+        "show_help": true,
+        "allow_manual_edit": true
+      },
+      "export_mapping": {
+        "target": "tbl_use_case_ext.business_line_1st_level"
+      },
+      "notes": [],
+      "source_confidence": "HIGH"
+    },
+    {
+      "field_name": "business_line_2nd_level",
+      "display_name": "Business Line 2nd Level",
+      "module": "Extension Info",
+      "domain_object": "use_case_extension",
+      "scope": "use_case_ext",
+      "business_description": "Business line second level, the department of the team head.",
+      "required_level": "Required by UI",
+      "field_type": "text",
+      "options_ref": null,
+      "options": null,
+      "db_table": "tbl_use_case_ext",
+      "provided_by": [
+        "Business"
+      ],
+      "raw_depends_on": null,
+      "dependency_rule_refs": [],
+      "aliases": [
+        "business line second level",
+        "second level department"
+      ],
+      "answer_guidance": {
+        "business_hint": "Provide the second-level business line / department of the team head.",
+        "assistant_hint": "Prefer prefill from department access information."
+      },
+      "example_answers": [],
+      "ai_behavior": {
+        "can_extract_from_requirement": false,
+        "can_prefill_from_reference": true,
+        "should_ask_user": true,
+        "ask_priority": "LOW",
+        "collection_stage": "FINAL_REVIEW",
+        "is_generated": false
+      },
+      "ui_behavior": {
+        "hide_when_not_applicable": true,
+        "show_source_label": true,
+        "show_help": true,
+        "allow_manual_edit": true
+      },
+      "export_mapping": {
+        "target": "tbl_use_case_ext.business_line_2nd_level"
+      },
+      "notes": [],
+      "source_confidence": "HIGH"
+    },
+    {
+      "field_name": "delivery_schedule",
+      "display_name": "Is 7*24",
+      "module": "Extension Info",
+      "domain_object": "use_case_extension",
+      "scope": "use_case_ext",
+      "business_description": "Whether delivery schedule supports 7*24.",
+      "required_level": "Required",
+      "field_type": "single_select",
+      "options_ref": "yes_no",
+      "options": null,
+      "db_table": "tbl_use_case_ext",
+      "provided_by": [
+        "Business"
+      ],
+      "raw_depends_on": null,
+      "dependency_rule_refs": [],
+      "aliases": [
+        "7*24",
+        "24/7",
+        "delivery schedule",
+        "always available"
+      ],
+      "answer_guidance": {
+        "business_hint": "Answer Y if the message delivery should support 7*24 operation; otherwise answer N.",
+        "assistant_hint": "Ask together with delivery mode when possible."
+      },
+      "example_answers": [
+        "Y",
+        "N"
+      ],
+      "ai_behavior": {
+        "can_extract_from_requirement": true,
+        "can_prefill_from_reference": true,
+        "should_ask_user": true,
+        "ask_priority": "MEDIUM",
+        "collection_stage": "BASIC_CONTEXT",
+        "is_generated": false
+      },
+      "ui_behavior": {
+        "hide_when_not_applicable": true,
+        "show_source_label": true,
+        "show_help": true,
+        "allow_manual_edit": true
+      },
+      "export_mapping": {
+        "target": "tbl_use_case_ext.delivery_schedule"
+      },
+      "notes": [],
+      "source_confidence": "HIGH"
+    },
+    {
+      "field_name": "high_risk_flag",
+      "display_name": "Is High Risk",
+      "module": "Extension Info",
+      "domain_object": "use_case_extension",
+      "scope": "use_case_ext",
+      "business_description": "High risk critical message flag. Examples: regulatory message, time-sensitive message like Card-Not-Present message, and message for high-risk transaction.",
+      "required_level": "Required",
+      "field_type": "single_select",
+      "options_ref": "yes_no",
+      "options": null,
+      "db_table": "tbl_use_case_ext",
+      "provided_by": [
+        "Business"
+      ],
+      "raw_depends_on": null,
+      "dependency_rule_refs": [],
+      "aliases": [
+        "high risk",
+        "high-risk",
+        "critical message",
+        "regulatory message",
+        "time sensitive",
+        "high-risk transaction"
+      ],
+      "answer_guidance": {
+        "business_hint": "Answer Y if this is a regulatory, time-sensitive, or high-risk transaction message. Otherwise answer N.",
+        "assistant_hint": "This affects router/vendor and traffic percentage recommendation, especially SMS."
+      },
+      "example_answers": [
+        "Y - regulatory message",
+        "Y - high-risk transaction",
+        "N - normal service notification"
+      ],
+      "ai_behavior": {
+        "can_extract_from_requirement": true,
+        "can_prefill_from_reference": true,
+        "should_ask_user": true,
+        "ask_priority": "HIGH",
+        "collection_stage": "BASIC_CONTEXT",
+        "is_generated": false
+      },
+      "ui_behavior": {
+        "hide_when_not_applicable": true,
+        "show_source_label": true,
+        "show_help": true,
+        "allow_manual_edit": true
+      },
+      "export_mapping": {
+        "target": "tbl_use_case_ext.high_risk_flag"
+      },
+      "notes": [],
+      "source_confidence": "HIGH"
+    },
+    {
+      "field_name": "message_trigger_conditions",
+      "display_name": "Message Trigger Conditions",
+      "module": "Extension Info",
+      "domain_object": "use_case_extension",
+      "scope": "use_case_ext",
+      "business_description": "Message trigger conditions.",
+      "required_level": "Optional",
+      "field_type": "text",
+      "options_ref": null,
+      "options": null,
+      "db_table": "tbl_use_case_ext",
+      "provided_by": [
+        "Business"
+      ],
+      "raw_depends_on": null,
+      "dependency_rule_refs": [],
+      "aliases": [
+        "trigger condition",
+        "message trigger",
+        "when to send",
+        "send trigger",
+        "business event"
+      ],
+      "answer_guidance": {
+        "business_hint": "Describe the business event or condition that triggers the message.",
+        "assistant_hint": "Even though optional in metadata, it is important for AC generation; extract from requirement and ask only if unclear."
+      },
+      "example_answers": [
+        "When a wealth product will mature soon",
+        "When an OTP is requested",
+        "When a card-not-present transaction is detected"
+      ],
+      "ai_behavior": {
+        "can_extract_from_requirement": true,
+        "can_prefill_from_reference": true,
+        "should_ask_user": true,
+        "ask_priority": "HIGH",
+        "collection_stage": "BUSINESS_SCENARIO",
+        "is_generated": false
+      },
+      "ui_behavior": {
+        "hide_when_not_applicable": false,
+        "show_source_label": true,
+        "show_help": true,
+        "allow_manual_edit": true
+      },
+      "export_mapping": {
+        "target": "tbl_use_case_ext.message_trigger_conditions"
+      },
+      "notes": [],
+      "source_confidence": "HIGH"
+    },
+    {
+      "field_name": "channel",
+      "display_name": "Delivery Channel",
+      "module": "Delivery Channel",
+      "domain_object": "use_case_channel_rule_list",
+      "scope": "channel_rule_collection",
+      "business_description": "Selected delivery channel. Channel is represented through channel rule list and priority, not as a simple flat field.",
+      "required_level": "Required",
+      "field_type": "multi_select_via_priority",
+      "options_ref": "delivery_channel",
+      "options": null,
+      "db_table": "tbl_use_case_channel_rule",
+      "provided_by": [
+        "Business"
+      ],
+      "raw_depends_on": "root selected channel",
+      "dependency_rule_refs": [
+        "CHANNEL_SELECTION_CREATES_CHANNEL_RULES"
+      ],
+      "aliases": [
+        "delivery channel",
+        "channel",
+        "send channel",
+        "message channel"
+      ],
+      "answer_guidance": {
+        "business_hint": "Select one or more channels such as EMAIL, SMS, PUSH, LETTER, WHATSAPP, WECHAT, MMS, or TWOWAYSMS.",
+        "assistant_hint": "Ask this early. Downstream router, sender, opt-in and bounce-back fields depend on it."
+      },
+      "example_answers": [
+        "EMAIL only",
+        "SMS and EMAIL",
+        "PUSH first, then SMS as fallback"
+      ],
+      "ai_behavior": {
+        "can_extract_from_requirement": true,
+        "can_prefill_from_reference": true,
+        "should_ask_user": true,
+        "ask_priority": "CRITICAL",
+        "collection_stage": "CHANNEL_SELECTION",
+        "is_generated": false
+      },
+      "ui_behavior": {
+        "hide_when_not_applicable": false,
+        "show_source_label": true,
+        "show_help": true,
+        "allow_manual_edit": true
+      },
+      "export_mapping": {
+        "target": "tbl_use_case_channel_rule.channel",
+        "domain_shape": "useCaseChannelRuleList[]"
+      },
+      "notes": [],
+      "source_confidence": "HIGH"
+    },
+    {
+      "field_name": "priority",
+      "display_name": "Priority",
+      "module": "Delivery Channel",
+      "domain_object": "use_case_channel_rule_list",
+      "scope": "channel_rule",
+      "business_description": "Channel priority / mandatory routing. For channel delivery priority, values 1-8 indicate sending priority; value 0 indicates mandatory send; value 99 indicates optional / may not send.",
+      "required_level": "Required when channel selected",
+      "field_type": "single_select",
+      "options_ref": "channel_priority",
+      "options": null,
+      "db_table": "tbl_use_case_channel_rule",
+      "provided_by": [
+        "Business"
+      ],
+      "raw_depends_on": "selected channel",
+      "dependency_rule_refs": [
+        "PRIORITY_REQUIRED_FOR_SELECTED_CHANNEL"
+      ],
+      "aliases": [
+        "priority",
+        "channel priority",
+        "mandatory routing",
+        "fallback priority"
+      ],
+      "answer_guidance": {
+        "business_hint": "Use 0 for mandatory send, 1-8 for channel priority order, and 99 for optional / may not send.",
+        "assistant_hint": "When user says one channel only, default priority can usually be 0 or ask for confirmation depending policy."
+      },
+      "example_answers": [
+        "EMAIL priority 0",
+        "PUSH priority 1, SMS priority 2",
+        "SMS 99"
+      ],
+      "ai_behavior": {
+        "can_extract_from_requirement": true,
+        "can_prefill_from_reference": true,
+        "should_ask_user": true,
+        "ask_priority": "HIGH",
+        "collection_stage": "CHANNEL_SELECTION",
+        "is_generated": false
+      },
+      "ui_behavior": {
+        "hide_when_not_applicable": true,
+        "show_source_label": true,
+        "show_help": true,
+        "allow_manual_edit": true
+      },
+      "export_mapping": {
+        "target": "tbl_use_case_channel_rule.priority",
+        "domain_shape": "useCaseChannelRuleList[].priority"
+      },
+      "notes": [],
+      "source_confidence": "HIGH"
+    },
+    {
+      "field_name": "router",
+      "display_name": "Router",
+      "module": "Delivery Channel",
+      "domain_object": "use_case_channel_rule_list",
+      "scope": "channel_rule",
+      "business_description": "Router / vendor path.",
+      "required_level": "Usually required when channel selected",
+      "field_type": "single_select",
+      "options_ref": "router_catalog",
+      "options": null,
+      "db_table": "tbl_use_case_channel_rule",
+      "provided_by": [
+        "MDC IT"
+      ],
+      "raw_depends_on": "selected channel.\nPUSH depends on app_name.\nSMS depends on telecom / delivery_mode.\nEmail depends on internal/external setup.\nLetter depends on auto/manual trigger.\n2WAYSMS chooses HTCL_2WAY_SMS.",
+      "dependency_rule_refs": [
+        "ROUTER_REQUIRED_FOR_SELECTED_CHANNEL",
+        "PUSH_DAASC_ROUTER_RECOMMENDATION",
+        "PUSH_INVESTEX_DBB_ROUTER_RECOMMENDATION",
+        "SMS_ROUTER_RECOMMENDATION",
+        "EMAIL_ROUTER_RECOMMENDATION",
+        "LETTER_ROUTER_RECOMMENDATION",
+        "TWOWAYSMS_ROUTER_RECOMMENDATION"
+      ],
+      "aliases": [
+        "router",
+        "route",
+        "vendor path",
+        "delivery path",
+        "message path"
+      ],
+      "answer_guidance": {
+        "business_hint": "Choose the router/vendor path according to channel and business rule. New use cases usually avoid legacy ICCM/HUTCHISON routers unless reference use case requires them.",
+        "assistant_hint": "Recommend router automatically based on channel, app_name, delivery_mode, high_risk_flag, Send_to_China_flag, and internal/external context; ask user to confirm if uncertain."
+      },
+      "example_answers": [
+        "PFP_EU_EMAIL for external email",
+        "HTCL_SVC_TC_SMS for time critical SMS",
+        "AWS_SG_SNS_PUSH for PUSH"
+      ],
+      "ai_behavior": {
+        "can_extract_from_requirement": true,
+        "can_prefill_from_reference": true,
+        "should_ask_user": true,
+        "ask_priority": "HIGH",
+        "collection_stage": "CHANNEL_ROUTING",
+        "is_generated": false
+      },
+      "ui_behavior": {
+        "hide_when_not_applicable": true,
+        "show_source_label": true,
+        "show_help": true,
+        "allow_manual_edit": true
+      },
+      "export_mapping": {
+        "target": "tbl_use_case_channel_rule.router",
+        "domain_shape": "useCaseChannelRuleList[].router"
+      },
+      "notes": [],
+      "source_confidence": "HIGH"
+    },
+    {
+      "field_name": "tag",
+      "display_name": "Tag",
+      "module": "Delivery Channel",
+      "domain_object": "use_case_channel_rule_list",
+      "scope": "channel_rule",
+      "business_description": "Router tag.",
+      "required_level": "Conditional",
+      "field_type": "single_select",
+      "options_ref": "conditional_tag_options",
+      "options": null,
+      "db_table": "tbl_use_case_channel_rule",
+      "provided_by": [
+        "Business"
+      ],
+      "raw_depends_on": "SMS router filtering; PUSH DAASC",
+      "dependency_rule_refs": [
+        "SMS_TAG_OPTIONS",
+        "PUSH_DAASC_TAG_OPTIONS"
+      ],
+      "aliases": [
+        "tag",
+        "router tag",
+        "SMS tag",
+        "PUSH tag"
+      ],
+      "answer_guidance": {
+        "business_hint": "For SMS, tag may be HK or CN. For PUSH with DaaSC, tag may be IOS or AOS.",
+        "assistant_hint": "Only ask when tag is applicable based on channel/app/router; otherwise hide it."
+      },
+      "example_answers": [
+        "HK",
+        "CN",
+        "IOS",
+        "AOS"
+      ],
+      "ai_behavior": {
+        "can_extract_from_requirement": true,
+        "can_prefill_from_reference": true,
+        "should_ask_user": true,
+        "ask_priority": "MEDIUM",
+        "collection_stage": "CHANNEL_ROUTING",
+        "is_generated": false
+      },
+      "ui_behavior": {
+        "hide_when_not_applicable": true,
+        "show_source_label": true,
+        "show_help": true,
+        "allow_manual_edit": true
+      },
+      "export_mapping": {
+        "target": "tbl_use_case_channel_rule.tag",
+        "domain_shape": "useCaseChannelRuleList[].tag"
+      },
+      "notes": [],
+      "source_confidence": "HIGH"
+    },
+    {
+      "field_name": "Send_to_China_flag",
+      "display_name": "Send_to_China",
+      "module": "Delivery Channel",
+      "domain_object": "use_case_channel_rule_list",
+      "scope": "channel_rule",
+      "business_description": "Requires to send to China Mobile Number or NOT.",
+      "required_level": "Required for SMS",
+      "field_type": "single_select",
+      "options_ref": "yes_no",
+      "options": null,
+      "db_table": "tbl_use_case_channel_rule",
+      "provided_by": [
+        "Business"
+      ],
+      "raw_depends_on": "SMS",
+      "dependency_rule_refs": [
+        "SMS_REQUIRES_SEND_TO_CHINA_FLAG",
+        "SMS_CHINA_ROUTE_RECOMMENDATION"
+      ],
+      "aliases": [
+        "send to China",
+        "China mobile number",
+        "CN route",
+        "mainland China SMS"
+      ],
+      "answer_guidance": {
+        "business_hint": "Answer Y if SMS needs to be sent to China mobile numbers. This is used to consider adding CN routes.",
+        "assistant_hint": "If Y, recommend CM and LX routes with CM 100% and LX 0% traffic split."
+      },
+      "example_answers": [
+        "Y - need to send to China mobile numbers",
+        "N - Hong Kong only"
+      ],
+      "ai_behavior": {
+        "can_extract_from_requirement": true,
+        "can_prefill_from_reference": true,
+        "should_ask_user": true,
+        "ask_priority": "HIGH",
+        "collection_stage": "CHANNEL_ROUTING",
+        "is_generated": false
+      },
+      "ui_behavior": {
+        "hide_when_not_applicable": true,
+        "show_source_label": true,
+        "show_help": true,
+        "allow_manual_edit": true
+      },
+      "export_mapping": {
+        "target": "tbl_use_case_channel_rule.Send_to_China_flag"
+      },
+      "notes": [],
+      "source_confidence": "HIGH"
+    },
+    {
+      "field_name": "traffic_percentage",
+      "display_name": "Traffic Percentage",
+      "module": "Delivery Channel",
+      "domain_object": "use_case_channel_rule_list",
+      "scope": "route_strategy",
+      "business_description": "Traffic split percentage. Normally: high-risk real-time message: HTCL 100%, CSL 0% for resilience; Time Critical one-time-password: HTCL 70%, CSL 30% for resilience; real-time / batch message: HTCL 100%.",
+      "required_level": "Required for SMS/EMAIL multi-path; PUSH DAASC path can show it",
+      "field_type": "number",
+      "options_ref": null,
+      "options": null,
+      "db_table": "tbl_use_case_channel_rule",
+      "provided_by": [
+        "Business",
+        "MDC IT"
+      ],
+      "raw_depends_on": "PUSH, SMS, EMAIL",
+      "dependency_rule_refs": [
+        "TRAFFIC_PERCENTAGE_APPLICABILITY",
+        "SMS_HIGH_RISK_TRAFFIC_DEFAULT",
+        "SMS_TC_OTP_TRAFFIC_DEFAULT",
+        "SMS_NORMAL_TRAFFIC_DEFAULT",
+        "SMS_CHINA_TRAFFIC_DEFAULT"
+      ],
+      "aliases": [
+        "traffic percentage",
+        "traffic split",
+        "traffic allocation",
+        "percentage"
+      ],
+      "answer_guidance": {
+        "business_hint": "Provide traffic split percentage when multiple paths/vendors are used. Examples: HTCL 100%, CSL 0%; HTCL 70%, CSL 30%; CM 100%, LX 0%.",
+        "assistant_hint": "Prefer default recommendation based on high_risk_flag, delivery_mode, Send_to_China_flag and selected routers; ask user to confirm rather than asking for raw number first."
+      },
+      "example_answers": [
+        "HTCL 100%, CSL 0%",
+        "HTCL 70%, CSL 30%",
+        "CM 100%, LX 0%"
+      ],
+      "ai_behavior": {
+        "can_extract_from_requirement": true,
+        "can_prefill_from_reference": true,
+        "should_ask_user": true,
+        "ask_priority": "MEDIUM",
+        "collection_stage": "CHANNEL_ROUTING",
+        "is_generated": false
+      },
+      "ui_behavior": {
+        "hide_when_not_applicable": true,
+        "show_source_label": true,
+        "show_help": true,
+        "allow_manual_edit": true
+      },
+      "export_mapping": {
+        "target": "tbl_use_case_channel_rule.traffic_percentage",
+        "domain_shape": "useCaseChannelRuleList[].route_strategy.traffic_split"
+      },
+      "notes": [],
+      "source_confidence": "HIGH"
+    },
+    {
+      "field_name": "sender",
+      "display_name": "Sender",
+      "module": "Delivery Channel",
+      "domain_object": "use_case_channel_rule_list",
+      "scope": "channel_rule",
+      "business_description": "Sender ID / address / name depending on channel. For SMS, this is the sender ID number. For EMAIL, this is mainly the sender domain or sender address; only the bold/self-identifiable part can be customized, for example **hangseng**@mail.test.hangseng.com.",
+      "required_level": "Conditional",
+      "field_type": "text",
+      "options_ref": null,
+      "options": null,
+      "db_table": "tbl_use_case_channel_rule",
+      "provided_by": [
+        "Business"
+      ],
+      "raw_depends_on": "SMS - sender id number.\nEMAIL - sender domain; only the bold/self-identifiable place can be customized, e.g. hangseng@mail.test.hangseng.com.",
+      "dependency_rule_refs": [
+        "SMS_REQUIRES_SENDER",
+        "EMAIL_SENDER_APPLICABLE",
+        "SENDER_CHANNEL_SPECIFIC_MEANING"
+      ],
+      "aliases": [
+        "sender",
+        "sender id",
+        "sender domain",
+        "from address",
+        "sender address"
+      ],
+      "answer_guidance": {
+        "business_hint": "For SMS, provide the sender ID number/name. For EMAIL, provide the sender domain/address; only the self-identifiable part such as 'hangseng' in hangseng@mail.test.hangseng.com can be customized.",
+        "assistant_hint": "When channel is EMAIL, guide the user with the email-domain example. When channel is SMS, ask for SMS sender ID."
+      },
+      "example_answers": [
+        "SMS sender ID: HASE",
+        "Email sender: hangseng@mail.test.hangseng.com",
+        "Self-identifiable part: hangseng"
+      ],
+      "ai_behavior": {
+        "can_extract_from_requirement": true,
+        "can_prefill_from_reference": true,
+        "should_ask_user": true,
+        "ask_priority": "HIGH",
+        "collection_stage": "SENDER_SETUP",
+        "is_generated": false
+      },
+      "ui_behavior": {
+        "hide_when_not_applicable": true,
+        "show_source_label": true,
+        "show_help": true,
+        "allow_manual_edit": true
+      },
+      "export_mapping": {
+        "target": "tbl_use_case_channel_rule.sender",
+        "domain_shape": "useCaseChannelRuleList[].sender"
+      },
+      "notes": [],
+      "source_confidence": "HIGH"
+    },
+    {
+      "field_name": "sender_name",
+      "display_name": "Sender Name",
+      "module": "Delivery Channel",
+      "domain_object": "use_case_channel_rule_list",
+      "scope": "channel_rule",
+      "business_description": "Email sender name.",
+      "required_level": "Conditional",
+      "field_type": "text",
+      "options_ref": null,
+      "options": null,
+      "db_table": "tbl_use_case_channel_rule",
+      "provided_by": [
+        "Business"
+      ],
+      "raw_depends_on": "IF EMAIL router contains PFP then this field is required. It can self-identify, but most HASE cases use 恒生银行 / Hang Seng Bank.",
+      "dependency_rule_refs": [
+        "EMAIL_PFP_REQUIRES_SENDER_NAME",
+        "EMAIL_SENDER_NAME_DEFAULT_HINT"
+      ],
+      "aliases": [
+        "sender name",
+        "email sender name",
+        "from name",
+        "display sender name"
+      ],
+      "answer_guidance": {
+        "business_hint": "For Email, provide the sender display name. If the email router contains PFP, this field is required. Most HASE cases use 恒生银行 / Hang Seng Bank.",
+        "assistant_hint": "If router contains PFP, ask explicitly. Otherwise suggest default 恒生银行 / Hang Seng Bank and let user confirm."
+      },
+      "example_answers": [
+        "Hang Seng Bank",
+        "恒生银行"
+      ],
+      "ai_behavior": {
+        "can_extract_from_requirement": true,
+        "can_prefill_from_reference": true,
+        "should_ask_user": true,
+        "ask_priority": "MEDIUM",
+        "collection_stage": "SENDER_SETUP",
+        "is_generated": false
+      },
+      "ui_behavior": {
+        "hide_when_not_applicable": true,
+        "show_source_label": true,
+        "show_help": true,
+        "allow_manual_edit": true
+      },
+      "export_mapping": {
+        "target": "tbl_use_case_channel_rule.sender_name",
+        "domain_shape": "useCaseChannelRuleList[].sender_name"
+      },
+      "notes": [],
+      "source_confidence": "HIGH"
+    },
+    {
+      "field_name": "app_name",
+      "display_name": "App Name",
+      "module": "Delivery Channel",
+      "domain_object": "use_case_channel_rule_list",
+      "scope": "channel_rule",
+      "business_description": "The App name for Push Notification.",
+      "required_level": "Conditional",
+      "field_type": "single_select",
+      "options_ref": "app_name",
+      "options": null,
+      "db_table": "tbl_use_case_channel_rule",
+      "provided_by": [
+        "Business"
+      ],
+      "raw_depends_on": "PUSH Channel 才要选",
+      "dependency_rule_refs": [
+        "PUSH_REQUIRES_APP_NAME",
+        "PUSH_APP_NAME_CONTROLS_ROUTER"
+      ],
+      "aliases": [
+        "app name",
+        "push app",
+        "mobile app",
+        "PUSH app"
+      ],
+      "answer_guidance": {
+        "business_hint": "Choose the app name for Push Notification: DaaSC, InvestEx, or DBB.",
+        "assistant_hint": "Ask only when PUSH is selected. App name controls PUSH router and tag."
+      },
+      "example_answers": [
+        "DaaSC",
+        "InvestEx",
+        "DBB"
+      ],
+      "ai_behavior": {
+        "can_extract_from_requirement": true,
+        "can_prefill_from_reference": true,
+        "should_ask_user": true,
+        "ask_priority": "HIGH",
+        "collection_stage": "CHANNEL_ROUTING",
+        "is_generated": false
+      },
+      "ui_behavior": {
+        "hide_when_not_applicable": true,
+        "show_source_label": true,
+        "show_help": true,
+        "allow_manual_edit": true
+      },
+      "export_mapping": {
+        "target": "tbl_use_case_channel_rule.app_name",
+        "domain_shape": "useCaseChannelRuleList[].app_name"
+      },
+      "notes": [],
+      "source_confidence": "HIGH"
+    },
+    {
+      "field_name": "cost_center_id",
+      "display_name": "Cost Center Id",
+      "module": "Delivery Channel",
+      "domain_object": "use_case_channel_rule_list",
+      "scope": "channel_rule",
+      "business_description": "SMS cost center id.",
+      "required_level": "Conditional",
+      "field_type": "text",
+      "options_ref": null,
+      "options": null,
+      "db_table": "tbl_use_case_channel_rule",
+      "provided_by": [
+        "Business"
+      ],
+      "raw_depends_on": "要发 SMS 才要填. Example: 25267613",
+      "dependency_rule_refs": [
+        "SMS_REQUIRES_COST_CENTER_ID"
+      ],
+      "aliases": [
+        "cost center",
+        "cost center id",
+        "SMS cost center"
+      ],
+      "answer_guidance": {
+        "business_hint": "Provide SMS cost center id only when SMS is selected. Example: 25267613.",
+        "assistant_hint": "Ask only for SMS channel."
+      },
+      "example_answers": [
+        "25267613"
+      ],
+      "ai_behavior": {
+        "can_extract_from_requirement": true,
+        "can_prefill_from_reference": true,
+        "should_ask_user": true,
+        "ask_priority": "MEDIUM",
+        "collection_stage": "SENDER_SETUP",
+        "is_generated": false
+      },
+      "ui_behavior": {
+        "hide_when_not_applicable": true,
+        "show_source_label": true,
+        "show_help": true,
+        "allow_manual_edit": true
+      },
+      "export_mapping": {
+        "target": "tbl_use_case_channel_rule.cost_center_id"
+      },
+      "notes": [],
+      "source_confidence": "HIGH"
+    },
+    {
+      "field_name": "push_optin_flag",
+      "display_name": "Master",
+      "module": "Opt-In Flag",
+      "domain_object": "opt_in_policy",
+      "scope": "use_case",
+      "business_description": "Opt-in master flag. If SMS / MMS / EMAIL / WECHAT / PUSH channel is selected, this flag is Y; otherwise it is N. The raw field name is push_optin_flag, but the business description appears to be a master opt-in flag.",
+      "required_level": "Optional / generated",
+      "field_type": "single_select",
+      "options_ref": "yes_no",
+      "options": null,
+      "db_table": "tbl_use_case",
+      "provided_by": [
+        "Business"
+      ],
+      "raw_depends_on": "If selected channel includes SMS/MMS/EMAIL/WECHAT/PUSH then Y, otherwise N. PUSH Channel if selected then must open.",
+      "dependency_rule_refs": [
+        "OPT_IN_MASTER_GENERATED_BY_CHANNEL"
+      ],
+      "aliases": [
+        "opt-in master flag",
+        "push optin flag",
+        "opt in",
+        "consent master"
+      ],
+      "answer_guidance": {
+        "business_hint": "Usually generated by selected channel. If SMS/MMS/EMAIL/WECHAT/PUSH is selected, it should be Y; otherwise N.",
+        "assistant_hint": "Do not ask user unless manual override is required. Show as generated/derived."
+      },
+      "example_answers": [
+        "Y",
+        "N"
+      ],
+      "ai_behavior": {
+        "can_extract_from_requirement": false,
+        "can_prefill_from_reference": true,
+        "should_ask_user": false,
+        "ask_priority": "LOW",
+        "collection_stage": "DERIVED",
+        "is_generated": true
+      },
+      "ui_behavior": {
+        "hide_when_not_applicable": true,
+        "show_source_label": true,
+        "show_help": true,
+        "allow_manual_edit": true
+      },
+      "export_mapping": {
+        "target": "tbl_use_case.push_optin_flag",
+        "semantic_name": "opt_in_master_flag"
+      },
+      "notes": [
+        "Confirm with business whether raw field name push_optin_flag should be treated as master opt-in flag or push-only opt-in flag."
+      ],
+      "source_confidence": "HIGH"
+    },
+    {
+      "field_name": "bounce_back",
+      "display_name": "Callback",
+      "module": "Bounce Back",
+      "domain_object": "bounce_back_policy",
+      "scope": "use_case",
+      "business_description": "Bounce back callback flag. Mobile will call MDC API to let MDC know when it received the PN, and MDC can bounce back to trigger next channel if system cannot get the API callback after a pre-defined period, such as 15 minutes.",
+      "required_level": "Required by section",
+      "field_type": "single_select",
+      "options_ref": "yes_no",
+      "options": null,
+      "db_table": "tbl_use_case",
+      "provided_by": [
+        "Business"
+      ],
+      "raw_depends_on": "PUSH Channel 才要",
+      "dependency_rule_refs": [
+        "PUSH_REQUIRES_BOUNCE_BACK_CALLBACK"
+      ],
+      "aliases": [
+        "bounce back",
+        "callback",
+        "PN callback",
+        "mobile callback"
+      ],
+      "answer_guidance": {
+        "business_hint": "Answer Y if mobile callback / bounce-back is required for Push Notification. It allows MDC to trigger next channel if callback is not received after a preset period.",
+        "assistant_hint": "Ask when PUSH is selected. Use plain wording: whether MDC should trigger fallback if mobile callback is not received."
+      },
+      "example_answers": [
+        "Y - enable callback and bounce back",
+        "N - no callback fallback"
+      ],
+      "ai_behavior": {
+        "can_extract_from_requirement": true,
+        "can_prefill_from_reference": true,
+        "should_ask_user": true,
+        "ask_priority": "HIGH",
+        "collection_stage": "BOUNCE_BACK",
+        "is_generated": false
+      },
+      "ui_behavior": {
+        "hide_when_not_applicable": true,
+        "show_source_label": true,
+        "show_help": true,
+        "allow_manual_edit": true
+      },
+      "export_mapping": {
+        "target": "tbl_use_case.bounce_back"
+      },
+      "notes": [],
+      "source_confidence": "HIGH"
+    },
+    {
+      "field_name": "letter_bounce_back_success_flag",
+      "display_name": "Letter Bounce Back",
+      "module": "Bounce Back",
+      "domain_object": "bounce_back_policy",
+      "scope": "use_case",
+      "business_description": "Letter bounce back success flag. It is for the INHK eStatement/eAdvice case, which triggers e-Notification when the eStatement/eAdvice is ready in website.",
+      "required_level": "Optional",
+      "field_type": "single_select",
+      "options_ref": "yes_no",
+      "options": null,
+      "db_table": "tbl_use_case",
+      "provided_by": [
+        "Business"
+      ],
+      "raw_depends_on": "LETTER / INHK eStatement / eAdvice scenario",
+      "dependency_rule_refs": [
+        "LETTER_BOUNCE_BACK_SUCCESS_FLAG_APPLICABILITY"
+      ],
+      "aliases": [
+        "letter bounce back",
+        "eStatement",
+        "eAdvice",
+        "letter success flag"
+      ],
+      "answer_guidance": {
+        "business_hint": "Use this for INHK eStatement/eAdvice cases where e-Notification is triggered when the eStatement/eAdvice is ready on website.",
+        "assistant_hint": "Ask only if LETTER or eStatement/eAdvice scenario is detected."
+      },
+      "example_answers": [
+        "Y - eStatement/eAdvice notification required",
+        "N"
+      ],
+      "ai_behavior": {
+        "can_extract_from_requirement": true,
+        "can_prefill_from_reference": true,
+        "should_ask_user": true,
+        "ask_priority": "LOW",
+        "collection_stage": "BOUNCE_BACK",
+        "is_generated": false
+      },
+      "ui_behavior": {
+        "hide_when_not_applicable": true,
+        "show_source_label": true,
+        "show_help": true,
+        "allow_manual_edit": true
+      },
+      "export_mapping": {
+        "target": "tbl_use_case.letter_bounce_back_success_flag"
+      },
+      "notes": [],
+      "source_confidence": "HIGH"
+    },
+    {
+      "field_name": "push_bounce_back_period",
+      "display_name": "Push Bounce Back Period",
+      "module": "Bounce Back",
+      "domain_object": "bounce_back_policy",
+      "scope": "use_case",
+      "business_description": "Push bounce back period in minutes. It will trigger bounce back to next channel if there is no callback from mobile for the PN after this pre-set period.",
+      "required_level": "Optional",
+      "field_type": "number",
+      "options_ref": null,
+      "options": null,
+      "db_table": "tbl_use_case",
+      "provided_by": [
+        "Business"
+      ],
+      "raw_depends_on": "bounce_back",
+      "dependency_rule_refs": [
+        "PUSH_BOUNCE_BACK_PERIOD_APPLICABILITY"
+      ],
+      "aliases": [
+        "push bounce period",
+        "push fallback period",
+        "PN callback timeout"
+      ],
+      "answer_guidance": {
+        "business_hint": "Provide timeout in minutes for Push callback before triggering bounce back to next channel.",
+        "assistant_hint": "Ask only when PUSH is selected and bounce_back = Y. Example period from business description: 15 minutes."
+      },
+      "example_answers": [
+        "15"
+      ],
+      "ai_behavior": {
+        "can_extract_from_requirement": true,
+        "can_prefill_from_reference": true,
+        "should_ask_user": true,
+        "ask_priority": "MEDIUM",
+        "collection_stage": "BOUNCE_BACK",
+        "is_generated": false
+      },
+      "ui_behavior": {
+        "hide_when_not_applicable": true,
+        "show_source_label": true,
+        "show_help": true,
+        "allow_manual_edit": true
+      },
+      "export_mapping": {
+        "target": "tbl_use_case.push_bounce_back_period"
+      },
+      "notes": [],
+      "source_confidence": "HIGH"
+    },
+    {
+      "field_name": "sms_bounce_back_period",
+      "display_name": "SMS Bounce Back Period",
+      "module": "Bounce Back",
+      "domain_object": "bounce_back_policy",
+      "scope": "use_case",
+      "business_description": "SMS bounce back period in minutes. It will trigger bounce back to next channel if MDC has not gotten the successful SENT status for SMS after this pre-set period.",
+      "required_level": "Optional",
+      "field_type": "number",
+      "options_ref": null,
+      "options": null,
+      "db_table": "tbl_use_case",
+      "provided_by": [
+        "Business"
+      ],
+      "raw_depends_on": "unknown_bounce_back_status",
+      "dependency_rule_refs": [
+        "SMS_BOUNCE_BACK_PERIOD_APPLICABILITY"
+      ],
+      "aliases": [
+        "SMS bounce period",
+        "SMS fallback period",
+        "SMS SENT status timeout"
+      ],
+      "answer_guidance": {
+        "business_hint": "Provide timeout in minutes before treating SMS as not successfully SENT and triggering next channel.",
+        "assistant_hint": "Ask only if SMS is selected and unknown bounce-back handling is enabled."
+      },
+      "example_answers": [
+        "15"
+      ],
+      "ai_behavior": {
+        "can_extract_from_requirement": true,
+        "can_prefill_from_reference": true,
+        "should_ask_user": true,
+        "ask_priority": "LOW",
+        "collection_stage": "BOUNCE_BACK",
+        "is_generated": false
+      },
+      "ui_behavior": {
+        "hide_when_not_applicable": true,
+        "show_source_label": true,
+        "show_help": true,
+        "allow_manual_edit": true
+      },
+      "export_mapping": {
+        "target": "tbl_use_case.sms_bounce_back_period"
+      },
+      "notes": [],
+      "source_confidence": "HIGH"
+    },
+    {
+      "field_name": "email_bounce_back_period",
+      "display_name": "Email Bounce Back Period",
+      "module": "Bounce Back",
+      "domain_object": "bounce_back_policy",
+      "scope": "use_case",
+      "business_description": "Email bounce back period in minutes. It will trigger bounce back to next channel if MDC has not gotten the successful SENT status for EMAIL after this pre-set period.",
+      "required_level": "Optional",
+      "field_type": "number",
+      "options_ref": null,
+      "options": null,
+      "db_table": "tbl_use_case",
+      "provided_by": [
+        "Business"
+      ],
+      "raw_depends_on": "unknown_bounce_back_status",
+      "dependency_rule_refs": [
+        "EMAIL_BOUNCE_BACK_PERIOD_APPLICABILITY"
+      ],
+      "aliases": [
+        "Email bounce period",
+        "Email fallback period",
+        "Email SENT status timeout"
+      ],
+      "answer_guidance": {
+        "business_hint": "Provide timeout in minutes before treating Email as not successfully SENT and triggering next channel.",
+        "assistant_hint": "Ask only if EMAIL is selected and unknown bounce-back handling is enabled."
+      },
+      "example_answers": [
+        "15"
+      ],
+      "ai_behavior": {
+        "can_extract_from_requirement": true,
+        "can_prefill_from_reference": true,
+        "should_ask_user": true,
+        "ask_priority": "LOW",
+        "collection_stage": "BOUNCE_BACK",
+        "is_generated": false
+      },
+      "ui_behavior": {
+        "hide_when_not_applicable": true,
+        "show_source_label": true,
+        "show_help": true,
+        "allow_manual_edit": true
+      },
+      "export_mapping": {
+        "target": "tbl_use_case.email_bounce_back_period"
+      },
+      "notes": [],
+      "source_confidence": "HIGH"
+    },
+    {
+      "field_name": "letter_bounce_back_period",
+      "display_name": "Letter Bounce Back Period",
+      "module": "Bounce Back",
+      "domain_object": "bounce_back_policy",
+      "scope": "use_case",
+      "business_description": "Letter bounce back period in minutes. It will trigger bounce back to next channel if MDC has not gotten the successful FAILED status for LETTER after this pre-set period.",
+      "required_level": "Optional",
+      "field_type": "number",
+      "options_ref": null,
+      "options": null,
+      "db_table": "tbl_use_case",
+      "provided_by": [
+        "Business"
+      ],
+      "raw_depends_on": "unknown_bounce_back_status",
+      "dependency_rule_refs": [
+        "LETTER_BOUNCE_BACK_PERIOD_APPLICABILITY"
+      ],
+      "aliases": [
+        "Letter bounce period",
+        "Letter fallback period",
+        "LETTER FAILED status timeout"
+      ],
+      "answer_guidance": {
+        "business_hint": "Provide timeout in minutes. For LETTER, the business description refers to successful FAILED status, which differs from SMS/EMAIL successful SENT status.",
+        "assistant_hint": "Preserve the LETTER-specific wording; do not simplify it into SENT status."
+      },
+      "example_answers": [
+        "15"
+      ],
+      "ai_behavior": {
+        "can_extract_from_requirement": true,
+        "can_prefill_from_reference": true,
+        "should_ask_user": true,
+        "ask_priority": "LOW",
+        "collection_stage": "BOUNCE_BACK",
+        "is_generated": false
+      },
+      "ui_behavior": {
+        "hide_when_not_applicable": true,
+        "show_source_label": true,
+        "show_help": true,
+        "allow_manual_edit": true
+      },
+      "export_mapping": {
+        "target": "tbl_use_case.letter_bounce_back_period"
+      },
+      "notes": [],
+      "source_confidence": "HIGH"
+    },
+    {
+      "field_name": "wechat_bounce_back_period",
+      "display_name": "Wechat Bounce Back Period",
+      "module": "Bounce Back",
+      "domain_object": "bounce_back_policy",
+      "scope": "use_case",
+      "business_description": "Wechat bounce back period in minutes.",
+      "required_level": "Optional",
+      "field_type": "number",
+      "options_ref": null,
+      "options": null,
+      "db_table": "tbl_use_case",
+      "provided_by": [
+        "Business"
+      ],
+      "raw_depends_on": "unknown_bounce_back_status",
+      "dependency_rule_refs": [
+        "WECHAT_BOUNCE_BACK_PERIOD_APPLICABILITY"
+      ],
+      "aliases": [
+        "Wechat bounce period",
+        "Wechat fallback period"
+      ],
+      "answer_guidance": {
+        "business_hint": "Provide Wechat bounce back period in minutes when Wechat fallback handling is enabled.",
+        "assistant_hint": "Ask only if WECHAT is selected and unknown bounce-back handling is enabled."
+      },
+      "example_answers": [
+        "15"
+      ],
+      "ai_behavior": {
+        "can_extract_from_requirement": true,
+        "can_prefill_from_reference": true,
+        "should_ask_user": true,
+        "ask_priority": "LOW",
+        "collection_stage": "BOUNCE_BACK",
+        "is_generated": false
+      },
+      "ui_behavior": {
+        "hide_when_not_applicable": true,
+        "show_source_label": true,
+        "show_help": true,
+        "allow_manual_edit": true
+      },
+      "export_mapping": {
+        "target": "tbl_use_case.wechat_bounce_back_period"
+      },
+      "notes": [],
+      "source_confidence": "HIGH"
+    },
+    {
+      "field_name": "bounce_back_next_channel",
+      "display_name": "Bounce Back Next Channel",
+      "module": "Bounce Back",
+      "domain_object": "bounce_back_policy",
+      "scope": "use_case",
+      "business_description": "Whether route to next channel after bounce back, when the status is failed for the related channel delivery.",
+      "required_level": "Optional",
+      "field_type": "single_select",
+      "options_ref": "yes_no",
+      "options": null,
+      "db_table": "tbl_use_case",
+      "provided_by": [
+        "Business"
+      ],
+      "raw_depends_on": "controls unknownBounceBackStatus area",
+      "dependency_rule_refs": [
+        "BOUNCE_BACK_NEXT_CHANNEL_CONTROLS_UNKNOWN_STATUS_AREA"
+      ],
+      "aliases": [
+        "bounce back next channel",
+        "fallback to next channel",
+        "next channel after bounce back"
+      ],
+      "answer_guidance": {
+        "business_hint": "Answer Y if MDC should route to the next channel after bounce back / failed delivery status.",
+        "assistant_hint": "If Y, ask or derive unknown_bounce_back_status and channel-specific bounce back periods."
+      },
+      "example_answers": [
+        "Y - fallback to next channel",
+        "N - no next-channel fallback"
+      ],
+      "ai_behavior": {
+        "can_extract_from_requirement": true,
+        "can_prefill_from_reference": true,
+        "should_ask_user": true,
+        "ask_priority": "MEDIUM",
+        "collection_stage": "BOUNCE_BACK",
+        "is_generated": false
+      },
+      "ui_behavior": {
+        "hide_when_not_applicable": true,
+        "show_source_label": true,
+        "show_help": true,
+        "allow_manual_edit": true
+      },
+      "export_mapping": {
+        "target": "tbl_use_case.bounce_back_next_channel"
+      },
+      "notes": [],
+      "source_confidence": "HIGH"
+    },
+    {
+      "field_name": "unknown_bounce_back_status",
+      "display_name": "Unknown Bounce Back Status",
+      "module": "Bounce Back",
+      "domain_object": "bounce_back_policy",
+      "scope": "use_case",
+      "business_description": "When opened, MDC will check the channel bounce back period set above and bounce back to trigger next channel if it has not gotten the successful SENT status.",
+      "required_level": "Optional",
+      "field_type": "single_select",
+      "options_ref": "unknown_bounce_back_status",
+      "options": null,
+      "db_table": "tbl_use_case",
+      "provided_by": [
+        "Business"
+      ],
+      "raw_depends_on": "bounce_back_next_channel",
+      "dependency_rule_refs": [
+        "UNKNOWN_BOUNCE_BACK_STATUS_APPLICABILITY",
+        "UNKNOWN_STATUS_CONTROLS_CHANNEL_PERIODS"
+      ],
+      "aliases": [
+        "unknown bounce back status",
+        "unknown status",
+        "failed or successful unknown status"
+      ],
+      "answer_guidance": {
+        "business_hint": "Choose whether unknown status should be treated as failed or successful. This controls whether MDC triggers the next channel when successful SENT status is not received.",
+        "assistant_hint": "Ask only when bounce_back_next_channel = Y."
+      },
+      "example_answers": [
+        "Unknown status as failed",
+        "Unknown status as successful"
+      ],
+      "ai_behavior": {
+        "can_extract_from_requirement": true,
+        "can_prefill_from_reference": true,
+        "should_ask_user": true,
+        "ask_priority": "MEDIUM",
+        "collection_stage": "BOUNCE_BACK",
+        "is_generated": false
+      },
+      "ui_behavior": {
+        "hide_when_not_applicable": true,
+        "show_source_label": true,
+        "show_help": true,
+        "allow_manual_edit": true
+      },
+      "export_mapping": {
+        "target": "tbl_use_case.unknown_bounce_back_status"
+      },
+      "notes": [],
+      "source_confidence": "HIGH"
+    }
+  ]
+}
