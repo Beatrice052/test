@@ -1,46 +1,47 @@
 ---
 name: safe-nl2sql
-description: Generate grounded read-only PostgreSQL from a supplied business data dictionary, optional sample rows and reporting question.
-argument-hint: "[paste data dictionary, sample rows and question]"
+description: Generate grounded read-only PostgreSQL from a short business question using available workspace or chat data context.
+argument-hint: "[natural-language reporting question]"
 agent: ask
 ---
 
 # Task
 
-Generate PostgreSQL for the supplied business data dictionary and reporting question.
+Generate read-only PostgreSQL for the user's natural-language reporting question using the available workspace or chat context, such as data dictionary files, scenario files, schema notes, sample rows or business metric documentation.
 
-Input:
+The user should not need to paste the full schema into the command. Use all content supplied after `/safe-nl2sql` as the reporting request, then ground the answer in the relevant context that is already open, attached or available in the chat.
 
-Use all content supplied after `/safe-nl2sql` as the input.
-
-If no data dictionary or business question is supplied, ask the user to provide it.
+If the reporting request or the data context is missing, ask the user to provide or attach the missing information. Do not invent tables, columns, metric definitions or business rules.
 
 # Rules
 
-Do not use tables or columns not present in the supplied data dictionary.
+Do not use tables or columns that are not present in the available data context.
 
-Treat sample rows as examples for understanding business semantics only. Do not hard-code sample values or produce a query that only works for the sample rows.
+Treat sample rows as examples for understanding business semantics only. Do not hard-code sample IDs, sample dates, sample amounts or sample categories.
 
-Do not silently invent metric definitions.
+Do not silently invent metric definitions. When the context is ambiguous, state the ambiguity and make only clearly labeled assumptions.
 
 Do not generate INSERT, UPDATE, DELETE, MERGE, DROP, ALTER, TRUNCATE, GRANT, REVOKE, CREATE, COPY, CALL, or executable administrative statements.
 
 # Method
 
-1. Ground the data dictionary: list tables, relevant columns, likely keys, timestamps, numeric fields and one-to-many relationships.
-2. Use sample rows only to clarify edge cases, such as invalid statuses, historical first orders, empty refunds and timezone boundaries.
-3. Analyze the request: state output grain, dimensions, metrics, filters, time range, timezone, distinct-count rules, historical lookback, ranking scope, tie-breaking and ambiguities.
-4. Design query stages: for each stage state input grain, output grain, filters, joins, aggregations and duplicate-count risk.
-5. Generate SQL with inclusive start, exclusive end, explicit timezone handling, safe NULL handling, `NULLIF` for division safety, numeric division, deterministic ordering and CTEs.
-6. Self-review against data-dictionary hallucination, write operations, joins, aggregation grain, duplicate counting, historical lookback, time boundary, timezone, NULL, division, Top-N partition and tie-breaking.
+1. Identify the data context used: list the context files or pasted sections, relevant tables, relevant columns, keys, timestamps, numeric fields, status fields and business timezones.
+2. Ground the request: state output grain, dimensions, metrics, filters, time range, timezone, currency conversion rules, distinct-count rules, historical lookback, ranking scope, tie-breaking and ambiguities.
+3. Inspect join cardinality before writing SQL, especially one-to-many joins between orders, items, payments and refunds.
+4. Design CTE stages with explicit input grain and output grain for each stage.
+5. Aggregate one-to-many tables before joining when needed to avoid duplicate revenue, duplicate refunds or duplicate customers.
+6. Use inclusive start and exclusive end for time ranges.
+7. Apply business timezone before date truncation, local-date grouping or FX-date joins.
+8. Use safe NULL handling, `NULLIF` for division safety, numeric division and deterministic ordering.
+9. For customer metrics, use distinct customers and full-history lookback when the definition requires first purchase or repeat behavior.
+10. For Top N logic, partition by the requested reporting grain, not globally.
+11. Self-review against data-context hallucination, write operations, join duplication, aggregation grain, historical lookback, time boundary, timezone, FX conversion, NULL, division, Top-N partition and tie-breaking.
 
 # Output
 
-## Data dictionary understanding
+## Data context used
 
 ## Business interpretation
-
-## Sample-row edge cases
 
 ## Ambiguities and assumptions
 

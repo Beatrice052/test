@@ -12,7 +12,7 @@
 
 ### A 组：Baseline
 
-普通用户直接使用默认 Copilot Chat，输入一到两句自然语言任务要求，再粘贴相同业务材料。
+普通用户直接使用默认 Copilot Chat，输入一到两句自然语言任务要求，并使用场景规定的相同业务材料或 Workspace context。
 
 A 组不得包含专业方法、检查清单、专家角色说明、Self-review 要求或 Finding 模板。
 
@@ -22,13 +22,13 @@ A 组不得包含专业方法、检查清单、专家角色说明、Self-review 
 
 普通用户使用团队已经创建好的 Prompt File、Skill 或 Custom Agent。
 
-C 组仍然保持低门槛：Prompt 和 Skill 只多一个 Slash Command，Agent 只多一步选择 Agent。业务材料必须与 A 组相同。
+C 组仍然保持低门槛：Prompt 和 Skill 只多一个 Slash Command，Agent 只多一步选择 Agent。业务材料或 Workspace context 必须与 A 组相同。
 
 ## 场景
 
 | 场景 | 定制类型 | 目录 |
 |---|---|---|
-| Prompt: NL2SQL | Prompt File | `scenarios/prompt-nl2sql/`，使用数据字典和样例数据，不需要真实数据库 |
+| Prompt: NL2SQL | Prompt File | `scenarios/prompt-nl2sql/`，数据说明在 `scenario.md` 中模拟为已有 Workspace context，用户输入只包含查询需求，不需要真实数据库 |
 | Skill: API Contract 测试用例设计 | Skill | `scenarios/skill-api-contract-tests/` |
 | Agent: 安全代码审查 | Custom Agent | `scenarios/agent-secure-code-review/` |
 
@@ -48,13 +48,14 @@ results/
 ## 基本流程
 
 1. 阅读 `scenario.md` 和 `operation-guide.md`。
-2. A 组：新建默认 Copilot Chat，复制 `novice-input.md`。
-3. 保存 A 组原始输出并评分。
-4. 使用 `create-customization-request.md` 创建资产。
-5. 检查生成资产，并与 `reference-asset/` 对照。
-6. C 组：新建 Chat，按 `customized-input.md` 调用资产。
-7. 保存 C 组原始输出并评分。
-8. 比较 A 与 C 的质量、遗漏、稳定性和使用成本。
+2. 按场景要求准备相同业务材料或 Workspace context。
+3. A 组：新建默认 Copilot Chat，复制 `novice-input.md`。
+4. 保存 A 组原始输出并评分。
+5. 使用 `create-customization-request.md` 创建资产。
+6. 检查生成资产，并与 `reference-asset/` 对照。
+7. C 组：新建 Chat，使用同一份业务材料或 Workspace context，按 `customized-input.md` 调用资产。
+8. 保存 C 组原始输出并评分。
+9. 比较 A 与 C 的质量、遗漏、稳定性和使用成本。
 
 ## 实验规模
 
