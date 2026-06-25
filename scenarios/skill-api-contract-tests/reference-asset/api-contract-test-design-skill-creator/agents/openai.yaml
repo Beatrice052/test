@@ -1,0 +1,4 @@
+interface:
+  display_name: "API Contract Test Design"
+  short_description: "API contract tests with traceability"
+  default_prompt: "Use $api-contract-test-design-skill-creator to design API contract tests from this pasted REST API specification."

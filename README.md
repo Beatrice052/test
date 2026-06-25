@@ -123,4 +123,20 @@ After：同一个用户只需要调用团队资产：
 - 如果资产发生修改，A/C 两组都需要重新运行。
 - 不要伪造 Copilot 输出或实验分数。
 
+## 可选：Skill Creator 对照
+
+API Contract Skill 场景额外提供一组 Skill 创建质量对照材料，用来比较 GitHub Copilot `/create-skill` 和 `skill-creator` 方法创建出的 Skill 哪个更好用。
+
+这不是正式 A/C 主实验的一部分，不应混入 A 组或原始 C 组评分。
+
+相关文件：
+
+- `scenarios/skill-api-contract-tests/skill-creator-request.md`
+- `scenarios/skill-api-contract-tests/customized-input-skill-creator.md`
+- `scenarios/skill-api-contract-tests/reference-asset/api-contract-test-design-skill-creator/`
+- `scenarios/skill-api-contract-tests/skill-creation-comparison-scorecard.md`
+- `scenarios/skill-api-contract-tests/results/skill-creator-comparison/`
+
+对照时必须保存真实运行输出，不要伪造 Skill 产物、Copilot 输出或分数。
+
 所有需要在 Copilot Chat 中手动执行的步骤汇总见 `manual-copilot-steps.md`。

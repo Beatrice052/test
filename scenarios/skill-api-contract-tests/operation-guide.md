@@ -8,6 +8,10 @@
 
 - `scenario.md`：测试材料和检查点。
 - `reference-asset/api-contract-test-design/`：参考 Skill 文件和方法资料，仅供对照或手动安装。
+- `reference-asset/api-contract-test-design-skill-creator/`：按 `skill-creator` 方法设计的参考 Skill，仅用于创建质量对照。
+- `skill-creator-request.md`：在支持 `skill-creator` 的环境中创建对照 Skill 的输入。
+- `customized-input-skill-creator.md`：运行 skill-creator 版 Skill 时使用的输入。
+- `skill-creation-comparison-scorecard.md`：比较 `/create-skill` 与 `skill-creator` 产物的人工评分卡。
 - `scorecard.md`：人工评分卡。
 
 这些内容不要默认复制到 `.github`。
@@ -41,6 +45,20 @@
 4. 不 Follow-up，不纠正，不补充业务信息。
 5. 保存 Copilot 原始输出为 C 组结果。
 
+## Optional Skill Creator Comparison
+
+这一节只比较“Skill 是怎么被创建出来的”，不替代 A/C 主实验。
+
+1. 使用 `create-customization-request.md` 在 Copilot Chat 中创建 `/api-contract-test-design`。
+2. 在支持 `skill-creator` 的环境中，使用 `skill-creator-request.md` 创建 `/api-contract-test-design-skill-creator`。
+3. 对照 `reference-asset/api-contract-test-design-skill-creator/` 检查 skill-creator 版资产结构，重点看 `SKILL.md` 是否简洁、详细方法是否拆到 `references/`。
+4. 新建 Chat，使用 `customized-input.md` 运行 Copilot `/create-skill` 创建出来的 Skill。
+5. 新建 Chat，使用 `customized-input-skill-creator.md` 运行 skill-creator 创建出来的 Skill。
+6. 保存两份原始输出到 `results/skill-creator-comparison/run-01/`。
+7. 使用 `skill-creation-comparison-scorecard.md` 人工比较两种 Skill 的可安装性、可调用性、覆盖度、可审核性和污染风险。
+
+不要根据第一种 Skill 的输出去修改第二种 Skill；也不要根据第二种 Skill 的输出回头修改第一种 Skill。
+
 ## Fairness rules
 
 - API Contract 必须相同。
@@ -49,3 +67,4 @@
 - A 和 C 均使用新 Chat。
 - 不根据输出结果临时改 Skill。
 - 如果 Skill 资产发生修改，A/C 两组都需要重新运行。
+- Skill Creator 对照结果必须单独记录，不要混入 A/C 主实验分数。
