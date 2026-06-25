@@ -1,12 +1,10 @@
-帮我 review 一下下面的代码有没有问题，按严重程度列出来。
+先选择 `Secure Code Review Gate` Agent，然后输入：
 
-## Context
+帮我看下这段客户查询接口有没有明显问题，按严重程度列一下就行，先不用帮我改代码。
 
-No additional API gateway, authorization middleware, rate limiter, or response filtering is guaranteed by the supplied context.
+现在先假设没有 API gateway / auth middleware / rate limit / response filter 兜底，能看出来的就直接说；如果有些要看环境才能判断，也写一下还缺什么信息。
 
-The reviewer may ask for missing context but must evaluate the visible code.
-
-## Code
+代码：
 
 ```python
 import logging

@@ -1,45 +1,35 @@
-根据下面这个 API 规格帮我写测试用例，尽量写全一点，输出表格。
+帮我把这个付款接口的测试 case 列一下，尽量全一点，表格就行，不用写代码。
 
-```text
-Endpoint:
+下面是我从文档里拷出来的，顺序可能有点乱：
+
 POST /v1/payments
 
-Headers:
-Authorization: Bearer token
-Idempotency-Key: required, maximum 64 characters
+header 里面有 Authorization: Bearer token
+还有 Idempotency-Key，必填，最长 64 个字符
 
-Request body:
-{
-  "sourceAccountId": "string",
-  "destinationAccountId": "string",
-  "amount": 100.00,
-  "currency": "HKD",
-  "scheduledAt": "2026-07-01T10:00:00+08:00",
-  "note": "string"
-}
+body 大概这样：
+sourceAccountId string
+destinationAccountId string
+amount 100.00
+currency HKD
+scheduledAt 2026-07-01T10:00:00+08:00
+note string
 
-Rules:
+规则：
+sourceAccountId 和 destinationAccountId 都要有
+两个账号不能一样
+amount 最小 0.01，最大 1,000,000.00
+amount 最多两位小数
+currency 只支持 HKD / CNY / USD
+scheduledAt 可以不传；如果传了不能是过去时间，也不能超过未来 30 天
+note 可以不传，最长 200
+登录用户要有 source account 的权限
+同一个 Idempotency-Key 加同一个 body 再发一次，要返回原来的 payment 结果
+同一个 Idempotency-Key 但是 body 不一样，返回 409
+余额不足返回 422
+新的成功请求返回 201
 
-1. sourceAccountId and destinationAccountId are required.
-2. The two account IDs cannot be the same.
-3. amount must be greater than or equal to 0.01.
-4. amount must not exceed 1,000,000.00.
-5. amount supports at most two decimal places.
-6. currency only supports HKD, CNY, and USD.
-7. scheduledAt is optional.
-8. If provided, scheduledAt cannot be in the past.
-9. scheduledAt cannot be more than 30 days in the future.
-10. note is optional and cannot exceed 200 characters.
-11. The authenticated user must have permission to use the source account.
-12. If the same Idempotency-Key and same request body are submitted again, the API returns the original payment result.
-13. If the same Idempotency-Key is used with a different request body, the API returns HTTP 409.
-14. Insufficient balance returns HTTP 422.
-15. A successful new request returns HTTP 201.
-
-Response:
-{
-  "paymentId": "string",
-  "status": "PENDING",
-  "createdAt": "timestamp"
-}
-```
+response 差不多是：
+paymentId string
+status PENDING
+createdAt timestamp

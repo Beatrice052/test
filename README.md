@@ -16,6 +16,8 @@
 
 A 组不得包含专业方法、检查清单、专家角色说明、Self-review 要求或 Finding 模板。
 
+`novice-input.md` 应模拟真实业务人员或普通开发者的原始输入：可以口语化、中英混杂、顺序不规整、格式不统一，但不得故意删除完成任务所需的业务事实。
+
 ### C 组：Customization
 
 普通用户使用团队已经创建好的 Prompt File、Skill 或 Custom Agent。
