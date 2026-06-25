@@ -1,141 +1,123 @@
-# MDC Requirement Intake
+# Copilot Customization Lightweight A vs C Test Pack
 
-This repository contains the new lightweight product frontend and guided-intake backend MVP for the Requirement Intake workflow.
+这是一个纯 Markdown 的 GitHub Copilot 定制资产 A vs C 测试包。
 
-Use this React frontend instead of the previous Streamlit UI for business users. Streamlit can remain as an internal backend/debug tool, but the user-facing intake experience should be driven by `frontend/`.
+它不会调用 GitHub Copilot，不会自动发送 `/create-prompt`、`/create-skill` 或 `/create-agent`，也不会创建 `.github` 目录。所有 Copilot 操作都由用户在公司内网的 VS Code GitHub Copilot Chat 中手动完成。
 
-## Repository Layout
+## 实验问题
 
-```text
-frontend/   React + TypeScript + Vite business UI
-backend/    FastAPI guided-intake MVP with mock LLM and OpenAI-compatible LLM adapter
-docs/       Opencode handoff and real backend integration notes
-legacy-single-page-prototype/  Older static prototype archived for reference only
-```
+对同一个不懂 AI 或不懂 Prompt Engineering 的普通用户，团队创建好的 Prompt File、Skill 或 Custom Agent，是否比直接用一句普通请求获得更完整、更稳定、更高效的结果？
 
-## What This Code Does
+## 分组
 
-The frontend provides the real intake workspace:
+### A 组：Baseline
 
-- starts from a user requirement;
-- lets backend return related use case candidates;
-- lets the user choose whether to use a reference case or create a new case;
-- renders structured `assistant_cards`;
-- renders business form modules and field dropdown options;
-- shows Action Preview before applying assistant-parsed updates;
-- hides dependent/internal changes from business UI;
-- calls validation and AC export endpoints through the same API client.
+普通用户直接使用默认 Copilot Chat，输入一到两句自然语言任务要求，再粘贴相同业务材料。
 
-The backend MVP provides the middle guided-fill logic:
+A 组不得包含专业方法、检查清单、专家角色说明、Self-review 要求或 Finding 模板。
 
-- requirement extraction through an LLM adapter interface;
-- candidate/reference draft building with mock fixtures;
-- question group based active question planning;
-- scoped answer parsing;
-- dependency rule application;
-- user-facing Action Preview plus hidden `InternalImpactPlan`;
-- validation and AC export placeholder endpoints.
+### C 组：Customization
 
-Your internal backend already owns richer business logic. Opencode should keep those mature parts and connect them to this frontend contract.
+普通用户使用团队已经创建好的 Prompt File、Skill 或 Custom Agent。
 
-## Run Locally
+C 组仍然保持低门槛：Prompt 和 Skill 只多一个 Slash Command，Agent 只多一步选择 Agent。业务材料必须与 A 组相同。
 
-Backend:
+## 场景
 
-```powershell
-cd backend
-python -m pip install -r requirements.txt
-python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
-```
+| 场景 | 定制类型 | 目录 |
+|---|---|---|
+| Prompt: NL2SQL | Prompt File | `scenarios/prompt-nl2sql/`，使用数据字典和样例数据，不需要真实数据库 |
+| Skill: API Contract 测试用例设计 | Skill | `scenarios/skill-api-contract-tests/` |
+| Agent: 安全代码审查 | Custom Agent | `scenarios/agent-secure-code-review/` |
 
-Frontend:
-
-```powershell
-cd frontend
-npm install
-npm run dev -- --host 127.0.0.1 --port 5173
-```
-
-For real backend mode, create `frontend/.env.local`:
+## 每个场景包含
 
 ```text
-VITE_API_CLIENT=real
-VITE_API_BASE_URL=http://127.0.0.1:8000
+scenario.md
+novice-input.md
+create-customization-request.md
+customized-input.md
+reference-asset/
+scorecard.md
+operation-guide.md
+results/
 ```
 
-Open:
+## 基本流程
+
+1. 阅读 `scenario.md` 和 `operation-guide.md`。
+2. A 组：新建默认 Copilot Chat，复制 `novice-input.md`。
+3. 保存 A 组原始输出并评分。
+4. 使用 `create-customization-request.md` 创建资产。
+5. 检查生成资产，并与 `reference-asset/` 对照。
+6. C 组：新建 Chat，按 `customized-input.md` 调用资产。
+7. 保存 C 组原始输出并评分。
+8. 比较 A 与 C 的质量、遗漏、稳定性和使用成本。
+
+## 实验规模
+
+第一轮流程验证：
 
 ```text
-http://127.0.0.1:5173
+3 scenarios x 2 groups x 1 run = 6 Copilot runs
 ```
 
-## Validation
-
-```powershell
-cd backend
-python -m pytest -q
-```
-
-```powershell
-cd frontend
-npm run build
-```
-
-Current validation before this handoff:
-
-- backend tests: `12 passed`
-- frontend build: successful
-
-## LLM Connection
-
-The backend defaults to `MockLLMClient`, so local parsing is intentionally limited. For realistic extraction and answer parsing, connect your internal LLM.
-
-If the internal gateway is OpenAI-compatible:
-
-```powershell
-$env:INTAKE_LLM_PROVIDER="openai_compatible"
-$env:INTAKE_LLM_BASE_URL="https://your-internal-llm-gateway/v1"
-$env:INTAKE_LLM_API_KEY="YOUR_INTERNAL_KEY"
-$env:INTAKE_LLM_MODEL="your-model-name"
-python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
-```
-
-If not OpenAI-compatible, implement another adapter with the same methods in `backend/app/llm.py`:
-
-```python
-extract_requirement(requirement, metadata_context)
-parse_answer(question, answer, draft_context)
-word_question(question, metadata_context)
-plan_next_question(draft_context, open_fields)
-summarize_draft(draft_context)
-```
-
-Keep LLM calls in the service layer, not in FastAPI routes.
-
-## Opencode Handoff
-
-Read this first:
+正式实验：
 
 ```text
-docs/opencode-handoff.md
+3 scenarios x 2 groups x 3 runs = 18 Copilot runs
 ```
 
-It explains how to connect:
+推荐执行顺序：
 
-- internal department/common-field statistics;
-- related use case retrieval and user reference selection;
-- real LLM extraction/parsing/wording;
-- internal validation;
-- AC generation;
-- the current React frontend contract.
+```text
+先跑全部 A
+-> 再创建 Prompt / Skill / Agent
+-> 再跑全部 C
+```
 
-## Important Product Rules
+这样可以最大程度避免定制资产影响 Baseline。
 
-- Do not use Streamlit as the business frontend.
-- `ActiveQuestionPlanner` owns the next active question.
-- LLM may rewrite wording and parse answers, but must not freely regroup unrelated fields.
-- One active question should represent one business decision.
-- Action Preview shows only direct business updates.
-- Hidden dependent changes stay in backend internal impact/debug structures.
-- If a user already provided a field with high confidence, the same question group should not ask that field again unless it has low confidence, conflict, or became invalid after an upstream change.
+## 分享逻辑：Before vs After
 
+Before：普通用户直接问默认 Copilot：
+
+```text
+帮我写 SQL。
+帮我写测试。
+帮我 Review 代码。
+```
+
+After：同一个用户只需要调用团队资产：
+
+```text
+/safe-nl2sql
+/api-contract-test-design
+选择 Secure Code Review Gate
+```
+
+本实验不是证明谁更会写长 Prompt，而是证明团队可以把专家方法封装一次，让不懂 AI 的普通成员重复使用。
+
+报告只展示：
+
+- A vs C 得分；
+- Critical Miss；
+- 三次稳定性；
+- Follow-up；
+- 人工修正；
+- 输入长度；
+- 一次性资产创建成本。
+
+## 防污染规则
+
+- 不要把 `reference-asset/` 默认复制到 `.github`。
+- A 组不要调用 Prompt File、Skill 或 Custom Agent。
+- 每次运行都使用新的 Copilot Chat。
+- A 和 C 使用同一模型、同一 VS Code、同一 Copilot 扩展版本。
+- A 和 C 的业务材料必须相同，唯一变量是是否调用团队定制资产。
+- 不要在模型输出过程中追问、纠正或补充业务信息。
+- 不要根据 A 组输出临时修改 Prompt、Skill 或 Agent。
+- 如果资产发生修改，A/C 两组都需要重新运行。
+- 不要伪造 Copilot 输出或实验分数。
+
+所有需要在 Copilot Chat 中手动执行的步骤汇总见 `manual-copilot-steps.md`。
