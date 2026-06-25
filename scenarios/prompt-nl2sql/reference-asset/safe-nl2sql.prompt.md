@@ -1,21 +1,21 @@
 ---
 name: safe-nl2sql
-description: Generate grounded read-only PostgreSQL from a business question using available workspace or chat database context.
+description: Generate grounded read-only PostgreSQL from a rough NL2SQL request that includes simple schema and optional sample data.
 argument-hint: "[reporting question, optionally with rough table/field reminders]"
 agent: ask
 ---
 
 # Task
 
-Generate read-only PostgreSQL for the user's natural-language reporting question using the available workspace or chat context, such as database context files, data dictionaries, schema notes or business metric documentation.
+Generate read-only PostgreSQL for the user's natural-language reporting question using the simple schema, business rules and sample-data context supplied by the user or attached to the chat.
 
-The user may include a rough reminder of related table names and fields, but should not need to paste the full database documentation into the command. Use all content supplied after `/safe-nl2sql` as the reporting request, then ground the answer in the relevant context that is already open, attached or available in the chat.
+The user may include rough table names, fields and business rules. Use all content supplied after `/safe-nl2sql` as the reporting request. If CSV/JSON sample data is attached, use it only to understand table relationships and edge cases.
 
-If the reporting request or the data context is missing, ask the user to provide or attach the missing information. Do not invent tables, columns, metric definitions or business rules.
+If the reporting request or schema is missing, ask the user to provide the missing table and field information. Do not invent tables, columns, metric definitions or business rules.
 
 # Rules
 
-Do not use tables or columns that are not present in the available data context.
+Do not use tables or columns that are not present in the user request or attached sample-data metadata.
 
 Do not hard-code example IDs, example dates, market codes, categories, currencies or rates unless the business rule explicitly requires them.
 

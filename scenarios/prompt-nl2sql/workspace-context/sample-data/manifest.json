@@ -1,0 +1,67 @@
+{
+  "dataset": "ecommerce_analytics_mini",
+  "purpose": "Tiny workspace dataset for NL2SQL A/C testing",
+  "dialect_target": "PostgreSQL",
+  "tables": [
+    {
+      "name": "dim_market",
+      "csv": "dim_market.csv",
+      "primary_key": ["market_code"]
+    },
+    {
+      "name": "dim_customer",
+      "csv": "dim_customer.csv",
+      "primary_key": ["customer_id"],
+      "foreign_keys": [
+        {"columns": ["market_code"], "references": "dim_market(market_code)"}
+      ]
+    },
+    {
+      "name": "dim_product",
+      "csv": "dim_product.csv",
+      "primary_key": ["product_id"]
+    },
+    {
+      "name": "fact_order",
+      "csv": "fact_order.csv",
+      "primary_key": ["order_id"],
+      "foreign_keys": [
+        {"columns": ["customer_id"], "references": "dim_customer(customer_id)"},
+        {"columns": ["market_code"], "references": "dim_market(market_code)"}
+      ]
+    },
+    {
+      "name": "fact_order_item",
+      "csv": "fact_order_item.csv",
+      "primary_key": ["order_item_id"],
+      "foreign_keys": [
+        {"columns": ["order_id"], "references": "fact_order(order_id)"},
+        {"columns": ["product_id"], "references": "dim_product(product_id)"}
+      ],
+      "cardinality_note": "One order can have many order items."
+    },
+    {
+      "name": "fact_payment",
+      "csv": "fact_payment.csv",
+      "primary_key": ["payment_id"],
+      "foreign_keys": [
+        {"columns": ["order_id"], "references": "fact_order(order_id)"}
+      ],
+      "cardinality_note": "One order can have many payment records."
+    },
+    {
+      "name": "fact_refund",
+      "csv": "fact_refund.csv",
+      "primary_key": ["refund_id"],
+      "foreign_keys": [
+        {"columns": ["order_id"], "references": "fact_order(order_id)"}
+      ],
+      "cardinality_note": "One order can have many refund records."
+    },
+    {
+      "name": "daily_fx_rate",
+      "csv": "daily_fx_rate.csv",
+      "primary_key": ["rate_date", "currency"]
+    }
+  ]
+}

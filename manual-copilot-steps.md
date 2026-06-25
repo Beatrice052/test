@@ -96,18 +96,18 @@ scenarios/<scenario>/results/run-03/
 
 ### 场景说明
 
-这个场景模拟 Workspace 里已经有数据库说明。数据库说明文件是：
+这个场景的简化 schema 写在 `novice-input.md` 和 `customized-input.md` 里。Workspace 里只额外提供一组小型 CSV/JSON 样例数据：
 
 ```text
-scenarios/prompt-nl2sql/workspace-context/ecommerce_database.md
+scenarios/prompt-nl2sql/workspace-context/sample-data/
 ```
 
-真实测试时，用户不会把这个数据库说明全文粘贴给 Copilot。用户只会发 `novice-input.md` 里那种粗略 NL2SQL 请求。
+真实测试时，用户不会把样例数据全文粘贴给 Copilot。用户只会发 `novice-input.md` 里那种包含简化 schema 的粗略 NL2SQL 请求。
 
 ### A 组怎么跑
 
 1. 在 VS Code 打开本测试包 Workspace。
-2. 打开或附加 `scenarios/prompt-nl2sql/workspace-context/ecommerce_database.md`，确保 Copilot Chat 能看到这个数据库上下文。
+2. 打开或附加 `scenarios/prompt-nl2sql/workspace-context/sample-data/sample_dataset.json`。如果 Copilot 对 CSV 读取更稳定，也可以附加 `sample-data/` 里的 CSV 文件。
 3. 新建默认 Copilot Chat。
 4. 复制 `scenarios/prompt-nl2sql/novice-input.md` 的全部内容。
 5. 发送。
@@ -127,7 +127,7 @@ A 组不要发送 `/safe-nl2sql`，也不要发送 `/create-prompt`。
 ### C 组怎么跑
 
 1. 新建 Copilot Chat。
-2. 打开或附加同一个 `workspace-context/ecommerce_database.md`。
+2. 打开或附加同一个 `workspace-context/sample-data/sample_dataset.json` 或同一组 CSV。
 3. 复制 `scenarios/prompt-nl2sql/customized-input.md` 的全部内容。
 4. 发送。
 5. 保存原始输出到 `scenarios/prompt-nl2sql/results/run-XX/C-customized.md`。

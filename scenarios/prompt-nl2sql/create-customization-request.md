@@ -2,15 +2,15 @@
 
 Create a workspace prompt named "safe-nl2sql".
 
-This prompt is for business users and ordinary developers who ask for SQL using database context files that already exist in the workspace or are attached to the current chat.
+This prompt is for business users and ordinary developers who ask for SQL by typing a simplified schema, business rules and a reporting question in the chat. The workspace or chat may also include small CSV/JSON sample data.
 
-At runtime, the user should only need to invoke `/safe-nl2sql` and type a natural-language reporting question, optionally with a rough reminder of relevant table names and columns. Do not require the user to paste complete database docs, sample data, prompt-engineering instructions, checklists, or output templates into the runtime request.
+At runtime, the user should only need to invoke `/safe-nl2sql` and type a rough NL2SQL request that includes simple table and field information. Do not require the user to write prompt-engineering instructions, checklists, SQL design steps, or output templates.
 
 The prompt must:
 
 1. generate read-only PostgreSQL only;
-2. use only tables and columns found in the available workspace/chat data context;
-3. if the data context is missing, ask the user to attach or open the relevant workspace database context instead of inventing schema;
+2. use only tables and columns supplied by the user or visible in attached sample-data metadata;
+3. if the schema is missing, ask the user to provide table and field information instead of inventing schema;
 4. identify output grain before writing SQL;
 5. extract exact metric definitions from the user request and available context;
 6. identify joins and one-to-many duplication risks before aggregating;

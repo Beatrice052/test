@@ -2,9 +2,9 @@
 
 ## 测试目的
 
-验证在 Workspace 已经存在数据库说明的情况下，普通用户用一段不专业但包含基本表名/字段线索的自然语言请求做 NL2SQL，团队创建好的 Workspace Prompt `/safe-nl2sql` 是否能比默认 Copilot 更稳定地产出可审核、只读、基于真实字段的 PostgreSQL。
+验证普通用户在输入中只提供简化 schema、少量业务口径和查询目标时，团队创建好的 Workspace Prompt `/safe-nl2sql` 是否能比默认 Copilot 更稳定地产出可审核、只读、基于真实字段的 PostgreSQL。
 
-这个场景不需要真实数据库，也不要求本地执行 SQL。`workspace-context/ecommerce_database.md` 模拟项目里本来就存在的数据库说明文件。A 组和 C 组都必须使用同一个 Workspace context；差异只允许是 C 组在同一段用户输入前多加 `/safe-nl2sql`。
+这个场景不需要连接真实数据库，也不要求本地执行 SQL。简化 schema 写在 `novice-input.md` 和 `customized-input.md` 里；`workspace-context/sample-data/` 模拟一个小型本地样例数据集。A 组和 C 组必须使用同一段用户输入和同一组样例数据；差异只允许是 C 组在同一段用户输入前多加 `/safe-nl2sql`。
 
 对比组：
 
@@ -15,9 +15,9 @@
 
 ## 测试材料
 
-- Existing workspace database context: `workspace-context/ecommerce_database.md`
-- A 组用户输入: `novice-input.md`
-- C 组用户输入: `customized-input.md`
+- A 组用户输入，含简化 schema: `novice-input.md`
+- C 组用户输入，含同一份简化 schema: `customized-input.md`
+- Small structured sample dataset: `workspace-context/sample-data/`
 - Prompt 创建请求: `create-customization-request.md`
 - 参考 Prompt File: `reference-asset/safe-nl2sql.prompt.md`
 - 人工评分卡: `scorecard.md`
@@ -30,9 +30,9 @@
 
 ## 正确性检查点
 
-1. 使用 `workspace-context/ecommerce_database.md` 中存在的表和字段，不编造表字段。
+1. 只使用用户输入中出现的表和字段，不编造表字段。
 2. 生成只读 PostgreSQL，不包含写操作或管理语句。
-3. 不要求用户再提供真实数据库、建表语句或样例数据。
+3. 不要求用户再提供真实数据库、建表语句或额外样例数据；已有样例数据在 `workspace-context/sample-data/`。
 4. 使用 2026-04-01 起点包含、2026-07-01 终点不包含的 Q2 时间范围。
 5. 月份和汇率日期必须先转换到 `dim_market.business_timezone` 对应的本地时间。
 6. 有效订单同时满足有效 `order_status` 和 `CAPTURED` 支付。

@@ -1,0 +1,96 @@
+{
+  "dim_market": [
+    {"market_code": "TW", "market_name": "Taiwan", "business_timezone": "Asia/Taipei"},
+    {"market_code": "HK", "market_name": "Hong Kong", "business_timezone": "Asia/Hong_Kong"},
+    {"market_code": "SG", "market_name": "Singapore", "business_timezone": "Asia/Singapore"}
+  ],
+  "dim_customer": [
+    {"customer_id": 101, "market_code": "TW", "created_at": "2025-12-20T10:00:00+08:00", "customer_type": "NORMAL", "is_test_customer": false},
+    {"customer_id": 102, "market_code": "TW", "created_at": "2026-04-03T09:00:00+08:00", "customer_type": "VIP", "is_test_customer": false},
+    {"customer_id": 103, "market_code": "HK", "created_at": "2026-04-18T12:00:00+08:00", "customer_type": "NORMAL", "is_test_customer": false},
+    {"customer_id": 104, "market_code": "HK", "created_at": "2026-05-01T00:10:00+08:00", "customer_type": "INTERNAL", "is_test_customer": false},
+    {"customer_id": 105, "market_code": "SG", "created_at": "2026-05-20T11:00:00+08:00", "customer_type": "NORMAL", "is_test_customer": true},
+    {"customer_id": 106, "market_code": "SG", "created_at": "2026-03-28T18:00:00+08:00", "customer_type": "NORMAL", "is_test_customer": false},
+    {"customer_id": 107, "market_code": "TW", "created_at": "2026-06-01T08:30:00+08:00", "customer_type": "NORMAL", "is_test_customer": false},
+    {"customer_id": 108, "market_code": "HK", "created_at": "2026-02-14T17:00:00+08:00", "customer_type": "VIP", "is_test_customer": false},
+    {"customer_id": 109, "market_code": "SG", "created_at": "2026-04-01T00:01:00+08:00", "customer_type": "NORMAL", "is_test_customer": false}
+  ],
+  "dim_product": [
+    {"product_id": 201, "category": "Electronics", "is_gift_card": false},
+    {"product_id": 202, "category": "Beauty", "is_gift_card": false},
+    {"product_id": 203, "category": "Home", "is_gift_card": false},
+    {"product_id": 204, "category": "Gift Card", "is_gift_card": true},
+    {"product_id": 205, "category": "Sports", "is_gift_card": false},
+    {"product_id": 206, "category": "Apparel", "is_gift_card": false}
+  ],
+  "fact_order": [
+    {"order_id": 5001, "customer_id": 101, "market_code": "TW", "order_status": "COMPLETED", "ordered_at": "2026-03-31T23:40:00+08:00", "currency": "TWD"},
+    {"order_id": 5002, "customer_id": 101, "market_code": "TW", "order_status": "SHIPPED", "ordered_at": "2026-04-05T09:30:00+08:00", "currency": "TWD"},
+    {"order_id": 5003, "customer_id": 102, "market_code": "TW", "order_status": "CANCELLED", "ordered_at": "2026-04-08T12:00:00+08:00", "currency": "TWD"},
+    {"order_id": 5004, "customer_id": 102, "market_code": "TW", "order_status": "PAID", "ordered_at": "2026-04-15T13:00:00+08:00", "currency": "TWD"},
+    {"order_id": 5005, "customer_id": 103, "market_code": "HK", "order_status": "COMPLETED", "ordered_at": "2026-05-01T00:20:00+08:00", "currency": "HKD"},
+    {"order_id": 5006, "customer_id": 104, "market_code": "HK", "order_status": "PAID", "ordered_at": "2026-05-10T10:00:00+08:00", "currency": "HKD"},
+    {"order_id": 5007, "customer_id": 105, "market_code": "SG", "order_status": "PAID", "ordered_at": "2026-05-22T10:00:00+08:00", "currency": "SGD"},
+    {"order_id": 5008, "customer_id": 106, "market_code": "SG", "order_status": "PAID", "ordered_at": "2026-06-30T23:50:00+08:00", "currency": "SGD"},
+    {"order_id": 5009, "customer_id": 106, "market_code": "SG", "order_status": "PAID", "ordered_at": "2026-07-01T00:10:00+08:00", "currency": "SGD"},
+    {"order_id": 5010, "customer_id": 107, "market_code": "TW", "order_status": "PAID", "ordered_at": "2026-06-15T14:30:00+08:00", "currency": "TWD"},
+    {"order_id": 5011, "customer_id": 108, "market_code": "HK", "order_status": "PAID", "ordered_at": "2026-04-30T23:30:00+08:00", "currency": "HKD"},
+    {"order_id": 5012, "customer_id": 109, "market_code": "SG", "order_status": "PAID", "ordered_at": "2026-04-01T00:05:00+08:00", "currency": "SGD"}
+  ],
+  "fact_order_item": [
+    {"order_item_id": 7001, "order_id": 5001, "product_id": 201, "quantity": 1, "item_gross_amount": 3000, "item_discount_amount": 0},
+    {"order_item_id": 7002, "order_id": 5002, "product_id": 201, "quantity": 1, "item_gross_amount": 5000, "item_discount_amount": 500},
+    {"order_item_id": 7003, "order_id": 5002, "product_id": 202, "quantity": 2, "item_gross_amount": 2000, "item_discount_amount": null},
+    {"order_item_id": 7004, "order_id": 5003, "product_id": 201, "quantity": 1, "item_gross_amount": 8000, "item_discount_amount": 0},
+    {"order_item_id": 7005, "order_id": 5004, "product_id": 204, "quantity": 1, "item_gross_amount": 1000, "item_discount_amount": 0},
+    {"order_item_id": 7006, "order_id": 5005, "product_id": 202, "quantity": 1, "item_gross_amount": 1200, "item_discount_amount": 100},
+    {"order_item_id": 7007, "order_id": 5005, "product_id": 203, "quantity": 1, "item_gross_amount": 800, "item_discount_amount": 0},
+    {"order_item_id": 7008, "order_id": 5006, "product_id": 203, "quantity": 1, "item_gross_amount": 600, "item_discount_amount": 0},
+    {"order_item_id": 7009, "order_id": 5007, "product_id": 205, "quantity": 1, "item_gross_amount": 300, "item_discount_amount": 0},
+    {"order_item_id": 7010, "order_id": 5008, "product_id": 201, "quantity": 1, "item_gross_amount": 900, "item_discount_amount": 90},
+    {"order_item_id": 7011, "order_id": 5009, "product_id": 202, "quantity": 1, "item_gross_amount": 700, "item_discount_amount": 0},
+    {"order_item_id": 7012, "order_id": 5010, "product_id": 202, "quantity": 1, "item_gross_amount": 3200, "item_discount_amount": 200},
+    {"order_item_id": 7013, "order_id": 5010, "product_id": 206, "quantity": 1, "item_gross_amount": 2400, "item_discount_amount": 0},
+    {"order_item_id": 7014, "order_id": 5011, "product_id": 206, "quantity": 2, "item_gross_amount": 1800, "item_discount_amount": 100},
+    {"order_item_id": 7015, "order_id": 5012, "product_id": 205, "quantity": 1, "item_gross_amount": 500, "item_discount_amount": 0}
+  ],
+  "fact_payment": [
+    {"payment_id": 8001, "order_id": 5001, "payment_status": "CAPTURED", "captured_at": "2026-03-31T23:45:00+08:00", "captured_amount": 3000},
+    {"payment_id": 8002, "order_id": 5002, "payment_status": "CAPTURED", "captured_at": "2026-04-05T09:35:00+08:00", "captured_amount": 6500},
+    {"payment_id": 8003, "order_id": 5003, "payment_status": "FAILED", "captured_at": null, "captured_amount": 0},
+    {"payment_id": 8004, "order_id": 5004, "payment_status": "CAPTURED", "captured_at": "2026-04-15T13:05:00+08:00", "captured_amount": 1000},
+    {"payment_id": 8005, "order_id": 5005, "payment_status": "CAPTURED", "captured_at": "2026-05-01T00:25:00+08:00", "captured_amount": 1900},
+    {"payment_id": 8006, "order_id": 5006, "payment_status": "CAPTURED", "captured_at": "2026-05-10T10:05:00+08:00", "captured_amount": 600},
+    {"payment_id": 8007, "order_id": 5007, "payment_status": "CAPTURED", "captured_at": "2026-05-22T10:05:00+08:00", "captured_amount": 300},
+    {"payment_id": 8008, "order_id": 5008, "payment_status": "AUTHORIZED", "captured_at": null, "captured_amount": 810},
+    {"payment_id": 8009, "order_id": 5008, "payment_status": "CAPTURED", "captured_at": "2026-06-30T23:55:00+08:00", "captured_amount": 810},
+    {"payment_id": 8010, "order_id": 5009, "payment_status": "CAPTURED", "captured_at": "2026-07-01T00:15:00+08:00", "captured_amount": 700},
+    {"payment_id": 8011, "order_id": 5010, "payment_status": "CAPTURED", "captured_at": "2026-06-15T14:35:00+08:00", "captured_amount": 3000},
+    {"payment_id": 8012, "order_id": 5010, "payment_status": "CAPTURED", "captured_at": "2026-06-15T14:36:00+08:00", "captured_amount": 2400},
+    {"payment_id": 8013, "order_id": 5011, "payment_status": "CAPTURED", "captured_at": "2026-04-30T23:45:00+08:00", "captured_amount": 1700},
+    {"payment_id": 8014, "order_id": 5012, "payment_status": "CAPTURED", "captured_at": "2026-04-01T00:10:00+08:00", "captured_amount": 500}
+  ],
+  "fact_refund": [
+    {"refund_id": 9001, "order_id": 5002, "refund_status": "SUCCEEDED", "refunded_at": "2026-04-20T10:00:00+08:00", "refund_amount": 1300},
+    {"refund_id": 9002, "order_id": 5005, "refund_status": "FAILED", "refunded_at": "2026-05-05T10:00:00+08:00", "refund_amount": 200},
+    {"refund_id": 9003, "order_id": 5005, "refund_status": "SUCCEEDED", "refunded_at": "2026-06-02T11:00:00+08:00", "refund_amount": 300},
+    {"refund_id": 9004, "order_id": 5010, "refund_status": "REQUESTED", "refunded_at": "2026-06-20T09:00:00+08:00", "refund_amount": 500},
+    {"refund_id": 9005, "order_id": 5010, "refund_status": "SUCCEEDED", "refunded_at": "2026-06-22T09:00:00+08:00", "refund_amount": 600}
+  ],
+  "daily_fx_rate": [
+    {"rate_date": "2026-03-31", "currency": "TWD", "usd_rate": 0.031},
+    {"rate_date": "2026-04-05", "currency": "TWD", "usd_rate": 0.031},
+    {"rate_date": "2026-04-15", "currency": "TWD", "usd_rate": 0.031},
+    {"rate_date": "2026-04-20", "currency": "TWD", "usd_rate": 0.031},
+    {"rate_date": "2026-06-15", "currency": "TWD", "usd_rate": 0.032},
+    {"rate_date": "2026-06-22", "currency": "TWD", "usd_rate": 0.032},
+    {"rate_date": "2026-04-30", "currency": "HKD", "usd_rate": 0.128},
+    {"rate_date": "2026-05-01", "currency": "HKD", "usd_rate": 0.128},
+    {"rate_date": "2026-05-10", "currency": "HKD", "usd_rate": 0.128},
+    {"rate_date": "2026-06-02", "currency": "HKD", "usd_rate": 0.128},
+    {"rate_date": "2026-04-01", "currency": "SGD", "usd_rate": 0.740},
+    {"rate_date": "2026-05-22", "currency": "SGD", "usd_rate": 0.740},
+    {"rate_date": "2026-06-30", "currency": "SGD", "usd_rate": 0.740},
+    {"rate_date": "2026-07-01", "currency": "SGD", "usd_rate": 0.740}
+  ]
+}

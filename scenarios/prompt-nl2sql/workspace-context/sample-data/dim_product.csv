@@ -1,0 +1,7 @@
+product_id,category,is_gift_card
+201,Electronics,false
+202,Beauty,false
+203,Home,false
+204,Gift Card,true
+205,Sports,false
+206,Apparel,false
