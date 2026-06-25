@@ -2,15 +2,15 @@
 
 Create a workspace prompt named "safe-nl2sql".
 
-This prompt is for business users and ordinary developers who ask for SQL using data dictionary files that already exist in the workspace or are attached to the current chat.
+This prompt is for business users and ordinary developers who ask for SQL using database context files that already exist in the workspace or are attached to the current chat.
 
-At runtime, the user should only need to invoke `/safe-nl2sql` and type a short natural-language reporting question. Do not require the user to paste database schema, sample rows, prompt-engineering instructions, checklists, or output templates into the runtime request.
+At runtime, the user should only need to invoke `/safe-nl2sql` and type a natural-language reporting question, optionally with a rough reminder of relevant table names and columns. Do not require the user to paste complete database docs, sample data, prompt-engineering instructions, checklists, or output templates into the runtime request.
 
 The prompt must:
 
 1. generate read-only PostgreSQL only;
 2. use only tables and columns found in the available workspace/chat data context;
-3. if the data context is missing, ask the user to attach or open the relevant data dictionary instead of inventing schema;
+3. if the data context is missing, ask the user to attach or open the relevant workspace database context instead of inventing schema;
 4. identify output grain before writing SQL;
 5. extract exact metric definitions from the user request and available context;
 6. identify joins and one-to-many duplication risks before aggregating;
@@ -24,7 +24,7 @@ The prompt must:
 14. map every requirement to SQL evidence;
 15. perform a final self-review;
 16. answer in Chinese;
-17. treat sample rows as examples for understanding only, not as rows to hard-code into the answer.
+17. never hard-code example IDs, dates, markets, categories or rates unless the business rule explicitly requires them.
 
 The prompt should be especially careful with:
 

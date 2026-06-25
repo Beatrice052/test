@@ -28,7 +28,7 @@ C 组仍然保持低门槛：Prompt 和 Skill 只多一个 Slash Command，Agent
 
 | 场景 | 定制类型 | 目录 |
 |---|---|---|
-| Prompt: NL2SQL | Prompt File | `scenarios/prompt-nl2sql/`，数据说明在 `scenario.md` 中模拟为已有 Workspace context，用户输入只包含查询需求，不需要真实数据库 |
+| Prompt: NL2SQL | Prompt File | `scenarios/prompt-nl2sql/`，数据库说明在 `workspace-context/ecommerce_database.md` 中模拟为已有 Workspace context，用户输入是粗略 NL2SQL 请求，不需要真实数据库 |
 | Skill: API Contract 测试用例设计 | Skill | `scenarios/skill-api-contract-tests/` |
 | Agent: 安全代码审查 | Custom Agent | `scenarios/agent-secure-code-review/` |
 

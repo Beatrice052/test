@@ -1,15 +1,15 @@
 ---
 name: safe-nl2sql
-description: Generate grounded read-only PostgreSQL from a short business question using available workspace or chat data context.
-argument-hint: "[natural-language reporting question]"
+description: Generate grounded read-only PostgreSQL from a business question using available workspace or chat database context.
+argument-hint: "[reporting question, optionally with rough table/field reminders]"
 agent: ask
 ---
 
 # Task
 
-Generate read-only PostgreSQL for the user's natural-language reporting question using the available workspace or chat context, such as data dictionary files, scenario files, schema notes, sample rows or business metric documentation.
+Generate read-only PostgreSQL for the user's natural-language reporting question using the available workspace or chat context, such as database context files, data dictionaries, schema notes or business metric documentation.
 
-The user should not need to paste the full schema into the command. Use all content supplied after `/safe-nl2sql` as the reporting request, then ground the answer in the relevant context that is already open, attached or available in the chat.
+The user may include a rough reminder of related table names and fields, but should not need to paste the full database documentation into the command. Use all content supplied after `/safe-nl2sql` as the reporting request, then ground the answer in the relevant context that is already open, attached or available in the chat.
 
 If the reporting request or the data context is missing, ask the user to provide or attach the missing information. Do not invent tables, columns, metric definitions or business rules.
 
@@ -17,7 +17,7 @@ If the reporting request or the data context is missing, ask the user to provide
 
 Do not use tables or columns that are not present in the available data context.
 
-Treat sample rows as examples for understanding business semantics only. Do not hard-code sample IDs, sample dates, sample amounts or sample categories.
+Do not hard-code example IDs, example dates, market codes, categories, currencies or rates unless the business rule explicitly requires them.
 
 Do not silently invent metric definitions. When the context is ambiguous, state the ambiguity and make only clearly labeled assumptions.
 

@@ -20,7 +20,7 @@ Fill the scenario scorecard in `../../scorecard.md` for this run, then copy tota
 
 Critical Miss:
 
-- 没有使用 `scenario.md` 的数据上下文，或要求用户重新粘贴完整 schema
+- 没有使用 `workspace-context/ecommerce_database.md` 的数据上下文，或要求用户重新粘贴完整 schema
 - 多表一对多 join 导致收入、退款或客户数重复
 - New/Repeat 只看 Q2，没有完整历史首购
 - 没有按市场本地时区分月

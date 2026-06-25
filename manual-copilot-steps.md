@@ -12,13 +12,13 @@
 
 ## Prompt: NL2SQL
 
-这个场景不需要真实数据库。`scenarios/prompt-nl2sql/scenario.md` 模拟项目中已经存在的数据说明，用户输入只包含查询问题。
+这个场景不需要真实数据库。`scenarios/prompt-nl2sql/workspace-context/ecommerce_database.md` 模拟项目中已经存在的数据库说明，用户输入只包含粗略查询请求和少量表字段提示。
 
-1. 在 VS Code 中打开或附加 `scenarios/prompt-nl2sql/scenario.md` 作为 Copilot Chat 上下文。
-2. 新建默认 Chat，确认同一个 `scenario.md` 对 Chat 可见，复制 `scenarios/prompt-nl2sql/novice-input.md`，保存为 A。
+1. 在 VS Code 中打开或附加 `scenarios/prompt-nl2sql/workspace-context/ecommerce_database.md` 作为 Copilot Chat 上下文。
+2. 新建默认 Chat，确认同一个数据库上下文对 Chat 可见，复制 `scenarios/prompt-nl2sql/novice-input.md`，保存为 A。
 3. 新建 Agent Chat，复制 `scenarios/prompt-nl2sql/create-customization-request.md`，执行 `/create-prompt`。
 4. 确认 Workspace Prompt `safe-nl2sql` 成功创建。
-5. 新建 Chat，确认同一个 `scenario.md` 对 Chat 可见，复制 `scenarios/prompt-nl2sql/customized-input.md`，保存为 C。
+5. 新建 Chat，确认同一个数据库上下文对 Chat 可见，复制 `scenarios/prompt-nl2sql/customized-input.md`，保存为 C。C 组运行时不要再发送 `/create-prompt`。
 6. 填写 `scenarios/prompt-nl2sql/scorecard.md`。
 
 ## Skill: API Contract 测试设计
