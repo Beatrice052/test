@@ -1,0 +1,3216 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MDC Messaging Platform — Full E2E Demo V2</title>
+<style>
+:root{
+  --green:#27b24a;
+  --green-dark:#168637;
+  --green-soft:#eef9f1;
+  --green-line:#a9dfb7;
+  --ink:#202520;
+  --muted:#6f786f;
+  --border:#dce3dd;
+  --page:#f7f8f7;
+  --surface:#fff;
+  --sidebar:250px;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--page);color:var(--ink);font:14px Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Arial,sans-serif}
+button,input,select,textarea{font:inherit}
+button{cursor:pointer}
+button:disabled{opacity:.45;cursor:not-allowed}
+.hidden{display:none!important}
+.app{min-height:100vh;display:grid;grid-template-columns:var(--sidebar) minmax(0,1fr)}
+
+/* Product shell */
+.sidebar{position:sticky;top:0;height:100vh;background:#f4f6f4;border-right:1px solid #d8dfda;display:flex;flex-direction:column;z-index:20}
+.sidebar-brand{padding:32px 24px 22px}
+.sidebar-brand h1{margin:0;font-size:18px;font-weight:760}
+.sidebar-brand p{margin:8px 0 0;color:var(--muted);font-size:12px;line-height:1.45}
+.sidebar-toggle{position:absolute;right:-15px;top:28px;width:30px;height:30px;border:0;border-radius:50%;background:var(--green);color:#fff;box-shadow:0 4px 12px rgba(39,178,74,.2);font-weight:900}
+.nav{padding:18px 14px;display:grid;gap:7px}
+.nav-item{display:flex;align-items:center;gap:12px;min-height:44px;padding:10px 14px;border:0;border-radius:6px;background:transparent;color:#303630;text-align:left;font-weight:650}
+.nav-item:hover{background:#e9eeea}
+.nav-item.active{background:var(--green);color:#fff;box-shadow:0 4px 12px rgba(39,178,74,.17)}
+.nav-icon{width:20px;text-align:center;font-size:16px}
+.sidebar-user{margin-top:auto;padding:18px 20px;border-top:1px solid var(--border);display:flex;gap:10px;align-items:center}
+.user-avatar{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:#6fb844;color:#fff;font-weight:800}
+.sidebar-user b{display:block;font-size:12px}
+.sidebar-user span{color:var(--muted);font-size:10px}
+
+.main{min-width:0;padding:0 26px 34px}
+.page-header{padding:28px 0 10px;display:flex;justify-content:space-between;gap:20px;align-items:flex-start}
+.page-header h2{margin:0;font-size:20px}
+.page-header p{margin:6px 0 0;color:var(--muted);font-size:12px}
+.stage-status{font-size:11px;color:#596159;font-weight:750;padding-top:5px}
+
+.stepper{position:sticky;top:0;z-index:18;background:rgba(247,248,247,.96);backdrop-filter:blur(8px);padding:12px 0 20px;border-bottom:1px solid #e5e9e5}
+.stepper-track{display:grid;grid-template-columns:repeat(5,1fr)}
+.step{position:relative;display:flex;align-items:flex-start;gap:8px;color:#8a918b;font-size:11px;min-width:0}
+.step:not(:last-child)::after{content:"";position:absolute;left:26px;right:5px;top:12px;height:1px;background:#d5dcd6}
+.step-dot{width:25px;height:25px;flex:0 0 25px;display:grid;place-items:center;border:1px solid #b6beb7;border-radius:50%;background:#fff;color:#7d857e;font-weight:700;z-index:1}
+.step-label{padding-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.step.active{color:var(--green-dark);font-weight:760}
+.step.active .step-dot{background:var(--green);border-color:var(--green);color:#fff}
+.step.done{color:#477a53}
+.step.done .step-dot{background:#dff4e4;border-color:#a8ddb6;color:var(--green-dark)}
+.step.done:not(:last-child)::after{background:#8bd19c}
+
+.stage-panel{margin-top:20px}
+.card{background:#fff;border:1px solid var(--border);border-radius:10px;box-shadow:0 2px 7px rgba(25,35,27,.035)}
+.panel-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;padding:17px 20px;border-bottom:1px solid var(--border)}
+.panel-head h3{margin:0;font-size:17px}
+.panel-head p{margin:5px 0 0;color:var(--muted);font-size:11px}
+.badge{display:inline-flex;padding:4px 8px;border-radius:999px;background:#edf3ee;color:#5e6b61;font-size:10px;font-weight:700}
+.badge.green{background:#dcf3e2;color:#267b3e}
+.primary,.secondary,.ghost{min-height:38px;padding:8px 14px;border-radius:6px;font-weight:700}
+.primary{border:1px solid var(--green);background:var(--green);color:#fff}
+.primary:hover{background:var(--green-dark);border-color:var(--green-dark)}
+.secondary{border:1px solid #cbd3cc;background:#fff;color:#303630}
+.secondary:hover{background:#f1f5f2}
+.ghost{border:0;background:transparent;color:#397b4a}
+
+/* Historical use cases */
+.historical{margin-bottom:14px}
+.historical-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding:14px}
+.hist-card{border:1px solid #c8e8d0;border-radius:8px;background:#f4fbf6;padding:12px}
+.hist-card.selected{background:#e2f6e7;border-color:#67c87c;box-shadow:0 0 0 2px rgba(39,178,74,.08)}
+.hist-top{display:flex;justify-content:space-between;gap:8px;align-items:center}
+.hist-card h4{margin:8px 0 4px;font-size:13px}
+.hist-meta{color:var(--muted);font-size:10px;line-height:1.45}
+.hist-actions{display:flex;gap:7px;margin-top:10px}
+.hist-actions button{min-height:30px;padding:5px 9px;font-size:10px}
+
+/* Draft form */
+.prefill-strip{display:flex;justify-content:space-between;gap:14px;align-items:center;padding:12px 16px;background:#fbfdfb;border-bottom:1px solid var(--border)}
+.prefill-strip b{font-size:12px}
+.prefill-strip span{display:block;margin-top:3px;color:var(--muted);font-size:10px}
+.form-shell{display:grid;grid-template-columns:180px minmax(0,1fr);align-items:start}
+.module-nav{position:sticky;top:86px;max-height:calc(100vh - 104px);overflow:auto;padding:12px;border-right:1px solid var(--border);background:#f8faf8}
+.module-nav h5{margin:0 0 8px;color:#7b847c;font-size:10px;text-transform:uppercase;letter-spacing:.05em}
+.module-link{width:100%;padding:9px 10px;border:1px solid transparent;border-radius:5px;background:transparent;text-align:left;font-size:11px;font-weight:700;color:#424a43}
+.module-link.active{background:#e6f7ea;border-color:#b1dfbc;color:#27773d}
+.form-content{min-width:0}
+.form-module{scroll-margin-top:104px}
+.module-head{padding:15px 18px 10px;border-bottom:1px solid var(--border);background:#fff}
+.module-head h4{margin:0;font-size:15px}
+.module-head p{margin:4px 0 0;color:var(--muted);font-size:10px}
+.field-head,.field-row{display:grid;grid-template-columns:minmax(170px,1.2fr) minmax(260px,2.3fr) 115px 76px;gap:12px;align-items:center}
+.field-head{padding:8px 18px;background:#f4f6f4;color:#69726a;font-size:9px;font-weight:800;text-transform:uppercase}
+.field-row{min-height:54px;padding:9px 18px;border-bottom:1px solid #edf0ed}
+.field-row.ai{background:#eff9f1;box-shadow:inset 4px 0 0 var(--green)}
+.field-label b{display:block;font-size:11px}
+.field-label span{color:#98a099;font-size:9px}
+.control{width:100%;min-height:34px;border:1px solid #d2d8d3;border-radius:5px;padding:7px 9px;background:#fff;color:#222}
+.control:focus{outline:none;border-color:#76c989;box-shadow:0 0 0 3px rgba(39,178,74,.1)}
+.status{display:inline-flex;justify-content:center;padding:5px 7px;border-radius:999px;font-size:9px;font-weight:760;text-align:center}
+.status.missing{background:#fff0ef;color:#b42318}
+.status.prefill{background:#e5f5e9;color:#267b3e}
+.status.reference{background:#fff5dc;color:#8a6810}
+.status.waiting{background:#f0f2f0;color:#737b74}
+.status.confirm{background:#dff4e4;color:#267b3e}
+.row-action{min-height:30px;border:1px solid #cbd3cc;border-radius:5px;background:#fff;font-size:9px;font-weight:700}
+.stage-actions{display:flex;justify-content:space-between;gap:12px;padding:15px 18px}
+.stage-actions-right{display:flex;gap:8px}
+
+/* Content Preparation */
+.summary-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;padding:16px}
+.summary-item{border:1px solid var(--border);border-radius:7px;padding:12px;background:#fbfcfb}
+.summary-item span{display:block;color:var(--muted);font-size:9px;text-transform:uppercase;letter-spacing:.04em}
+.summary-item b{display:block;margin-top:5px;font-size:12px;line-height:1.35}
+.template-area{padding:18px}
+.channel-tabs{display:flex;gap:20px;border-bottom:1px solid var(--border);margin-bottom:16px}
+.channel-tab{padding:0 2px 10px;border:0;border-bottom:2px solid transparent;background:transparent;font-weight:700;color:#5e665f}
+.channel-tab.active{border-color:var(--green);color:var(--green-dark)}
+.template-toolbar{display:flex;justify-content:space-between;gap:16px;align-items:flex-end;margin-bottom:12px}
+.template-toolbar h4{margin:0;font-size:15px}
+.template-toolbar p{margin:4px 0 0;color:var(--muted);font-size:10px}
+.language-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.language-card{border:1px solid var(--border);border-radius:8px;padding:12px;background:#fff}
+.language-tag{display:inline-flex;padding:4px 7px;border-radius:999px;background:#edf7ef;color:#317947;font-size:9px;font-weight:760}
+.language-card label{display:block;margin:10px 0 4px;font-size:9px;font-weight:760;color:#5d655f}
+.language-card input,.language-card textarea{width:100%;border:1px solid #d5dad6;border-radius:5px;padding:8px;font-size:10px}
+.language-card textarea{min-height:126px;resize:vertical;line-height:1.45}
+.template-ref{margin-top:8px;color:#7a837b;font-size:9px}
+.content-review-bar{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-top:14px;padding:12px;border:1px solid #dce3dd;border-radius:8px;background:#fbfcfb}
+.content-review-bar b{display:block;font-size:11px}
+.content-review-bar span{display:block;margin-top:3px;color:var(--muted);font-size:9px}
+
+.similar-picker{display:grid;grid-template-columns:minmax(0,1fr) 190px;gap:12px;align-items:stretch;margin-top:16px;padding-top:16px;border-top:1px solid var(--border)}
+.similar-picker select{min-height:54px;font-size:13px}
+.similar-picker button{min-height:54px;font-size:13px}
+
+.testing-block{margin-top:18px;padding-top:16px;border-top:1px solid var(--border)}
+.testing-head{display:flex;justify-content:space-between;gap:14px;align-items:flex-start;margin-bottom:10px}
+.testing-head h4{margin:0;font-size:15px}
+.testing-head p{margin:4px 0 0;color:var(--muted);font-size:10px}
+.evidence-table{width:100%;border-collapse:collapse;border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.evidence-table th,.evidence-table td{padding:10px 12px;border-bottom:1px solid var(--border);text-align:left;font-size:10px}
+.evidence-table th{background:#eef1ee;color:#555e56;font-size:9px;text-transform:uppercase}
+.evidence-name{display:flex;align-items:center;gap:8px}
+.file-icon{width:24px;height:24px;border-radius:5px;display:grid;place-items:center;background:#edf4ee;color:#387f4a}
+.capture-status{color:#8a928b}
+.capture-status.done{color:#287b3e;font-weight:760}
+.thumb{width:46px;height:30px;border:1px solid #badfc3;border-radius:4px;background:linear-gradient(135deg,#e7f7eb,#fff);display:none;place-items:center;color:#2f7c43;font-size:8px;font-weight:800}
+.thumb.show{display:grid}
+
+/* AC validation */
+.validation-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:16px}
+.validation-stat{padding:13px;border:1px solid var(--border);border-radius:7px;background:#fbfcfb}
+.validation-stat b{font-size:22px}
+.validation-stat span{display:block;margin-top:4px;color:var(--muted);font-size:10px}
+.ac-list{padding:0 16px 16px;display:grid;gap:8px}
+.ac-row{display:grid;grid-template-columns:54px minmax(0,1fr) 210px 100px;gap:12px;align-items:center;padding:11px 12px;border:1px solid var(--border);border-radius:7px;background:#fff}
+.ac-id{font-weight:850;color:#317947}
+.ac-text{font-size:11px}
+.ac-evidence{color:#707970;font-size:9px}
+.ac-result{justify-self:end;padding:5px 9px;border-radius:999px;background:#eef1ee;color:#778078;font-size:9px;font-weight:800}
+.ac-result.pass{background:#dff4e4;color:#267b3e}
+.ac-result.running{background:#fff5d9;color:#8a6d10}
+
+/* Simplified IT review */
+.it-form{padding:18px;display:grid;gap:16px}
+.it-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.it-field label{display:block;margin-bottom:6px;font-size:10px;font-weight:800;color:#59625a}
+.it-field input,.it-field select,.it-field textarea{width:100%;border:1px solid #ccd4cd;border-radius:6px;padding:9px;background:#fff}
+.it-field textarea{min-height:130px;resize:vertical}
+.feedback-wrap{display:none}
+.feedback-wrap.show{display:block}
+.it-note{padding:12px;border:1px solid #dce3dd;border-radius:8px;background:#fbfcfb;color:#69726a;font-size:10px;line-height:1.5}
+
+/* UAT */
+.uat-hero{padding:28px;text-align:center}
+.uat-icon{width:64px;height:64px;margin:0 auto 14px;border-radius:50%;display:grid;place-items:center;background:#dff4e4;color:#277c3e;font-size:28px;font-weight:900}
+.uat-hero h3{margin:0;font-size:22px}
+.uat-hero p{max-width:660px;margin:10px auto 0;color:var(--muted);line-height:1.5}
+.uat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:20px}
+.uat-item{border:1px solid var(--border);border-radius:7px;padding:12px;background:#fbfcfb}
+.uat-item b{display:block}
+.uat-item span{display:block;margin-top:4px;color:var(--muted);font-size:9px}
+
+/* Taller movable Assistant */
+.assistant-launcher{position:fixed;right:22px;bottom:22px;width:58px;height:58px;border:0;border-radius:50%;background:var(--green);color:#fff;z-index:120;box-shadow:0 12px 28px rgba(39,178,74,.25);font-size:21px;font-weight:900;touch-action:none}
+.assistant-launcher.dragging{cursor:grabbing}
+.assistant-panel{position:fixed;right:18px;top:12px;bottom:88px;width:440px;z-index:110;background:#fff;border:1px solid #d4dad5;border-radius:12px;box-shadow:0 20px 58px rgba(18,28,21,.18);display:flex;flex-direction:column;overflow:hidden;resize:both;min-width:360px;min-height:520px;max-width:calc(100vw - 24px);max-height:calc(100vh - 24px)}
+.assistant-panel.closed{display:none}
+.assistant-head{padding:14px 15px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;gap:12px;align-items:flex-start;cursor:move}
+.assistant-head h3{margin:0;font-size:18px}
+.assistant-head p{margin:4px 0 0;color:var(--muted);font-size:10px}
+.assistant-tabs{display:flex;gap:6px}
+.assistant-tab{padding:7px 10px;border:1px solid #ccd3cd;border-radius:6px;background:#fff;font-size:10px;font-weight:750}
+.assistant-tab.active{background:var(--green);border-color:var(--green);color:#fff}
+.assistant-body{flex:1;min-height:0;overflow:auto;padding:12px;background:#f8faf8}
+.chat{display:grid;gap:9px}
+.bot{display:grid;grid-template-columns:26px 1fr;gap:7px}
+.bot-avatar{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:#dff4e4;color:#277b3e;font-size:8px;font-weight:850}
+.bubble{padding:11px 12px;border:1px solid var(--border);border-radius:9px;background:#fff;font-size:11px;line-height:1.48}
+.bubble h4{margin:0 0 5px;font-size:13px}
+.hint{margin-top:8px;padding:8px;border:1px solid #cfe7d5;border-radius:6px;background:#f1faf3;color:#4b5d4f;font-size:9px}
+.user-message{margin-left:34px;padding:10px 11px;border:1px solid #b9dfc4;border-radius:9px;background:#eaf8ee;color:#1f5e32;font-size:10px;line-height:1.45}
+.quick-options{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.quick-option{padding:7px 9px;border:1px solid #bcdcc4;border-radius:999px;background:#fff;color:#2d6e40;font-size:9px;font-weight:750}
+.preview-list{margin:7px 0 0 18px;padding:0}
+.preview-list li{margin:4px 0}
+.assistant-input{padding:10px;border-top:1px solid var(--border);background:#fff}
+.assistant-input textarea{width:100%;min-height:74px;border:1px solid #ccd3cd;border-radius:7px;padding:8px;font-size:10px;resize:none}
+.assistant-actions{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:7px}
+.assistant-note{color:#8a928b;font-size:9px}
+.toast{position:fixed;right:24px;bottom:92px;z-index:160;background:#202520;color:#fff;padding:10px 12px;border-radius:7px;font-size:10px;opacity:0;transform:translateY(8px);transition:.2s}
+.toast.show{opacity:1;transform:none}
+.modal-bg{position:fixed;inset:0;z-index:180;background:rgba(19,26,21,.55);display:none;place-items:center;padding:20px}
+.modal-bg.show{display:grid}
+.modal{width:min(520px,100%);background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 25px 70px rgba(0,0,0,.25)}
+.modal-head{padding:16px 18px;border-bottom:1px solid var(--border);font-weight:800}
+.modal-body{padding:22px 18px;color:#465047;line-height:1.55}
+.modal-actions{padding:14px 18px;border-top:1px solid var(--border);display:flex;justify-content:flex-end}
+
+@media(max-width:1100px){
+  :root{--sidebar:210px}
+  .language-grid{grid-template-columns:1fr}
+  .summary-grid{grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:760px){
+  .app{grid-template-columns:1fr}
+  .sidebar{display:none}
+  .main{padding:0 12px 22px}
+  .stepper-track{min-width:650px}
+  .stepper{overflow:auto}
+  .historical-grid{grid-template-columns:1fr}
+  .form-shell{grid-template-columns:1fr}
+  .module-nav{position:static;display:flex;gap:6px;overflow:auto;border-right:0;border-bottom:1px solid var(--border)}
+  .module-link{min-width:150px}
+  .field-head{display:none}
+  .field-row{grid-template-columns:1fr}
+  .it-grid{grid-template-columns:1fr}
+  .assistant-panel{left:10px;right:10px;top:10px;bottom:80px;width:auto;min-width:0}
+}
+
+/* V3: preserve complete guided-question cards in view */
+.assistant-panel{
+  top:8px;
+  bottom:74px;
+  width:460px;
+  min-width:390px;
+  min-height:600px;
+}
+.assistant-body{
+  scroll-behavior:smooth;
+}
+.hint ul{
+  margin:6px 0 0 18px;
+  padding:0;
+}
+.hint li{
+  margin:5px 0;
+}
+.channel-choice-list{
+  display:grid;
+  gap:8px;
+  width:100%;
+  margin-top:2px;
+}
+.channel-rule-option{
+  width:100%;
+  min-height:46px;
+  padding:10px 12px;
+  border:1px solid #cbd4cc;
+  border-radius:9px;
+  background:#fff;
+  color:#293229;
+  text-align:left;
+  font-size:11px;
+  font-weight:760;
+}
+.channel-rule-option:hover{
+  border-color:#75c98a;
+  background:#f1faf3;
+}
+.channel-rule-option.recommended{
+  border-color:#58c977;
+  background:#edf9f0;
+  color:#23723a;
+}
+.recommended-pill{
+  float:right;
+  padding:3px 7px;
+  border-radius:999px;
+  background:#dff3e5;
+  color:#25803f;
+  font-size:8px;
+  font-weight:850;
+}
+
+/* V3: product-style integrated template reference + evidence table */
+.template-workbench{
+  margin-top:18px;
+  padding-top:16px;
+  border-top:1px solid var(--border);
+}
+.template-workbench-head{
+  display:flex;
+  justify-content:space-between;
+  gap:16px;
+  align-items:flex-start;
+  margin-bottom:10px;
+}
+.template-workbench-head h4{
+  margin:0;
+  font-size:15px;
+}
+.template-workbench-head p{
+  margin:4px 0 0;
+  color:var(--muted);
+  font-size:10px;
+}
+.workbench-actions{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+}
+.template-product-table{
+  overflow:auto;
+  border:1px solid var(--border);
+  border-radius:8px;
+  background:#fff;
+}
+.template-table-head,
+.template-product-row{
+  display:grid;
+  grid-template-columns:minmax(260px,1.45fr) minmax(220px,1fr) minmax(300px,1.35fr) 150px;
+  gap:0;
+  align-items:stretch;
+  min-width:980px;
+}
+.template-table-head{
+  background:#eef1ee;
+  color:#545d55;
+  font-size:9px;
+  font-weight:850;
+  text-transform:uppercase;
+}
+.template-table-head > div,
+.template-product-row > div{
+  padding:11px 12px;
+  border-right:1px solid var(--border);
+}
+.template-table-head > div:last-child,
+.template-product-row > div:last-child{
+  border-right:0;
+}
+.template-product-row{
+  border-top:1px solid var(--border);
+  font-size:10px;
+}
+.template-product-row:first-child{
+  border-top:0;
+}
+.template-channel{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  margin-bottom:6px;
+  font-weight:850;
+}
+.channel-marker{
+  width:25px;
+  height:25px;
+  border-radius:6px;
+  display:grid;
+  place-items:center;
+  background:#e4f5e8;
+  color:#267c3e;
+  font-size:9px;
+  font-weight:850;
+}
+.template-product-row select{
+  width:100%;
+  min-height:34px;
+  border:1px solid #cfd6d0;
+  border-radius:5px;
+  padding:6px 8px;
+  background:#fff;
+}
+.language-pills{
+  display:flex;
+  gap:6px;
+  flex-wrap:wrap;
+  align-content:flex-start;
+}
+.language-pill{
+  display:inline-flex;
+  padding:5px 7px;
+  border-radius:5px;
+  background:#eef2ee;
+  color:#5d665e;
+  font-size:8px;
+  font-weight:700;
+}
+.evidence-empty{
+  min-height:70px;
+  display:grid;
+  place-items:center;
+  border:1px dashed #cfd6d0;
+  border-radius:6px;
+  background:#fafbfa;
+  color:#8b938c;
+  text-align:center;
+  font-size:9px;
+}
+.evidence-files{
+  display:grid;
+  gap:6px;
+}
+.evidence-file{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:7px 8px;
+  border:1px solid #d7e6da;
+  border-radius:6px;
+  background:#f5fbf6;
+}
+.evidence-file-icon{
+  width:26px;
+  height:26px;
+  flex:0 0 26px;
+  border-radius:5px;
+  display:grid;
+  place-items:center;
+  background:#e1f3e5;
+  color:#2e7f45;
+  font-size:9px;
+  font-weight:850;
+}
+.evidence-file b{
+  display:block;
+  font-size:9px;
+}
+.evidence-file span{
+  display:block;
+  color:#768078;
+  font-size:8px;
+}
+.template-action-state{
+  display:flex;
+  min-height:70px;
+  align-items:center;
+  justify-content:center;
+}
+.template-state-pill{
+  display:inline-flex;
+  padding:6px 9px;
+  border-radius:999px;
+  background:#eef1ee;
+  color:#69716a;
+  font-size:9px;
+  font-weight:800;
+}
+.template-state-pill.selected{
+  background:#e2f5e7;
+  color:#287b3e;
+}
+.template-state-pill.captured{
+  background:#d9f1df;
+  color:#23733a;
+}
+@media(max-width:760px){
+  .assistant-panel{
+    width:auto;
+    min-width:0;
+    min-height:420px;
+  }
+}
+
+
+/* =========================================================
+   V4 — Compact product typography
+   Matches the denser typography and spacing in the product references.
+   ========================================================= */
+:root{
+  --sidebar:238px;
+  --font-xs:8px;
+  --font-sm:9px;
+  --font-body:11px;
+  --font-label:10px;
+  --font-section:14px;
+  --font-page:17px;
+}
+
+body{
+  font-family:Arial,"Helvetica Neue",Helvetica,sans-serif;
+  font-size:var(--font-body);
+  line-height:1.35;
+}
+
+/* Sidebar */
+.sidebar-brand{
+  padding:27px 21px 19px;
+}
+.sidebar-brand h1{
+  font-size:16px;
+  line-height:1.18;
+}
+.sidebar-brand p{
+  margin-top:7px;
+  font-size:10px;
+  line-height:1.4;
+}
+.nav{
+  padding:14px 11px;
+  gap:5px;
+}
+.nav-item{
+  min-height:38px;
+  padding:8px 11px;
+  gap:9px;
+  font-size:11px;
+  line-height:1.2;
+}
+.nav-icon{
+  width:17px;
+  font-size:13px;
+}
+.sidebar-user{
+  padding:14px 17px;
+}
+.sidebar-user b{
+  font-size:10px;
+}
+.sidebar-user span{
+  font-size:8px;
+}
+
+/* Page title and lifecycle */
+.main{
+  padding-left:22px;
+  padding-right:22px;
+}
+.page-header{
+  padding-top:23px;
+  padding-bottom:8px;
+}
+.page-header h2{
+  font-size:var(--font-page);
+  line-height:1.2;
+}
+.page-header p{
+  margin-top:4px;
+  font-size:10px;
+}
+.stage-status{
+  font-size:9px;
+}
+.stepper{
+  padding-top:10px;
+  padding-bottom:15px;
+}
+.step{
+  gap:6px;
+  font-size:9px;
+}
+.step-dot{
+  width:22px;
+  height:22px;
+  flex-basis:22px;
+  font-size:9px;
+}
+.step:not(:last-child)::after{
+  left:23px;
+  top:10px;
+}
+.step-label{
+  padding-top:4px;
+}
+
+/* General cards and buttons */
+.stage-panel{
+  margin-top:16px;
+}
+.panel-head{
+  padding:14px 16px;
+}
+.panel-head h3{
+  font-size:var(--font-section);
+}
+.panel-head p{
+  margin-top:4px;
+  font-size:9px;
+}
+.badge{
+  padding:3px 7px;
+  font-size:8px;
+}
+.primary,
+.secondary,
+.ghost{
+  min-height:32px;
+  padding:6px 11px;
+  border-radius:5px;
+  font-size:10px;
+  line-height:1.15;
+}
+
+/* Historical use cases */
+.historical-grid{
+  gap:9px;
+  padding:11px;
+}
+.hist-card{
+  padding:10px;
+}
+.hist-card h4{
+  margin-top:6px;
+  font-size:11px;
+}
+.hist-meta{
+  font-size:8px;
+}
+.hist-actions{
+  margin-top:8px;
+}
+.hist-actions button{
+  min-height:27px;
+  padding:4px 7px;
+  font-size:8px;
+}
+
+/* Draft guidance and full form */
+.prefill-strip{
+  padding:9px 13px;
+}
+.prefill-strip b{
+  font-size:10px;
+}
+.prefill-strip span{
+  margin-top:2px;
+  font-size:8px;
+}
+.form-shell{
+  grid-template-columns:164px minmax(0,1fr);
+}
+.module-nav{
+  padding:9px;
+}
+.module-nav h5{
+  font-size:8px;
+}
+.module-link{
+  padding:7px 8px;
+  font-size:9px;
+}
+.module-head{
+  padding:11px 14px 8px;
+}
+.module-head h4{
+  font-size:12px;
+}
+.module-head p{
+  margin-top:3px;
+  font-size:8px;
+}
+.field-head,
+.field-row{
+  grid-template-columns:minmax(155px,1.1fr) minmax(240px,2.35fr) 105px 68px;
+  gap:9px;
+}
+.field-head{
+  padding:6px 14px;
+  font-size:8px;
+}
+.field-row{
+  min-height:46px;
+  padding:7px 14px;
+}
+.field-label b{
+  font-size:10px;
+}
+.field-label span{
+  font-size:8px;
+}
+.control{
+  min-height:29px;
+  padding:5px 7px;
+  border-radius:4px;
+  font-size:10px;
+  line-height:1.2;
+}
+textarea.control{
+  min-height:50px;
+}
+.status{
+  padding:4px 6px;
+  font-size:8px;
+}
+.row-action{
+  min-height:27px;
+  font-size:8px;
+}
+.stage-actions{
+  padding:11px 14px;
+}
+
+/* Requirement summary */
+.summary-grid{
+  gap:8px;
+  padding:13px;
+}
+.summary-item{
+  padding:10px;
+}
+.summary-item span{
+  font-size:8px;
+}
+.summary-item b{
+  margin-top:4px;
+  font-size:10px;
+}
+
+/* Message templates */
+.template-area{
+  padding:14px;
+}
+.channel-tabs{
+  gap:17px;
+  margin-bottom:13px;
+}
+.channel-tab{
+  padding-bottom:8px;
+  font-size:10px;
+}
+.template-toolbar{
+  margin-bottom:9px;
+}
+.template-toolbar h4,
+.template-workbench-head h4{
+  font-size:12px;
+}
+.template-toolbar p,
+.template-workbench-head p{
+  font-size:8px;
+}
+.language-grid{
+  gap:9px;
+}
+.language-card{
+  padding:10px;
+}
+.language-tag{
+  padding:3px 6px;
+  font-size:8px;
+}
+.language-card label{
+  margin-top:8px;
+  font-size:8px;
+}
+.language-card input,
+.language-card textarea{
+  padding:6px 7px;
+  font-size:9px;
+}
+.language-card textarea{
+  min-height:105px;
+}
+.template-ref{
+  margin-top:6px;
+  font-size:8px;
+}
+.content-review-bar{
+  margin-top:11px;
+  padding:9px 10px;
+}
+.content-review-bar b{
+  font-size:10px;
+}
+.content-review-bar span{
+  font-size:8px;
+}
+
+/* Integrated template-reference / evidence area */
+.template-workbench{
+  margin-top:14px;
+  padding-top:13px;
+}
+.template-workbench-head{
+  margin-bottom:8px;
+}
+.template-table-head,
+.template-product-row{
+  grid-template-columns:minmax(235px,1.4fr) minmax(195px,1fr) minmax(270px,1.35fr) 125px;
+  min-width:850px;
+}
+.template-table-head{
+  font-size:8px;
+}
+.template-table-head > div,
+.template-product-row > div{
+  padding:8px 9px;
+}
+.template-product-row{
+  font-size:9px;
+}
+.template-channel{
+  gap:6px;
+  margin-bottom:5px;
+}
+.channel-marker{
+  width:22px;
+  height:22px;
+  font-size:8px;
+}
+.template-product-row select{
+  min-height:29px;
+  padding:5px 6px;
+  font-size:9px;
+}
+.language-pill{
+  padding:4px 6px;
+  font-size:7px;
+}
+.evidence-empty{
+  min-height:58px;
+  font-size:8px;
+}
+.evidence-file{
+  padding:5px 6px;
+}
+.evidence-file-icon{
+  width:23px;
+  height:23px;
+  flex-basis:23px;
+  font-size:7px;
+}
+.evidence-file b{
+  font-size:8px;
+}
+.evidence-file span{
+  font-size:7px;
+}
+.template-action-state{
+  min-height:58px;
+}
+.template-state-pill{
+  padding:5px 7px;
+  font-size:8px;
+}
+
+/* AC validation */
+.validation-summary{
+  gap:8px;
+  padding:13px;
+}
+.validation-stat{
+  padding:10px;
+}
+.validation-stat b{
+  font-size:18px;
+}
+.validation-stat span{
+  font-size:8px;
+}
+.ac-list{
+  padding:0 13px 13px;
+  gap:6px;
+}
+.ac-row{
+  grid-template-columns:45px minmax(0,1fr) 180px 82px;
+  gap:9px;
+  padding:8px 9px;
+}
+.ac-id{
+  font-size:9px;
+}
+.ac-text{
+  font-size:9px;
+}
+.ac-evidence{
+  font-size:8px;
+}
+.ac-result{
+  padding:4px 7px;
+  font-size:8px;
+}
+
+/* IT review */
+.it-form{
+  padding:14px;
+  gap:12px;
+}
+.it-grid{
+  gap:11px;
+}
+.it-field label{
+  margin-bottom:4px;
+  font-size:9px;
+}
+.it-field input,
+.it-field select,
+.it-field textarea{
+  padding:7px;
+  font-size:10px;
+}
+.it-field textarea{
+  min-height:105px;
+}
+.it-note{
+  padding:9px;
+  font-size:8px;
+}
+
+/* UAT */
+.uat-hero{
+  padding:23px;
+}
+.uat-icon{
+  width:54px;
+  height:54px;
+  margin-bottom:11px;
+  font-size:23px;
+}
+.uat-hero h3{
+  font-size:18px;
+}
+.uat-hero p{
+  font-size:10px;
+}
+.uat-grid{
+  gap:8px;
+  margin-top:16px;
+}
+.uat-item{
+  padding:10px;
+}
+.uat-item b{
+  font-size:10px;
+}
+.uat-item span{
+  font-size:8px;
+}
+
+/* Assistant typography — compact but still readable for demos */
+.assistant-panel{
+  width:440px;
+}
+.assistant-head{
+  padding:11px 13px;
+}
+.assistant-head h3{
+  font-size:16px;
+}
+.assistant-head p{
+  margin-top:3px;
+  font-size:9px;
+}
+.assistant-tab{
+  padding:6px 9px;
+  font-size:9px;
+}
+.assistant-body{
+  padding:10px;
+}
+.chat{
+  gap:7px;
+}
+.bot{
+  grid-template-columns:23px 1fr;
+  gap:6px;
+}
+.bot-avatar{
+  width:23px;
+  height:23px;
+  font-size:7px;
+}
+.bubble{
+  padding:9px 10px;
+  font-size:10px;
+  line-height:1.42;
+}
+.bubble h4{
+  margin-bottom:4px;
+  font-size:12px;
+}
+.hint{
+  margin-top:6px;
+  padding:7px;
+  font-size:8px;
+}
+.hint li{
+  margin:3px 0;
+}
+.user-message{
+  margin-left:29px;
+  padding:8px 9px;
+  font-size:9px;
+}
+.quick-options{
+  gap:5px;
+  margin-top:6px;
+}
+.quick-option{
+  padding:6px 8px;
+  font-size:8px;
+}
+.channel-rule-option{
+  min-height:39px;
+  padding:8px 10px;
+  font-size:10px;
+}
+.recommended-pill{
+  font-size:7px;
+}
+.assistant-input{
+  padding:8px;
+}
+.assistant-input textarea{
+  min-height:62px;
+  padding:7px;
+  font-size:9px;
+}
+.assistant-note{
+  font-size:8px;
+}
+
+/* Launcher */
+.assistant-launcher{
+  width:52px;
+  height:52px;
+  font-size:18px;
+}
+
+
+/* =========================================================
+   V5 — compact Assistant, live missing counts and field Help
+   ========================================================= */
+
+/* Preferred default size from the approved screenshot */
+.assistant-panel{
+  width:390px;
+  min-width:340px;
+  max-width:min(520px,calc(100vw - 24px));
+}
+
+/* The user can always type in the Assistant */
+.assistant-input{
+  display:block!important;
+}
+.assistant-input textarea{
+  min-height:62px;
+}
+.assistant-input textarea:disabled{
+  background:#fff;
+  color:var(--ink);
+  opacity:1;
+}
+
+/* Module index with live missing-field counts */
+.module-link{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+}
+.module-link-label{
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.module-missing{
+  flex:0 0 auto;
+  padding:3px 6px;
+  border-radius:999px;
+  background:#fff0ef;
+  color:#b42318;
+  font-size:7px;
+  font-weight:800;
+  white-space:nowrap;
+}
+.module-missing.complete{
+  background:#dff4e4;
+  color:#267b3e;
+}
+.module-summary{
+  margin:0 0 8px;
+  padding:7px 8px;
+  border:1px solid #d8dfd9;
+  border-radius:5px;
+  background:#fff;
+  color:#677068;
+  font-size:8px;
+  line-height:1.35;
+}
+.module-summary strong{
+  color:#252c26;
+}
+
+/* Add the Help column used by the product form */
+.field-head,
+.field-row{
+  grid-template-columns:
+    minmax(150px,1.08fr)
+    minmax(230px,2.35fr)
+    42px
+    104px
+    66px;
+  gap:8px;
+}
+.field-help{
+  width:27px;
+  height:27px;
+  justify-self:center;
+  border:1px solid #c8d0c9;
+  border-radius:50%;
+  background:#fff;
+  color:#4d5a50;
+  display:grid;
+  place-items:center;
+  font-size:12px;
+  font-weight:850;
+  cursor:pointer;
+}
+.field-help:hover,
+.field-help:focus-visible{
+  border-color:#65c47b;
+  background:#edf9f0;
+  color:#23763a;
+  outline:none;
+  box-shadow:0 0 0 3px rgba(39,178,74,.10);
+}
+
+/* Help cards in the Assistant */
+.field-help-summary{
+  display:grid;
+  gap:7px;
+}
+.field-help-summary p{
+  margin:0;
+}
+.field-help-meta{
+  padding:8px 9px;
+  border:1px solid #d7e9db;
+  border-radius:6px;
+  background:#f4fbf6;
+}
+.field-help-meta b{
+  display:block;
+  margin-bottom:3px;
+  color:#267b3e;
+  font-size:9px;
+}
+.field-help-meta span{
+  color:#536057;
+  font-size:9px;
+  line-height:1.42;
+}
+
+@media(max-width:760px){
+  .assistant-panel{
+    width:auto;
+    min-width:0;
+  }
+  .field-head{
+    display:none;
+  }
+  .field-row{
+    grid-template-columns:1fr;
+  }
+  .field-help{
+    justify-self:start;
+  }
+}
+
+
+/* =========================================================
+   V6 — metadata-driven statuses and detailed field help
+   ========================================================= */
+.status-legend{
+  display:flex;
+  flex-wrap:wrap;
+  gap:5px;
+  margin-top:7px;
+}
+.legend-chip{
+  display:inline-flex;
+  align-items:center;
+  padding:3px 6px;
+  border-radius:999px;
+  font-size:7px;
+  font-weight:800;
+  border:1px solid transparent;
+}
+.legend-chip.missing{background:#fff0ef;color:#b42318}
+.legend-chip.ai{background:#e7f0ff;color:#245fc7}
+.legend-chip.reference{background:#fff3d8;color:#8a650a}
+.legend-chip.statistical{background:#eee8ff;color:#6946b8}
+.legend-chip.rule{background:#e6f5ef;color:#1d7a55}
+.legend-chip.needs{background:#fff0e1;color:#a05a00}
+.legend-chip.na{background:#f0f2f0;color:#747c75}
+
+.status.statistical{background:#eee8ff;color:#6946b8}
+.status.rule{background:#e6f5ef;color:#1d7a55}
+.status.needs{background:#fff0e1;color:#a05a00}
+.status.na{background:#f0f2f0;color:#747c75}
+.status.manual{background:#e8f4ff;color:#24669a}
+.status.waiting{background:#f0f2f0;color:#747c75}
+.status-cell{min-width:0}
+
+.module-missing.pending{
+  background:#fff2db;
+  color:#8b6200;
+}
+.module-missing.waiting{
+  background:#f0f2f0;
+  color:#747c75;
+}
+.module-summary-sep{
+  color:#a0a7a1;
+  margin:0 2px;
+}
+
+.field-row.not-applicable{
+  background:#fafbfa;
+}
+.field-row.not-applicable .field-label,
+.field-row.not-applicable .control{
+  opacity:.66;
+}
+.field-row.dependency-waiting{
+  background:#fcfcfc;
+}
+.field-row.dependency-waiting .field-label,
+.field-row.dependency-waiting .control{
+  opacity:.74;
+}
+.row-action:disabled{
+  background:#f4f5f4;
+  color:#909791;
+  border-color:#dde2de;
+}
+
+.metadata-help{
+  display:grid;
+  gap:8px;
+}
+.metadata-help-section{
+  padding:9px;
+  border:1px solid #dce7de;
+  border-radius:7px;
+  background:#fff;
+}
+.metadata-help-section h5{
+  margin:0 0 5px;
+  font-size:10px;
+  color:#1d6f37;
+}
+.metadata-help-section p{
+  margin:0;
+  font-size:9px;
+  line-height:1.48;
+  color:#465248;
+}
+.metadata-help-section ul{
+  margin:5px 0 0 17px;
+  padding:0;
+  color:#465248;
+  font-size:9px;
+  line-height:1.45;
+}
+.metadata-help-section li{
+  margin:3px 0;
+}
+.metadata-help-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:6px;
+  margin-top:7px;
+}
+.metadata-help-grid>div{
+  padding:7px;
+  border-radius:6px;
+  background:#f5f8f5;
+}
+.metadata-help-grid b{
+  display:block;
+  margin-bottom:2px;
+  font-size:8px;
+  color:#617064;
+}
+.metadata-help-grid span{
+  display:block;
+  font-size:9px;
+  line-height:1.35;
+  color:#29332b;
+  overflow-wrap:anywhere;
+}
+.current-field-state{
+  border-color:#bfe1c7;
+  background:#f5fbf6;
+}
+.metadata-technical{
+  padding:9px;
+  border:1px solid #dce3dd;
+  border-radius:7px;
+  background:#fafbfa;
+}
+.metadata-technical summary{
+  cursor:pointer;
+  font-size:9px;
+  font-weight:800;
+  color:#4e5a50;
+}
+.metadata-notes{
+  margin-top:8px;
+  font-size:8px;
+}
+.help-option-group{
+  display:inline-flex;
+  margin-right:5px;
+  padding:2px 5px;
+  border-radius:999px;
+  background:#e7f5eb;
+  color:#267b3e;
+  font-size:7px;
+  font-weight:800;
+}
+.help-empty{
+  color:#8a928b;
+  font-size:8px;
+}
+.metadata-help code{
+  padding:1px 4px;
+  border-radius:4px;
+  background:#eef1ee;
+  font-size:8px;
+}
+
+
+/* V7 — QA mode and cleaner field-help presentation */
+.qa-answer{
+  display:grid;
+  gap:8px;
+}
+.qa-answer p{
+  margin:0;
+}
+.qa-answer ul{
+  margin:0 0 0 17px;
+  padding:0;
+}
+.qa-answer li{
+  margin:5px 0;
+}
+
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <button class="sidebar-toggle">≡</button>
+    <div class="sidebar-brand">
+      <h1>MDC Messaging Platform</h1>
+      <p>A centralized platform for managing diverse systems and workflows.</p>
+    </div>
+    <nav class="nav">
+      <button class="nav-item"><span class="nav-icon">▣</span>Templates Management</button>
+      <button class="nav-item"><span class="nav-icon">◯</span>Requirements Management</button>
+      <button class="nav-item active"><span class="nav-icon">◉</span>AI Generated Requirements</button>
+      <button class="nav-item"><span class="nav-icon">▤</span>Smart Forms</button>
+      <button class="nav-item"><span class="nav-icon">▧</span>MI Report</button>
+      <button class="nav-item"><span class="nav-icon">▦</span>Power MI</button>
+      <button class="nav-item"><span class="nav-icon">⌂</span>Policy Management</button>
+      <button class="nav-item"><span class="nav-icon">◈</span>System Operations</button>
+    </nav>
+    <div class="sidebar-user">
+      <div class="user-avatar">C</div>
+      <div><b>Cero</b><span>MDC System</span></div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="page-header">
+      <div>
+        <h2>Campaign Configuration</h2>
+        <p>Configure customer messaging settings for your business use case.</p>
+      </div>
+      <div class="stage-status" id="stageStatus">Drafted</div>
+    </header>
+
+    <div class="stepper">
+      <div class="stepper-track">
+        <div class="step active" data-stage="1"><span class="step-dot">1</span><span class="step-label">Drafted</span></div>
+        <div class="step" data-stage="2"><span class="step-dot">2</span><span class="step-label">Content Preparation</span></div>
+        <div class="step" data-stage="3"><span class="step-dot">3</span><span class="step-label">Generate AC</span></div>
+        <div class="step" data-stage="4"><span class="step-dot">4</span><span class="step-label">IT Review</span></div>
+        <div class="step" data-stage="5"><span class="step-dot">5</span><span class="step-label">UAT</span></div>
+      </div>
+    </div>
+
+    <section class="stage-panel" id="stage1">
+      <section class="card historical hidden" id="historicalSection">
+        <div class="panel-head">
+          <div><h3>Related historical use cases</h3><p>Select a reference or start a new use case.</p></div>
+          <button class="secondary" id="startNewUseCase">Start new use case</button>
+        </div>
+        <div class="historical-grid" id="historicalGrid"></div>
+      </section>
+
+      <section class="card" id="draftForm">
+        <div class="prefill-strip">
+          <div>
+            <b id="draftGuideTitle">Start with the AI Assistant</b>
+            <span id="draftGuideCopy">Open the green AI Assistant in the lower-right corner and describe your requirement. Only requirement-derived values will be prefilled before you select a historical reference.</span>
+          </div>
+          <button class="secondary" id="jumpCurrent">Open AI Assistant</button>
+        </div>
+        <div class="form-shell">
+          <aside class="module-nav"><h5>Modules</h5><div id="moduleLinks"></div></aside>
+          <div class="form-content" id="formContent"></div>
+        </div>
+        <div class="stage-actions">
+          <button class="ghost">Back to list</button>
+          <div class="stage-actions-right">
+            <button class="secondary" id="saveDraft" disabled>Save as Draft</button>
+            <button class="primary" id="continueContent" disabled>Continue to Content Preparation</button>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <section class="stage-panel hidden" id="stage2">
+      <section class="card">
+        <div class="panel-head">
+          <div><h3>Campaign requirement information</h3><p>Summary of the confirmed use case before template generation.</p></div>
+          <span class="badge green">Content Preparation</span>
+        </div>
+        <div class="summary-grid" id="summaryGrid"></div>
+      </section>
+
+      <section class="card" style="margin-top:14px">
+        <div class="panel-head">
+          <div><h3>Message Templates</h3><p>Review the AI-generated channel copies, choose a similar template reference, and capture testing evidence.</p></div>
+          <span class="badge">AI generated</span>
+        </div>
+        <div class="template-area">
+          <div class="channel-tabs" id="channelTabs"></div>
+          <div id="templateChannel"></div>
+
+          <div class="content-review-bar">
+            <div><b>AI-generated content is ready</b><span>Review and edit the copy if needed. Confirm the content when all channel and language versions are acceptable.</span></div>
+            <button class="primary" id="confirmContent">Confirm generated content</button>
+          </div>
+
+          <section class="template-workbench hidden" id="templateWorkbench">
+            <div class="template-workbench-head">
+              <div>
+                <h4>Template reference and testing evidence</h4>
+                <p>Select the similar templates first. Testing Evidence remains empty until Auto evidence capture is started.</p>
+              </div>
+              <div class="workbench-actions">
+                <button class="secondary" id="applySimilar">Add similar templates</button>
+                <button class="primary" id="captureAll" disabled>Auto evidence capture</button>
+              </div>
+            </div>
+            <div class="template-product-table">
+              <div class="template-table-head">
+                <div>Template Name</div>
+                <div>Language</div>
+                <div>Testing Evidence</div>
+                <div>Action</div>
+              </div>
+              <div id="templateReferenceRows"></div>
+            </div>
+          </section>
+        </div>
+        <div class="stage-actions">
+          <button class="secondary" data-go="1">Previous</button>
+          <div class="stage-actions-right">
+            <button class="secondary">Save as Draft</button>
+            <button class="primary" id="startAC" disabled>Start AC Validation</button>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <section class="stage-panel hidden" id="stage3">
+      <section class="card">
+        <div class="panel-head">
+          <div><h3>Acceptance Criteria Validation</h3><p>Validate each generated AC against the captured testing screenshots.</p></div>
+          <button class="primary" id="startValidation">Start validation</button>
+        </div>
+        <div class="validation-summary">
+          <div class="validation-stat"><b>9</b><span>Total AC</span></div>
+          <div class="validation-stat"><b id="acPassed">0</b><span>Passed</span></div>
+          <div class="validation-stat"><b id="acPending">9</b><span>Pending</span></div>
+        </div>
+        <div class="ac-list" id="acList"></div>
+        <div class="stage-actions">
+          <button class="secondary" data-go="2">Previous</button>
+          <button class="primary" id="continueIT" disabled>Continue to IT Review</button>
+        </div>
+      </section>
+    </section>
+
+    <section class="stage-panel hidden" id="stage4">
+      <section class="card">
+        <div class="panel-head">
+          <div><h3>IT Review</h3><p>Record the IT reviewer, review outcome and feedback when changes are required.</p></div>
+          <span class="badge">Pending review</span>
+        </div>
+        <div class="it-form">
+          <div class="it-grid">
+            <div class="it-field">
+              <label>Reviewer</label>
+              <input id="itReviewer" placeholder="Enter reviewer name">
+            </div>
+            <div class="it-field">
+              <label>Review Result</label>
+              <select id="itDecision">
+                <option value="">Select result</option>
+                <option value="PASS">Pass</option>
+                <option value="FAIL">Not passed</option>
+              </select>
+            </div>
+          </div>
+          <div class="it-field feedback-wrap" id="feedbackWrap">
+            <label>Feedback</label>
+            <textarea id="itFeedback" placeholder="Describe the fields or configuration that must be corrected."></textarea>
+          </div>
+          <div class="it-note">For this demo, use the sample approval to complete the happy-path flow. When the result is “Not passed”, feedback is required and the case remains in IT Review.</div>
+          <div><button class="secondary" id="sampleIT">Use sample approval</button></div>
+        </div>
+        <div class="stage-actions">
+          <button class="secondary" data-go="3">Previous</button>
+          <button class="primary" id="submitITReview">Submit IT Review</button>
+        </div>
+      </section>
+    </section>
+
+    <section class="stage-panel hidden" id="stage5">
+      <section class="card">
+        <div class="uat-hero">
+          <div class="uat-icon">✓</div>
+          <h3>Ready for UAT</h3>
+          <p>The requirement, templates, evidence, AC validation and IT review are complete. The package is ready for promotion to the UAT environment.</p>
+          <div class="uat-grid">
+            <div class="uat-item"><b>Use Case</b><span>Confirmed</span></div>
+            <div class="uat-item"><b>Templates</b><span>9 language/channel copies</span></div>
+            <div class="uat-item"><b>Evidence</b><span>9 screenshots captured</span></div>
+            <div class="uat-item"><b>AC Validation</b><span>9 / 9 passed</span></div>
+          </div>
+          <div style="margin-top:22px"><button class="primary" id="promoteUAT">Promote to UAT</button></div>
+        </div>
+      </section>
+    </section>
+  </main>
+</div>
+
+<button class="assistant-launcher" id="assistantLauncher">M</button>
+<aside class="assistant-panel closed" id="assistantPanel">
+  <div class="assistant-head" id="assistantDragHandle">
+    <div><h3>Assistant</h3><p id="assistantSubtitle">Follow the guided conversation to complete this use case.</p></div>
+    <div class="assistant-tabs"><button class="assistant-tab active" id="guidedTab">Guided</button><button class="assistant-tab" id="qaTab">QA</button></div>
+  </div>
+  <div class="assistant-body" id="assistantBody"><div class="chat" id="guidedChat"></div><div class="chat hidden" id="qaChat"></div></div>
+  <div class="assistant-input" id="assistantComposer">
+    <textarea id="assistantText" placeholder="Describe your requirement..."></textarea>
+    <div class="assistant-actions">
+      <span class="assistant-note" id="assistantNote">Start with the sample requirement.</span>
+      <div><button class="secondary" id="sampleAnswer">Use sample</button><button class="primary" id="assistantSend">Send</button></div>
+    </div>
+  </div>
+</aside>
+
+<div class="toast" id="toast"></div>
+<div class="modal-bg" id="modalBg">
+  <div class="modal">
+    <div class="modal-head">UAT promotion complete</div>
+    <div class="modal-body">The package has been promoted to UAT with the confirmed use case, generated templates, captured evidence, AC validation results and IT approval.</div>
+    <div class="modal-actions"><button class="primary" id="closeModal">Done</button></div>
+  </div>
+</div>
+
+<script>
+const requirement = "We have a new payment service for a new payment method of the bank debit card. A notification must be triggered after the customer completes a payment transaction. The message must be delivered through PUSH, SMS and EMAIL in English, Simplified Chinese and Traditional Chinese.";
+const historicalCases = [{"name":"Debit Card Payment Notification","id":"M1048","match":"Best match","channels":"PUSH · SMS · EMAIL","project":"Digital Payments","prefill":{"line_of_business":"WPB","project_name":"Digital Payments","source_system":"Payment Service","delivery_mode":"REALTIME","delivery_schedule":"Y","high_risk_flag":"N","app_name":"DaaSC","sender":"SMS:HASE · EMAIL:payment.alert@mail.test.hangseng.com","sender_name":"Hang Seng Bank","cost_center_id":"25267613","bounce_back":"Y"}},{"name":"Card Transaction Alert","id":"M0862","match":"Possible match","channels":"PUSH · SMS","project":"Cards Platform","prefill":{"line_of_business":"WPB","project_name":"Cards Platform","source_system":"Card Transaction Hub","delivery_mode":"REALTIME","delivery_schedule":"Y","high_risk_flag":"N","app_name":"DaaSC","sender":"SMS:HASE","cost_center_id":"25267613","bounce_back":"Y"}},{"name":"Account Payment Confirmation","id":"M0731","match":"Possible match","channels":"EMAIL · SMS","project":"Payment Services","prefill":{"line_of_business":"WPB","project_name":"Payment Services","source_system":"Payment Gateway","delivery_mode":"REALTIME","delivery_schedule":"Y","high_risk_flag":"N","sender":"SMS:HASE · EMAIL:payment.alert@mail.test.hangseng.com","sender_name":"Hang Seng Bank","cost_center_id":"25267613","bounce_back":"N"}}];
+const moduleSchema = [{"id":"basic","name":"Basic Info","desc":"Confirm core use case information and source-system context.","fields":[["line_of_business","Line Of Business"],["use_case_name","Use Case Name"],["project_name","Project Name"],["source_system","Source System"],["delivery_mode","Delivery Mode"]]},{"id":"extension","name":"Extension Info","desc":"Confirm ownership, business hierarchy, schedule, risk and triggering condition.","fields":[["depart_head","Depart Head"],["team_head","Team Head"],["message_owner","Message Owner"],["business_line_1st_level","Business Line 1st Level"],["business_line_2nd_level","Business Line 2nd Level"],["delivery_schedule","Is 7×24"],["high_risk_flag","Is High Risk"],["message_trigger_conditions","Message Trigger Conditions"]]},{"id":"channel","name":"Delivery Channel","desc":"Configure channel priority, routing, tags, sender identity and traffic strategy.","fields":[["channel","Delivery Channel"],["priority","Priority"],["router","Router"],["tag","Tag"],["Send_to_China_flag","Send_to_China"],["traffic_percentage","Traffic Percentage"],["sender","Sender"],["sender_name","Sender Name"],["app_name","App Name"],["cost_center_id","Cost Center Id"]]},{"id":"optin","name":"Opt-In Flag","desc":"Review the generated opt-in master flag for the selected channels.","fields":[["push_optin_flag","Master"]]},{"id":"bounce","name":"Bounce Back","desc":"Configure callback, fallback, channel periods and unknown delivery-status handling.","fields":[["bounce_back","Callback"],["letter_bounce_back_success_flag","Letter Bounce Back"],["push_bounce_back_period","Push Bounce Back Period"],["sms_bounce_back_period","SMS Bounce Back Period"],["email_bounce_back_period","Email Bounce Back Period"],["letter_bounce_back_period","Letter Bounce Back Period"],["wechat_bounce_back_period","Wechat Bounce Back Period"],["bounce_back_next_channel","Bounce Back Next Channel"],["unknown_bounce_back_status","Unknown Bounce Back Status"]]}];
+const fieldMetadata = {"line_of_business":{"field_name":"line_of_business","display_name":"Line Of Business","module":"Basic Info","domain_object":"use_case_master","scope":"use_case","business_description":"Line of business.","required_level":"Required","field_type":"single_select","options_ref":"line_of_business","options":null,"db_table":"tbl_use_case","provided_by":["Business"],"raw_depends_on":"create mode editable","dependency_rule_refs":["LOB_CREATE_MODE_EDITABLE"],"aliases":["LOB","business line","line of business"],"answer_guidance":{"business_hint":"Select the owning line of business for this use case.","assistant_hint":"Can be prefilled by checking department / user access information, then ask user to confirm only if uncertain."},"example_answers":["WPB","CMB"],"ai_behavior":{"can_extract_from_requirement":true,"can_prefill_from_reference":true,"should_ask_user":true,"ask_priority":"MEDIUM","collection_stage":"BASIC_CONTEXT","is_generated":false},"ui_behavior":{"hide_when_not_applicable":false,"show_source_label":true,"show_help":true,"allow_manual_edit":true},"export_mapping":{"target":"tbl_use_case.line_of_business"},"notes":[],"source_confidence":"HIGH"},"use_case_name":{"field_name":"use_case_name","display_name":"Use Case Name","module":"Basic Info","domain_object":"use_case_master","scope":"use_case","business_description":"The business scenario for the message triggering. It is used for users to check the related message delivery information in MDC MI report.","required_level":"Required","field_type":"text","options_ref":null,"options":null,"db_table":"tbl_use_case","provided_by":["Business"],"raw_depends_on":null,"dependency_rule_refs":[],"aliases":["use case name","scenario name","message scenario"],"answer_guidance":{"business_hint":"Provide a short business scenario name that users can recognize in MDC MI report.","assistant_hint":"Generate a concise candidate name from requirement and ask user to confirm."},"example_answers":["Wealth Product Maturity Reminder","OTP Login Verification"],"ai_behavior":{"can_extract_from_requirement":true,"can_prefill_from_reference":true,"should_ask_user":true,"ask_priority":"MEDIUM","collection_stage":"BASIC_CONTEXT","is_generated":false},"ui_behavior":{"hide_when_not_applicable":false,"show_source_label":true,"show_help":true,"allow_manual_edit":true},"export_mapping":{"target":"tbl_use_case.use_case_name"},"notes":[],"source_confidence":"HIGH"},"project_name":{"field_name":"project_name","display_name":"Project Name","module":"Basic Info","domain_object":"use_case_master","scope":"use_case","business_description":"Project name.","required_level":"Required","field_type":"text","options_ref":null,"options":null,"db_table":"tbl_use_case","provided_by":["Business","IT PM"],"raw_depends_on":null,"dependency_rule_refs":[],"aliases":["project","project name","initiative name"],"answer_guidance":{"business_hint":"Provide the related project name.","assistant_hint":"Ask later if not found in requirement; do not interrupt core channel/trigger decisions early."},"example_answers":["WPB Wealth Maturity Notification Project"],"ai_behavior":{"can_extract_from_requirement":true,"can_prefill_from_reference":true,"should_ask_user":true,"ask_priority":"LOW","collection_stage":"FINAL_REVIEW","is_generated":false},"ui_behavior":{"hide_when_not_applicable":false,"show_source_label":true,"show_help":true,"allow_manual_edit":true},"export_mapping":{"target":"tbl_use_case.project_name"},"notes":[],"source_confidence":"HIGH"},"source_system":{"field_name":"source_system","display_name":"Source System","module":"Basic Info","domain_object":"use_case_master","scope":"use_case","business_description":"Source system name that will pass the notification request to MDC.","required_level":"Required","field_type":"text","options_ref":null,"options":null,"db_table":"tbl_use_case","provided_by":["Business","IT PM","Source System IT"],"raw_depends_on":null,"dependency_rule_refs":[],"aliases":["source system","upstream system","requesting system"],"answer_guidance":{"business_hint":"Provide the upstream system that sends the notification request to MDC.","assistant_hint":"If missing, ask as an integration question after basic business scenario is clear."},"example_answers":["PEGA","CMS","Mobile App","Source System A"],"ai_behavior":{"can_extract_from_requirement":true,"can_prefill_from_reference":true,"should_ask_user":true,"ask_priority":"HIGH","collection_stage":"BASIC_CONTEXT","is_generated":false},"ui_behavior":{"hide_when_not_applicable":false,"show_source_label":true,"show_help":true,"allow_manual_edit":true},"export_mapping":{"target":"tbl_use_case.source_system"},"notes":[],"source_confidence":"HIGH"},"delivery_mode":{"field_name":"delivery_mode","display_name":"Delivery Mode","module":"Basic Info","domain_object":"use_case_master","scope":"use_case_ext","business_description":"Delivery mode. Time Critical is for OTP only. Other values include Realtime and Batch.","required_level":"Required","field_type":"single_select","options_ref":"delivery_mode","options":null,"db_table":"tbl_use_case_ext","provided_by":["ITPM","Source System IT"],"raw_depends_on":null,"dependency_rule_refs":[],"aliases":["delivery mode","send mode","time critical","realtime","batch"],"answer_guidance":{"business_hint":"Choose Time Critical only for OTP. Choose Realtime for immediate event-driven messages, or Batch for scheduled/batch messages.","assistant_hint":"This field affects router recommendation and traffic percentage strategy, especially for SMS."},"example_answers":["TIMECRITICAL","REALTIME","BATCH"],"ai_behavior":{"can_extract_from_requirement":true,"can_prefill_from_reference":true,"should_ask_user":true,"ask_priority":"HIGH","collection_stage":"BASIC_CONTEXT","is_generated":false},"ui_behavior":{"hide_when_not_applicable":false,"show_source_label":true,"show_help":true,"allow_manual_edit":true},"export_mapping":{"target":"tbl_use_case_ext.delivery_mode"},"notes":[],"source_confidence":"HIGH"},"depart_head":{"field_name":"depart_head","display_name":"Depart Head","module":"Extension Info","domain_object":"use_case_extension","scope":"use_case_ext","business_description":"Department head, MD or GCB 2.","required_level":"Required by UI","field_type":"text","options_ref":null,"options":null,"db_table":"tbl_use_case_ext","provided_by":["Business"],"raw_depends_on":null,"dependency_rule_refs":[],"aliases":["department head","depart head","MD","GCB2"],"answer_guidance":{"business_hint":"Provide the department head. This may be derived from department access information.","assistant_hint":"Prefer prefill from user profile or department information; ask in final review if missing."},"example_answers":[],"ai_behavior":{"can_extract_from_requirement":false,"can_prefill_from_reference":true,"should_ask_user":true,"ask_priority":"LOW","collection_stage":"FINAL_REVIEW","is_generated":false},"ui_behavior":{"hide_when_not_applicable":true,"show_source_label":true,"show_help":true,"allow_manual_edit":true},"export_mapping":{"target":"tbl_use_case_ext.depart_head"},"notes":[],"source_confidence":"HIGH"},"team_head":{"field_name":"team_head","display_name":"Team Head","module":"Extension Info","domain_object":"use_case_extension","scope":"use_case_ext","business_description":"Team head, GCB 3.","required_level":"Required by UI","field_type":"text","options_ref":null,"options":null,"db_table":"tbl_use_case_ext","provided_by":["Business"],"raw_depends_on":null,"dependency_rule_refs":[],"aliases":["team head","GCB3"],"answer_guidance":{"business_hint":"Provide the team head.","assistant_hint":"Prefer prefill from user profile or department information; ask in final review if missing."},"example_answers":[],"ai_behavior":{"can_extract_from_requirement":false,"can_prefill_from_reference":true,"should_ask_user":true,"ask_priority":"LOW","collection_stage":"FINAL_REVIEW","is_generated":false},"ui_behavior":{"hide_when_not_applicable":true,"show_source_label":true,"show_help":true,"allow_manual_edit":true},"export_mapping":{"target":"tbl_use_case_ext.team_head"},"notes":[],"source_confidence":"HIGH"},"message_owner":{"field_name":"message_owner","display_name":"Message Owner","module":"Extension Info","domain_object":"use_case_extension","scope":"use_case_ext","business_description":"Message owner, GCB 5 or above.","required_level":"Required","field_type":"text","options_ref":null,"options":null,"db_table":"tbl_use_case_ext","provided_by":["Business"],"raw_depends_on":null,"dependency_rule_refs":[],"aliases":["message owner","owner","business owner"],"answer_guidance":{"business_hint":"Provide the business owner responsible for the message, GCB 5 or above.","assistant_hint":"Important for governance; ask after main business/channel decisions if not prefilled."},"example_answers":[],"ai_behavior":{"can_extract_from_requirement":false,"can_prefill_from_reference":true,"should_ask_user":true,"ask_priority":"MEDIUM","collection_stage":"OWNERSHIP","is_generated":false},"ui_behavior":{"hide_when_not_applicable":true,"show_source_label":true,"show_help":true,"allow_manual_edit":true},"export_mapping":{"target":"tbl_use_case_ext.message_owner"},"notes":[],"source_confidence":"HIGH"},"business_line_1st_level":{"field_name":"business_line_1st_level","display_name":"Business Line 1st Level","module":"Extension Info","domain_object":"use_case_extension","scope":"use_case_ext","business_description":"Business line first level, the department of the department head.","required_level":"Required by UI","field_type":"text","options_ref":null,"options":null,"db_table":"tbl_use_case_ext","provided_by":["Business"],"raw_depends_on":null,"dependency_rule_refs":[],"aliases":["business line first level","first level department"],"answer_guidance":{"business_hint":"Provide the first-level business line / department of the department head.","assistant_hint":"Prefer prefill from department access information."},"example_answers":[],"ai_behavior":{"can_extract_from_requirement":false,"can_prefill_from_reference":true,"should_ask_user":true,"ask_priority":"LOW","collection_stage":"FINAL_REVIEW","is_generated":false},"ui_behavior":{"hide_when_not_applicable":true,"show_source_label":true,"show_help":true,"allow_manual_edit":true},"export_mapping":{"target":"tbl_use_case_ext.business_line_1st_level"},"notes":[],"source_confidence":"HIGH"},"business_line_2nd_level":{"field_name":"business_line_2nd_level","display_name":"Business Line 2nd Level","module":"Extension Info","domain_object":"use_case_extension","scope":"use_case_ext","business_description":"Business line second level, the department of the team head.","required_level":"Required by UI","field_type":"text","options_ref":null,"options":null,"db_table":"tbl_use_case_ext","provided_by":["Business"],"raw_depends_on":null,"dependency_rule_refs":[],"aliases":["business line second level","second level department"],"answer_guidance":{"business_hint":"Provide the second-level business line / department of the team head.","assistant_hint":"Prefer prefill from department access information."},"example_answers":[],"ai_behavior":{"can_extract_from_requirement":false,"can_prefill_from_reference":true,"should_ask_user":true,"ask_priority":"LOW","collection_stage":"FINAL_REVIEW","is_generated":false},"ui_behavior":{"hide_when_not_applicable":true,"show_source_label":true,"show_help":true,"allow_manual_edit":true},"export_mapping":{"target":"tbl_use_case_ext.business_line_2nd_level"},"notes":[],"source_confidence":"HIGH"},"delivery_schedule":{"field_name":"delivery_schedule","display_name":"Is 7×24","module":"Extension Info","domain_object":"use_case_extension","scope":"use_case_ext","business_description":"Whether the use case is expected to operate continuously on a 7×24 basis.","required_level":"Required by UI","field_type":"single_select","options_ref":"yes_no","options":null,"db_table":"tbl_use_case_ext","provided_by":["Business","IT PM"],"raw_depends_on":null,"dependency_rule_refs":[],"aliases":["7x24","24x7","delivery schedule","operating schedule"],"answer_guidance":{"business_hint":"Answer Y if the use case must operate continuously, including weekends and public holidays; otherwise answer N.","assistant_hint":"The detailed field metadata is not present in metadata_version v1.0-draft, so use this conservative UI fallback and ask the user to confirm."},"example_answers":["Y - continuous 7×24 service","N - limited operating window"],"ai_behavior":{"can_extract_from_requirement":true,"can_prefill_from_reference":true,"should_ask_user":true,"ask_priority":"MEDIUM","collection_stage":"BASIC_CONTEXT","is_generated":false},"ui_behavior":{"hide_when_not_applicable":false,"show_source_label":true,"show_help":true,"allow_manual_edit":true},"export_mapping":{"target":"tbl_use_case_ext.delivery_schedule"},"notes":["Fallback metadata added by the prototype because delivery_schedule is listed in domain_objects but absent from fields[]."],"source_confidence":"MEDIUM"},"high_risk_flag":{"field_name":"high_risk_flag","display_name":"Is High Risk","module":"Extension Info","domain_object":"use_case_extension","scope":"use_case_ext","business_description":"High risk critical message flag. Examples: regulatory message, time-sensitive message like Card-Not-Present message, and message for high-risk transaction.","required_level":"Required","field_type":"single_select","options_ref":"yes_no","options":null,"db_table":"tbl_use_case_ext","provided_by":["Business"],"raw_depends_on":null,"dependency_rule_refs":[],"aliases":["high risk","high-risk","critical message","regulatory message","time sensitive","high-risk transaction"],"answer_guidance":{"business_hint":"Answer Y if this is a regulatory, time-sensitive, or high-risk transaction message. Otherwise answer N.","assistant_hint":"This affects router/vendor and traffic percentage recommendation, especially SMS."},"example_answers":["Y - regulatory message","Y - high-risk transaction","N - normal service notification"],"ai_behavior":{"can_extract_from_requirement":true,"can_prefill_from_reference":true,"should_ask_user":true,"ask_priority":"HIGH","collection_stage":"BASIC_CONTEXT","is_generated":false},"ui_behavior":{"hide_when_not_applicable":true,"show_source_label":true,"show_help":true,"allow_manual_edit":true},"export_mapping":{"target":"tbl_use_case_ext.high_risk_flag"},"notes":[],"source_confidence":"HIGH"},"message_trigger_conditions":{"field_name":"message_trigger_conditions","display_name":"Message Trigger Conditions","module":"Extension Info","domain_object":"use_case_extension","scope":"use_case_ext","business_description":"Message trigger conditions.","required_level":"Optional","field_type":"text","options_ref":null,"options":null,"db_table":"tbl_use_case_ext","provided_by":["Business"],"raw_depends_on":null,"dependency_rule_refs":[],"aliases":["trigger condition","message trigger","when to send","send trigger","business event"],"answer_guidance":{"business_hint":"Describe the business event or condition that triggers the message.","assistant_hint":"Even though optional in metadata, it is important for AC generation; extract from requirement and ask only if unclear."},"example_answers":["When a wealth product will mature soon","When an OTP is requested","When a card-not-present transaction is detected"],"ai_behavior":{"can_extract_from_requirement":true,"can_prefill_from_reference":true,"should_ask_user":true,"ask_priority":"HIGH","collection_stage":"BUSINESS_SCENARIO","is_generated":false},"ui_behavior":{"hide_when_not_applicable":false,"show_source_label":true,"show_help":true,"allow_manual_edit":true},"export_mapping":{"target":"tbl_use_case_ext.message_trigger_conditions"},"notes":[],"source_confidence":"HIGH"},"channel":{"field_name":"channel","display_name":"Delivery Channel","module":"Delivery Channel","domain_object":"use_case_channel_rule_list","scope":"channel_rule_collection","business_description":"Selected delivery channel. Channel is represented through channel rule list and priority, not as a simple flat field.","required_level":"Required","field_type":"multi_select_via_priority","options_ref":"delivery_channel","options":null,"db_table":"tbl_use_case_channel_rule","provided_by":["Business"],"raw_depends_on":"root selected channel","dependency_rule_refs":["CHANNEL_SELECTION_CREATES_CHANNEL_RULES"],"aliases":["delivery channel","channel","send channel","message channel"],"answer_guidance":{"business_hint":"Select one or more channels such as EMAIL, SMS, PUSH, LETTER, WHATSAPP, WECHAT, MMS, or TWOWAYSMS.","assistant_hint":"Ask this early. Downstream router, sender, opt-in and bounce-back fields depend on it."},"example_answers":["EMAIL only","SMS and EMAIL","PUSH first, then SMS as fallback"],"ai_behavior":{"can_extract_from_requirement":true,"can_prefill_from_reference":true,"should_ask_user":true,"ask_priority":"CRITICAL","collection_stage":"CHANNEL_SELECTION","is_generated":false},"ui_behavior":{"hide_when_not_applicable":false,"show_source_label":true,"show_help":true,"allow_manual_edit":true},"export_mapping":{"target":"tbl_use_case_channel_rule.channel","domain_shape":"useCaseChannelRuleList[]"},"notes":[],"source_confidence":"HIGH"},"priority":{"field_name":"priority","display_name":"Priority","module":"Delivery Channel","domain_object":"use_case_channel_rule_list","scope":"channel_rule","business_description":"Channel priority / mandatory routing. For channel delivery priority, values 1-8 indicate sending priority; value 0 indicates mandatory send; value 99 indicates optional / may not send.","required_level":"Required when channel selected","field_type":"single_select","options_ref":"channel_priority","options":null,"db_table":"tbl_use_case_channel_rule","provided_by":["Business"],"raw_depends_on":"selected channel","dependency_rule_refs":["PRIORITY_REQUIRED_FOR_SELECTED_CHANNEL"],"aliases":["priority","channel priority","mandatory routing","fallback priority"],"answer_guidance":{"business_hint":"Use 0 for mandatory send, 1-8 for channel priority order, and 99 for optional / may not send.","assistant_hint":"When user says one channel only, default priority can usually be 0 or ask for confirmation depending policy."},"example_answers":["EMAIL priority 0","PUSH priority 1, SMS priority 2","SMS 99"],"ai_behavior":{"can_extract_from_requirement":true,"can_prefill_from_reference":true,"should_ask_user":true,"ask_priority":"HIGH","collection_stage":"CHANNEL_SELECTION","is_generated":false},"ui_behavior":{"hide_when_not_applicable":true,"show_source_label":true,"show_help":true,"allow_manual_edit":true},"export_mapping":{"target":"tbl_use_case_channel_rule.priority","domain_shape":"useCaseChannelRuleList[].priority"},"notes":[],"source_confidence":"HIGH"},"router":{"field_name":"router","display_name":"Router","module":"Delivery Channel","domain_object":"use_case_channel_rule_list","scope":"channel_rule","business_description":"Router / vendor path.","required_level":"Usually required when channel selected","field_type":"single_select","options_ref":"router_catalog","options":null,"db_table":"tbl_use_case_channel_rule","provided_by":["MDC IT"],"raw_depends_on":"selected channel.\nPUSH depends on app_name.\nSMS depends on telecom / delivery_mode.\nEmail depends on internal/external setup.\nLetter depends on auto/manual trigger.\n2WAYSMS chooses HTCL_2WAY_SMS.","dependency_rule_refs":["ROUTER_REQUIRED_FOR_SELECTED_CHANNEL","PUSH_DAASC_ROUTER_RECOMMENDATION","PUSH_INVESTEX_DBB_ROUTER_RECOMMENDATION","SMS_ROUTER_RECOMMENDATION","EMAIL_ROUTER_RECOMMENDATION","LETTER_ROUTER_RECOMMENDATION","TWOWAYSMS_ROUTER_RECOMMENDATION"],"aliases":["router","route","vendor path","delivery path","message path"],"answer_guidance":{"business_hint":"Choose the router/vendor path according to channel and business rule. New use cases usually avoid legacy ICCM/HUTCHISON routers unless reference use case requires them.","assistant_hint":"Recommend router automatically based on channel, app_name, delivery_mode, high_risk_flag, Send_to_China_flag, and internal/external context; ask user to confirm if uncertain."},"example_answers":["PFP_EU_EMAIL for external email","HTCL_SVC_TC_SMS for time critical SMS","AWS_SG_SNS_PUSH for PUSH"],"ai_behavior":{"can_extract_from_requirement":true,"can_prefill_from_reference":true,"should_ask_user":true,"ask_priority":"HIGH","collection_stage":"CHANNEL_ROUTING","is_generated":false},"ui_behavior":{"hide_when_not_applicable":true,"show_source_label":true,"show_help":true,"allow_manual_edit":true},"export_mapping":{"target":"tbl_use_case_channel_rule.router","domain_shape":"useCaseChannelRuleList[].router"},"notes":[],"source_confidence":"HIGH"},"tag":{"field_name":"tag","display_name":"Tag","module":"Delivery Channel","domain_object":"use_case_channel_rule_list","scope":"channel_rule","business_description":"Router tag.","required_level":"Conditional","field_type":"single_select","options_ref":"conditional_tag_options","options":null,"db_table":"tbl_use_case_channel_rule","provided_by":["Business"],"raw_depends_on":"SMS router filtering; PUSH DAASC","dependency_rule_refs":["SMS_TAG_OPTIONS","PUSH_DAASC_TAG_OPTIONS"],"aliases":["tag","router tag","SMS tag","PUSH tag"],"answer_guidance":{"business_hint":"For SMS, tag may be HK or CN. For PUSH with DaaSC, tag may be IOS or AOS.","assistant_hint":"Only ask when tag is applicable based on channel/app/router; otherwise hide it."},"example_answers":["HK","CN","IOS","AOS"],"ai_behavior":{"can_extract_from_requirement":true,"can_prefill_from_reference":true,"should_ask_user":true,"ask_priority":"MEDIUM","collection_stage":"CHANNEL_ROUTING","is_generated":false},"ui_behavior":{"hide_when_not_applicable":true,"show_source_label":true,"show_help":true,"allow_manual_edit":true},"export_mapping":{"target":"tbl_use_case_channel_rule.tag","domain_shape":"useCaseChannelRuleList[].tag"},"notes":[],"source_confidence":"HIGH"},"Send_to_China_flag":{"field_name":"Send_to_China_flag","display_name":"Send_to_China","module":"Delivery Channel","domain_object":"use_case_channel_rule_list","scope":"channel_rule","business_description":"Requires to send to China Mobile Number or NOT.","required_level":"Required for SMS","field_type":"single_select","options_ref":"yes_no","options":null,"db_table":"tbl_use_case_channel_rule","provided_by":["Business"],"raw_depends_on":"SMS","dependency_rule_refs":["SMS_REQUIRES_SEND_TO_CHINA_FLAG","SMS_CHINA_ROUTE_RECOMMENDATION"],"aliases":["send to China","China mobile number","CN route","mainland China SMS"],"answer_guidance":{"business_hint":"Answer Y if SMS needs to be sent to China mobile numbers. This is used to consider adding CN routes.","assistant_hint":"If Y, recommend CM and LX routes with CM 100% and LX 0% traffic split."},"example_answers":["Y - need to send to China mobile numbers","N - Hong Kong only"],"ai_behavior":{"can_extract_from_requirement":true,"can_prefill_from_reference":true,"should_ask_user":true,"ask_priority":"HIGH","collection_stage":"CHANNEL_ROUTING","is_generated":false},"ui_behavior":{"hide_when_not_applicable":true,"show_source_label":true,"show_help":true,"allow_manual_edit":true},"export_mapping":{"target":"tbl_use_case_channel_rule.Send_to_China_flag"},"notes":[],"source_confidence":"HIGH"},"traffic_percentage":{"field_name":"traffic_percentage","display_name":"Traffic Percentage","module":"Delivery Channel","domain_object":"use_case_channel_rule_list","scope":"route_strategy","business_description":"Traffic split percentage. Normally: high-risk real-time message: HTCL 100%, CSL 0% for resilience; Time Critical one-time-password: HTCL 70%, CSL 30% for resilience; real-time / batch message: HTCL 100%.","required_level":"Required for SMS/EMAIL multi-path; PUSH DAASC path can show it","field_type":"number","options_ref":null,"options":null,"db_table":"tbl_use_case_channel_rule","provided_by":["Business","MDC IT"],"raw_depends_on":"PUSH, SMS, EMAIL","dependency_rule_refs":["TRAFFIC_PERCENTAGE_APPLICABILITY","SMS_HIGH_RISK_TRAFFIC_DEFAULT","SMS_TC_OTP_TRAFFIC_DEFAULT","SMS_NORMAL_TRAFFIC_DEFAULT","SMS_CHINA_TRAFFIC_DEFAULT"],"aliases":["traffic percentage","traffic split","traffic allocation","percentage"],"answer_guidance":{"business_hint":"Provide traffic split percentage when multiple paths/vendors are used. Examples: HTCL 100%, CSL 0%; HTCL 70%, CSL 30%; CM 100%, LX 0%.","assistant_hint":"Prefer default recommendation based on high_risk_flag, delivery_mode, Send_to_China_flag and selected routers; ask user to confirm rather than asking for raw number first."},"example_answers":["HTCL 100%, CSL 0%","HTCL 70%, CSL 30%","CM 100%, LX 0%"],"ai_behavior":{"can_extract_from_requirement":true,"can_prefill_from_reference":true,"should_ask_user":true,"ask_priority":"MEDIUM","collection_stage":"CHANNEL_ROUTING","is_generated":false},"ui_behavior":{"hide_when_not_applicable":true,"show_source_label":true,"show_help":true,"allow_manual_edit":true},"export_mapping":{"target":"tbl_use_case_channel_rule.traffic_percentage","domain_shape":"useCaseChannelRuleList[].route_strategy.traffic_split"},"notes":[],"source_confidence":"HIGH"},"sender":{"field_name":"sender","display_name":"Sender","module":"Delivery Channel","domain_object":"use_case_channel_rule_list","scope":"channel_rule","business_description":"Sender ID / address / name depending on channel. For SMS, this is the sender ID number. For EMAIL, this is mainly the sender domain or sender address; only the bold/self-identifiable part can be customized, for example **hangseng**@mail.test.hangseng.com.","required_level":"Conditional","field_type":"text","options_ref":null,"options":null,"db_table":"tbl_use_case_channel_rule","provided_by":["Business"],"raw_depends_on":"SMS - sender id number.\nEMAIL - sender domain; only the bold/self-identifiable place can be customized, e.g. hangseng@mail.test.hangseng.com.","dependency_rule_refs":["SMS_REQUIRES_SENDER","EMAIL_SENDER_APPLICABLE","SENDER_CHANNEL_SPECIFIC_MEANING"],"aliases":["sender","sender id","sender domain","from address","sender address"],"answer_guidance":{"business_hint":"For SMS, provide the sender ID number/name. For EMAIL, provide the sender domain/address; only the self-identifiable part such as 'hangseng' in hangseng@mail.test.hangseng.com can be customized.","assistant_hint":"When channel is EMAIL, guide the user with the email-domain example. When channel is SMS, ask for SMS sender ID."},"example_answers":["SMS sender ID: HASE","Email sender: hangseng@mail.test.hangseng.com","Self-identifiable part: hangseng"],"ai_behavior":{"can_extract_from_requirement":true,"can_prefill_from_reference":true,"should_ask_user":true,"ask_priority":"HIGH","collection_stage":"SENDER_SETUP","is_generated":false},"ui_behavior":{"hide_when_not_applicable":true,"show_source_label":true,"show_help":true,"allow_manual_edit":true},"export_mapping":{"target":"tbl_use_case_channel_rule.sender","domain_shape":"useCaseChannelRuleList[].sender"},"notes":[],"source_confidence":"HIGH"},"sender_name":{"field_name":"sender_name","display_name":"Sender Name","module":"Delivery Channel","domain_object":"use_case_channel_rule_list","scope":"channel_rule","business_description":"Email sender name.","required_level":"Conditional","field_type":"text","options_ref":null,"options":null,"db_table":"tbl_use_case_channel_rule","provided_by":["Business"],"raw_depends_on":"IF EMAIL router contains PFP then this field is required. It can self-identify, but most HASE cases use 恒生银行 / Hang Seng Bank.","dependency_rule_refs":["EMAIL_PFP_REQUIRES_SENDER_NAME","EMAIL_SENDER_NAME_DEFAULT_HINT"],"aliases":["sender name","email sender name","from name","display sender name"],"answer_guidance":{"business_hint":"For Email, provide the sender display name. If the email router contains PFP, this field is required. Most HASE cases use 恒生银行 / Hang Seng Bank.","assistant_hint":"If router contains PFP, ask explicitly. Otherwise suggest default 恒生银行 / Hang Seng Bank and let user confirm."},"example_answers":["Hang Seng Bank","恒生银行"],"ai_behavior":{"can_extract_from_requirement":true,"can_prefill_from_reference":true,"should_ask_user":true,"ask_priority":"MEDIUM","collection_stage":"SENDER_SETUP","is_generated":false},"ui_behavior":{"hide_when_not_applicable":true,"show_source_label":true,"show_help":true,"allow_manual_edit":true},"export_mapping":{"target":"tbl_use_case_channel_rule.sender_name","domain_shape":"useCaseChannelRuleList[].sender_name"},"notes":[],"source_confidence":"HIGH"},"app_name":{"field_name":"app_name","display_name":"App Name","module":"Delivery Channel","domain_object":"use_case_channel_rule_list","scope":"channel_rule","business_description":"The App name for Push Notification.","required_level":"Conditional","field_type":"single_select","options_ref":"app_name","options":null,"db_table":"tbl_use_case_channel_rule","provided_by":["Business"],"raw_depends_on":"PUSH Channel 才要选","dependency_rule_refs":["PUSH_REQUIRES_APP_NAME","PUSH_APP_NAME_CONTROLS_ROUTER"],"aliases":["app name","push app","mobile app","PUSH app"],"answer_guidance":{"business_hint":"Choose the app name for Push Notification: DaaSC, InvestEx, or DBB.","assistant_hint":"Ask only when PUSH is selected. App name controls PUSH router and tag."},"example_answers":["DaaSC","InvestEx","DBB"],"ai_behavior":{"can_extract_from_requirement":true,"can_prefill_from_reference":true,"should_ask_user":true,"ask_priority":"HIGH","collection_stage":"CHANNEL_ROUTING","is_generated":false},"ui_behavior":{"hide_when_not_applicable":true,"show_source_label":true,"show_help":true,"allow_manual_edit":true},"export_mapping":{"target":"tbl_use_case_channel_rule.app_name","domain_shape":"useCaseChannelRuleList[].app_name"},"notes":[],"source_confidence":"HIGH"},"cost_center_id":{"field_name":"cost_center_id","display_name":"Cost Center Id","module":"Delivery Channel","domain_object":"use_case_channel_rule_list","scope":"channel_rule","business_description":"SMS cost center id.","required_level":"Conditional","field_type":"text","options_ref":null,"options":null,"db_table":"tbl_use_case_channel_rule","provided_by":["Business"],"raw_depends_on":"要发 SMS 才要填. Example: 25267613","dependency_rule_refs":["SMS_REQUIRES_COST_CENTER_ID"],"aliases":["cost center","cost center id","SMS cost center"],"answer_guidance":{"business_hint":"Provide SMS cost center id only when SMS is selected. Example: 25267613.","assistant_hint":"Ask only for SMS channel."},"example_answers":["25267613"],"ai_behavior":{"can_extract_from_requirement":true,"can_prefill_from_reference":true,"should_ask_user":true,"ask_priority":"MEDIUM","collection_stage":"SENDER_SETUP","is_generated":false},"ui_behavior":{"hide_when_not_applicable":true,"show_source_label":true,"show_help":true,"allow_manual_edit":true},"export_mapping":{"target":"tbl_use_case_channel_rule.cost_center_id"},"notes":[],"source_confidence":"HIGH"},"push_optin_flag":{"field_name":"push_optin_flag","display_name":"Master","module":"Opt-In Flag","domain_object":"opt_in_policy","scope":"use_case","business_description":"Opt-in master flag. If SMS / MMS / EMAIL / WECHAT / PUSH channel is selected, this flag is Y; otherwise it is N. The raw field name is push_optin_flag, but the business description appears to be a master opt-in flag.","required_level":"Optional / generated","field_type":"single_select","options_ref":"yes_no","options":null,"db_table":"tbl_use_case","provided_by":["Business"],"raw_depends_on":"If selected channel includes SMS/MMS/EMAIL/WECHAT/PUSH then Y, otherwise N. PUSH Channel if selected then must open.","dependency_rule_refs":["OPT_IN_MASTER_GENERATED_BY_CHANNEL"],"aliases":["opt-in master flag","push optin flag","opt in","consent master"],"answer_guidance":{"business_hint":"Usually generated by selected channel. If SMS/MMS/EMAIL/WECHAT/PUSH is selected, it should be Y; otherwise N.","assistant_hint":"Do not ask user unless manual override is required. Show as generated/derived."},"example_answers":["Y","N"],"ai_behavior":{"can_extract_from_requirement":false,"can_prefill_from_reference":true,"should_ask_user":false,"ask_priority":"LOW","collection_stage":"DERIVED","is_generated":true},"ui_behavior":{"hide_when_not_applicable":true,"show_source_label":true,"show_help":true,"allow_manual_edit":true},"export_mapping":{"target":"tbl_use_case.push_optin_flag","semantic_name":"opt_in_master_flag"},"notes":["Confirm with business whether raw field name push_optin_flag should be treated as master opt-in flag or push-only opt-in flag."],"source_confidence":"HIGH"},"bounce_back":{"field_name":"bounce_back","display_name":"Callback","module":"Bounce Back","domain_object":"bounce_back_policy","scope":"use_case","business_description":"Bounce back callback flag. Mobile will call MDC API to let MDC know when it received the PN, and MDC can bounce back to trigger next channel if system cannot get the API callback after a pre-defined period, such as 15 minutes.","required_level":"Required by section","field_type":"single_select","options_ref":"yes_no","options":null,"db_table":"tbl_use_case","provided_by":["Business"],"raw_depends_on":"PUSH Channel 才要","dependency_rule_refs":["PUSH_REQUIRES_BOUNCE_BACK_CALLBACK"],"aliases":["bounce back","callback","PN callback","mobile callback"],"answer_guidance":{"business_hint":"Answer Y if mobile callback / bounce-back is required for Push Notification. It allows MDC to trigger next channel if callback is not received after a preset period.","assistant_hint":"Ask when PUSH is selected. Use plain wording: whether MDC should trigger fallback if mobile callback is not received."},"example_answers":["Y - enable callback and bounce back","N - no callback fallback"],"ai_behavior":{"can_extract_from_requirement":true,"can_prefill_from_reference":true,"should_ask_user":true,"ask_priority":"HIGH","collection_stage":"BOUNCE_BACK","is_generated":false},"ui_behavior":{"hide_when_not_applicable":true,"show_source_label":true,"show_help":true,"allow_manual_edit":true},"export_mapping":{"target":"tbl_use_case.bounce_back"},"notes":[],"source_confidence":"HIGH"},"letter_bounce_back_success_flag":{"field_name":"letter_bounce_back_success_flag","display_name":"Letter Bounce Back","module":"Bounce Back","domain_object":"bounce_back_policy","scope":"use_case","business_description":"Letter bounce back success flag. It is for the INHK eStatement/eAdvice case, which triggers e-Notification when the eStatement/eAdvice is ready in website.","required_level":"Optional","field_type":"single_select","options_ref":"yes_no","options":null,"db_table":"tbl_use_case","provided_by":["Business"],"raw_depends_on":"LETTER / INHK eStatement / eAdvice scenario","dependency_rule_refs":["LETTER_BOUNCE_BACK_SUCCESS_FLAG_APPLICABILITY"],"aliases":["letter bounce back","eStatement","eAdvice","letter success flag"],"answer_guidance":{"business_hint":"Use this for INHK eStatement/eAdvice cases where e-Notification is triggered when the eStatement/eAdvice is ready on website.","assistant_hint":"Ask only if LETTER or eStatement/eAdvice scenario is detected."},"example_answers":["Y - eStatement/eAdvice notification required","N"],"ai_behavior":{"can_extract_from_requirement":true,"can_prefill_from_reference":true,"should_ask_user":true,"ask_priority":"LOW","collection_stage":"BOUNCE_BACK","is_generated":false},"ui_behavior":{"hide_when_not_applicable":true,"show_source_label":true,"show_help":true,"allow_manual_edit":true},"export_mapping":{"target":"tbl_use_case.letter_bounce_back_success_flag"},"notes":[],"source_confidence":"HIGH"},"push_bounce_back_period":{"field_name":"push_bounce_back_period","display_name":"Push Bounce Back Period","module":"Bounce Back","domain_object":"bounce_back_policy","scope":"use_case","business_description":"Push bounce back period in minutes. It will trigger bounce back to next channel if there is no callback from mobile for the PN after this pre-set period.","required_level":"Optional","field_type":"number","options_ref":null,"options":null,"db_table":"tbl_use_case","provided_by":["Business"],"raw_depends_on":"bounce_back","dependency_rule_refs":["PUSH_BOUNCE_BACK_PERIOD_APPLICABILITY"],"aliases":["push bounce period","push fallback period","PN callback timeout"],"answer_guidance":{"business_hint":"Provide timeout in minutes for Push callback before triggering bounce back to next channel.","assistant_hint":"Ask only when PUSH is selected and bounce_back = Y. Example period from business description: 15 minutes."},"example_answers":["15"],"ai_behavior":{"can_extract_from_requirement":true,"can_prefill_from_reference":true,"should_ask_user":true,"ask_priority":"MEDIUM","collection_stage":"BOUNCE_BACK","is_generated":false},"ui_behavior":{"hide_when_not_applicable":true,"show_source_label":true,"show_help":true,"allow_manual_edit":true},"export_mapping":{"target":"tbl_use_case.push_bounce_back_period"},"notes":[],"source_confidence":"HIGH"},"sms_bounce_back_period":{"field_name":"sms_bounce_back_period","display_name":"SMS Bounce Back Period","module":"Bounce Back","domain_object":"bounce_back_policy","scope":"use_case","business_description":"SMS bounce back period in minutes. It will trigger bounce back to next channel if MDC has not gotten the successful SENT status for SMS after this pre-set period.","required_level":"Optional","field_type":"number","options_ref":null,"options":null,"db_table":"tbl_use_case","provided_by":["Business"],"raw_depends_on":"unknown_bounce_back_status","dependency_rule_refs":["SMS_BOUNCE_BACK_PERIOD_APPLICABILITY"],"aliases":["SMS bounce period","SMS fallback period","SMS SENT status timeout"],"answer_guidance":{"business_hint":"Provide timeout in minutes before treating SMS as not successfully SENT and triggering next channel.","assistant_hint":"Ask only if SMS is selected and unknown bounce-back handling is enabled."},"example_answers":["15"],"ai_behavior":{"can_extract_from_requirement":true,"can_prefill_from_reference":true,"should_ask_user":true,"ask_priority":"LOW","collection_stage":"BOUNCE_BACK","is_generated":false},"ui_behavior":{"hide_when_not_applicable":true,"show_source_label":true,"show_help":true,"allow_manual_edit":true},"export_mapping":{"target":"tbl_use_case.sms_bounce_back_period"},"notes":[],"source_confidence":"HIGH"},"email_bounce_back_period":{"field_name":"email_bounce_back_period","display_name":"Email Bounce Back Period","module":"Bounce Back","domain_object":"bounce_back_policy","scope":"use_case","business_description":"Email bounce back period in minutes. It will trigger bounce back to next channel if MDC has not gotten the successful SENT status for EMAIL after this pre-set period.","required_level":"Optional","field_type":"number","options_ref":null,"options":null,"db_table":"tbl_use_case","provided_by":["Business"],"raw_depends_on":"unknown_bounce_back_status","dependency_rule_refs":["EMAIL_BOUNCE_BACK_PERIOD_APPLICABILITY"],"aliases":["Email bounce period","Email fallback period","Email SENT status timeout"],"answer_guidance":{"business_hint":"Provide timeout in minutes before treating Email as not successfully SENT and triggering next channel.","assistant_hint":"Ask only if EMAIL is selected and unknown bounce-back handling is enabled."},"example_answers":["15"],"ai_behavior":{"can_extract_from_requirement":true,"can_prefill_from_reference":true,"should_ask_user":true,"ask_priority":"LOW","collection_stage":"BOUNCE_BACK","is_generated":false},"ui_behavior":{"hide_when_not_applicable":true,"show_source_label":true,"show_help":true,"allow_manual_edit":true},"export_mapping":{"target":"tbl_use_case.email_bounce_back_period"},"notes":[],"source_confidence":"HIGH"},"letter_bounce_back_period":{"field_name":"letter_bounce_back_period","display_name":"Letter Bounce Back Period","module":"Bounce Back","domain_object":"bounce_back_policy","scope":"use_case","business_description":"Letter bounce back period in minutes. It will trigger bounce back to next channel if MDC has not gotten the successful FAILED status for LETTER after this pre-set period.","required_level":"Optional","field_type":"number","options_ref":null,"options":null,"db_table":"tbl_use_case","provided_by":["Business"],"raw_depends_on":"unknown_bounce_back_status","dependency_rule_refs":["LETTER_BOUNCE_BACK_PERIOD_APPLICABILITY"],"aliases":["Letter bounce period","Letter fallback period","LETTER FAILED status timeout"],"answer_guidance":{"business_hint":"Provide timeout in minutes. For LETTER, the business description refers to successful FAILED status, which differs from SMS/EMAIL successful SENT status.","assistant_hint":"Preserve the LETTER-specific wording; do not simplify it into SENT status."},"example_answers":["15"],"ai_behavior":{"can_extract_from_requirement":true,"can_prefill_from_reference":true,"should_ask_user":true,"ask_priority":"LOW","collection_stage":"BOUNCE_BACK","is_generated":false},"ui_behavior":{"hide_when_not_applicable":true,"show_source_label":true,"show_help":true,"allow_manual_edit":true},"export_mapping":{"target":"tbl_use_case.letter_bounce_back_period"},"notes":[],"source_confidence":"HIGH"},"wechat_bounce_back_period":{"field_name":"wechat_bounce_back_period","display_name":"Wechat Bounce Back Period","module":"Bounce Back","domain_object":"bounce_back_policy","scope":"use_case","business_description":"Wechat bounce back period in minutes.","required_level":"Optional","field_type":"number","options_ref":null,"options":null,"db_table":"tbl_use_case","provided_by":["Business"],"raw_depends_on":"unknown_bounce_back_status","dependency_rule_refs":["WECHAT_BOUNCE_BACK_PERIOD_APPLICABILITY"],"aliases":["Wechat bounce period","Wechat fallback period"],"answer_guidance":{"business_hint":"Provide Wechat bounce back period in minutes when Wechat fallback handling is enabled.","assistant_hint":"Ask only if WECHAT is selected and unknown bounce-back handling is enabled."},"example_answers":["15"],"ai_behavior":{"can_extract_from_requirement":true,"can_prefill_from_reference":true,"should_ask_user":true,"ask_priority":"LOW","collection_stage":"BOUNCE_BACK","is_generated":false},"ui_behavior":{"hide_when_not_applicable":true,"show_source_label":true,"show_help":true,"allow_manual_edit":true},"export_mapping":{"target":"tbl_use_case.wechat_bounce_back_period"},"notes":[],"source_confidence":"HIGH"},"bounce_back_next_channel":{"field_name":"bounce_back_next_channel","display_name":"Bounce Back Next Channel","module":"Bounce Back","domain_object":"bounce_back_policy","scope":"use_case","business_description":"Whether route to next channel after bounce back, when the status is failed for the related channel delivery.","required_level":"Optional","field_type":"single_select","options_ref":"yes_no","options":null,"db_table":"tbl_use_case","provided_by":["Business"],"raw_depends_on":"controls unknownBounceBackStatus area","dependency_rule_refs":["BOUNCE_BACK_NEXT_CHANNEL_CONTROLS_UNKNOWN_STATUS_AREA"],"aliases":["bounce back next channel","fallback to next channel","next channel after bounce back"],"answer_guidance":{"business_hint":"Answer Y if MDC should route to the next channel after bounce back / failed delivery status.","assistant_hint":"If Y, ask or derive unknown_bounce_back_status and channel-specific bounce back periods."},"example_answers":["Y - fallback to next channel","N - no next-channel fallback"],"ai_behavior":{"can_extract_from_requirement":true,"can_prefill_from_reference":true,"should_ask_user":true,"ask_priority":"MEDIUM","collection_stage":"BOUNCE_BACK","is_generated":false},"ui_behavior":{"hide_when_not_applicable":true,"show_source_label":true,"show_help":true,"allow_manual_edit":true},"export_mapping":{"target":"tbl_use_case.bounce_back_next_channel"},"notes":[],"source_confidence":"HIGH"},"unknown_bounce_back_status":{"field_name":"unknown_bounce_back_status","display_name":"Unknown Bounce Back Status","module":"Bounce Back","domain_object":"bounce_back_policy","scope":"use_case","business_description":"When opened, MDC will check the channel bounce back period set above and bounce back to trigger next channel if it has not gotten the successful SENT status.","required_level":"Optional","field_type":"single_select","options_ref":"unknown_bounce_back_status","options":null,"db_table":"tbl_use_case","provided_by":["Business"],"raw_depends_on":"bounce_back_next_channel","dependency_rule_refs":["UNKNOWN_BOUNCE_BACK_STATUS_APPLICABILITY","UNKNOWN_STATUS_CONTROLS_CHANNEL_PERIODS"],"aliases":["unknown bounce back status","unknown status","failed or successful unknown status"],"answer_guidance":{"business_hint":"Choose whether unknown status should be treated as failed or successful. This controls whether MDC triggers the next channel when successful SENT status is not received.","assistant_hint":"Ask only when bounce_back_next_channel = Y."},"example_answers":["Unknown status as failed","Unknown status as successful"],"ai_behavior":{"can_extract_from_requirement":true,"can_prefill_from_reference":true,"should_ask_user":true,"ask_priority":"MEDIUM","collection_stage":"BOUNCE_BACK","is_generated":false},"ui_behavior":{"hide_when_not_applicable":true,"show_source_label":true,"show_help":true,"allow_manual_edit":true},"export_mapping":{"target":"tbl_use_case.unknown_bounce_back_status"},"notes":[],"source_confidence":"HIGH"}};
+const optionSets = {"line_of_business":[{"label":"WPB","value":"WPB"},{"label":"CMB","value":"CMB"}],"delivery_mode":[{"label":"Time Critical","value":"TIMECRITICAL","description":"For OTP only"},{"label":"Realtime","value":"REALTIME"},{"label":"Batch","value":"BATCH"}],"delivery_channel":[{"label":"PUSH","value":"PUSH"},{"label":"SMS","value":"SMS"},{"label":"MMS","value":"MMS"},{"label":"EMAIL","value":"EMAIL"},{"label":"LETTER","value":"LETTER"},{"label":"WHATSAPP","value":"WHATSAPP"},{"label":"WECHAT","value":"WECHAT"},{"label":"TWOWAYSMS","value":"TWOWAYSMS"}],"channel_priority":[{"label":"Mandatory send","value":"0","description":"0 indicates must send / mandatory routing"},{"label":"1","value":"1","description":"1 indicates channel delivery priority"},{"label":"2","value":"2","description":"2 indicates channel delivery priority"},{"label":"3","value":"3","description":"3 indicates channel delivery priority"},{"label":"4","value":"4","description":"4 indicates channel delivery priority"},{"label":"5","value":"5","description":"5 indicates channel delivery priority"},{"label":"6","value":"6","description":"6 indicates channel delivery priority"},{"label":"7","value":"7","description":"7 indicates channel delivery priority"},{"label":"8","value":"8","description":"8 indicates channel delivery priority"},{"label":"Optional / may not send","value":"99","description":"99 indicates optional / may not send"},{"label":"M","value":"0","description":"Business sheet includes M as equivalent/label for mandatory"}],"app_name":[{"label":"Dassc","value":"DaaSC"},{"label":"Investex","value":"InvestEx"},{"label":"DBB","value":"DBB"}],"conditional_tag_options":{"SMS":[{"label":"HK","value":"HK"},{"label":"CN","value":"CN"}],"PUSH_DAASC":[{"label":"IOS","value":"IOS"},{"label":"AOS","value":"AOS"}]},"unknown_bounce_back_status":[{"label":"Unknown status as failed","value":"0"},{"label":"Unknown status as successful","value":"1"}],"router_catalog":[{"channel":"PUSH","router":"AWS_SG_SNS_PUSH","route":"AWS_SNS_PUSH","is_legacy":false},{"channel":"PUSH","router":"AWS_HK_SNS_PUSH","route":"AWS_HK_SNS_PUSH","is_legacy":false},{"channel":"PUSH","router":"ICCM_VM_SVC_RT_GEN_PUSH","route":"VM1_RT_SVC_PUSH","is_legacy":true},{"channel":"PUSH","router":"ICCM_VM_SVC_BAT_PUSH","route":"VM3_BAT_SVC_PUSH","is_legacy":true},{"channel":"PUSH","router":"AURORA_PUSH","route":"AURORA_PUSH","is_legacy":false},{"channel":"SMS","router":"HTCL_SVC_TC_SMS","route":"HTCL_SVC_TC_SMS","vendor":"HTCL","delivery_mode_hint":"TIMECRITICAL","is_legacy":false},{"channel":"SMS","router":"HTCL_SVC_RT_SMS","route":"HTCL_SVC_RT_SMS","vendor":"HTCL","delivery_mode_hint":"REALTIME","is_legacy":false},{"channel":"SMS","router":"CM_HTTP_SMS","route":"CM_HTTP_SMS","vendor":"CM","region_hint":"CN","is_legacy":false},{"channel":"SMS","router":"HTCL_SVC_RT_GEN_SMS","route":"HUTCHISON_GW_SMS","vendor":"HTCL/HUTCHISON_GW","is_legacy":true},{"channel":"SMS","router":"HTCL_SVC_RT_HR_SMS","route":"HUTCHISON_GW_SMS","vendor":"HTCL/HUTCHISON_GW","risk_hint":"HIGH_RISK","is_legacy":true},{"channel":"SMS","router":"HTCL_SVC_BAT_SMS","route":"HUTCHISON_GW_SMS","vendor":"HTCL/HUTCHISON_GW","delivery_mode_hint":"BATCH","is_legacy":true},{"channel":"SMS","router":"CSL_SVC_RT_SMS","route":"CSL_SVC_RT_SMS","vendor":"CSL","risk_hint":"HIGH_RISK","is_legacy":false},{"channel":"SMS","router":"ICCM_VM_SVC_RT_GEN_SMS","route":"VM1_RT_SVC_SMS","is_legacy":true},{"channel":"SMS","router":"ICCM_VM_SVC_BAT_SMS","route":"VM3_BAT_SVC_SMS","is_legacy":true},{"channel":"SMS","router":"ICCM_SHP_SVC_RT_GEN_SMS","route":"SHP1_RT_SVC_SMS","is_legacy":true},{"channel":"SMS","router":"ICCM_SHP_SVC_TC_SMS","route":"SHP1_TC_SVC_SMS","delivery_mode_hint":"TIMECRITICAL","is_legacy":true},{"channel":"SMS","router":"ICCM_SHP_SVC_RT_HR_SMS","route":"SHP1_HS_SVC_SMS","risk_hint":"HIGH_RISK","is_legacy":true},{"channel":"SMS","router":"LX_SVC_RT_SMS","route":"LX_SVC_RT_SMS","vendor":"LX","region_hint":"CN","is_legacy":false},{"channel":"SMS","router":"LX_SVC_TC_SMS","route":"LX_SVC_TC_SMS","vendor":"LX","region_hint":"CN","delivery_mode_hint":"TIMECRITICAL","is_legacy":false},{"channel":"SMS","router":"SINCH_SVC_RT_SMS","route":"SINCH_SVC_RT_SMS","vendor":"SINCH","is_legacy":false},{"channel":"SMS","router":"CSL_SVC_TC_SMS","route":"CSL_SVC_TC_SMS","vendor":"CSL","delivery_mode_hint":"TIMECRITICAL","risk_hint":"HIGH_RISK","is_legacy":false},{"channel":"MMS","router":"HTCL_MKT_MMS","route":"HTCL_MKT_MMS","is_legacy":false},{"channel":"EMAIL","router":"ICCM_VM_SVC_RT_GEN_EMAIL","route":"VM1_RT_SVC_EMAIL","is_legacy":true},{"channel":"EMAIL","router":"ICCM_VM_SVC_BAT_EMAIL","route":"VM3_BAT_SVC_EMAIL","delivery_mode_hint":"BATCH","is_legacy":true},{"channel":"EMAIL","router":"ICCM_SHP_SVC_RT_GEN_EMAIL","route":"SHP1_RT_SVC_EMAIL","is_legacy":true},{"channel":"EMAIL","router":"ICCM_SHP_SVC_BAT_EMAIL","route":"SHP1_BAT_SVC_EMAIL","delivery_mode_hint":"BATCH","is_legacy":true},{"channel":"EMAIL","router":"ICCM_SHP_SVC_TC_EMAIL","route":"SHP1_TC_SVC_EMAIL","delivery_mode_hint":"TIMECRITICAL","is_legacy":true},{"channel":"EMAIL","router":"ICCM_SHP_SVC_RT_HR_EMAIL","route":"SHP1_HS_SVC_EMAIL","risk_hint":"HIGH_RISK","is_legacy":true},{"channel":"EMAIL","router":"SFMC_BAT_EMAIL","route":"SFMC_BAT_EMAIL","delivery_mode_hint":"BATCH","is_legacy":false},{"channel":"EMAIL","router":"PFP_US_EMAIL","route":"PFP_US_EMAIL","scope_hint":"EXTERNAL","is_legacy":false},{"channel":"EMAIL","router":"PFP_EU_EMAIL","route":"PFP_EU_EMAIL","scope_hint":"EXTERNAL","is_legacy":false},{"channel":"EMAIL","router":"INT_EMAIL","route":"INT_EMAIL","scope_hint":"INTERNAL","is_legacy":false},{"channel":"LETTER","router":"OTX_RT_LETTER","route":"OTX_RT_LETTER","trigger_hint":"REALTIME","is_legacy":false},{"channel":"LETTER","router":"OTX_BAT_LETTER","route":"OTX_BAT_LETTER","trigger_hint":"AUTO_TRIGGER_OR_BATCH","is_legacy":false,"note":"Business note also mentions OTX_BATCH_LETTER; confirm whether it is the same value as OTX_BAT_LETTER."},{"channel":"LETTER","router":"OTX_BAT_HTML_LETTER","route":"OTX_BAT_HTML_LETTER","trigger_hint":"MANUAL_TRIGGER","is_legacy":false},{"channel":"WHATSAPP","router":"HARO_RT_WHATSAPP","route":"HARO_RT_WHATSAPP","is_legacy":false},{"channel":"WECHAT","router":"TENCENT_WECHAT","route":"TENCENT_WECHAT","is_legacy":false},{"channel":"TWOWAYSMS","router":"HTCL_SVC_RT_GEN_SMS","route":"HUTCHISON_GW_SMS","is_legacy":true},{"channel":"TWOWAYSMS","router":"HTCL_TWOWAY_SMS","route":"HUTCHISON_GW_SMS","is_legacy":true},{"channel":"TWOWAYSMS","router":"HTCL_2WAY_SMS","route":"HTCL_2WAY_SMS","is_legacy":false}],"yes_no":[{"label":"Yes","value":"Y"},{"label":"No","value":"N"}]};
+const templates = {"PUSH": {"similar": ["Debit Card Purchase Confirmation v3", "Card Payment Alert Standard", "Real-time Payment Notification"], "languages": {"English": {"title": "Debit card payment completed", "body": "Your debit card payment of {{amount}} to {{merchant}} was completed on {{date_time}}. If you did not make this transaction, contact us immediately."}, "Simplified Chinese": {"title": "扣账卡付款已完成", "body": "您的扣账卡付款已于{{date_time}}完成，商户为{{merchant}}，金额为{{amount}}。如非本人操作，请立即联络我们。"}, "Traditional Chinese": {"title": "扣賬卡付款已完成", "body": "您的扣賬卡付款已於{{date_time}}完成，商戶為{{merchant}}，金額為{{amount}}。如非本人操作，請立即聯絡我們。"}}}, "EMAIL": {"similar": ["Payment Confirmation Email v5", "Debit Card Transaction Receipt", "Secure Payment Completion Notice"], "languages": {"English": {"title": "Your debit card payment has been completed", "body": "Dear Customer,\n\nYour debit card payment of {{amount}} to {{merchant}} was completed on {{date_time}}.\n\nIf you do not recognise this transaction, please contact us immediately.\n\nMDC Bank"}, "Simplified Chinese": {"title": "您的扣账卡付款已完成", "body": "尊敬的客户：\n\n您的扣账卡付款已于{{date_time}}完成，商户为{{merchant}}，金额为{{amount}}。\n\n如您不认识此交易，请立即联络我们。\n\nMDC Bank"}, "Traditional Chinese": {"title": "您的扣賬卡付款已完成", "body": "尊敬的客戶：\n\n您的扣賬卡付款已於{{date_time}}完成，商戶為{{merchant}}，金額為{{amount}}。\n\n如您不認識此交易，請立即聯絡我們。\n\nMDC Bank"}}}, "SMS": {"similar": ["Debit Card SMS Alert v4", "Transaction Confirmation Short Copy", "Payment Completed SMS Standard"], "languages": {"English": {"title": "SMS body", "body": "MDC Bank: Your debit card payment of {{amount}} to {{merchant}} was completed at {{date_time}}. Call us immediately if this was not you."}, "Simplified Chinese": {"title": "短信正文", "body": "MDC Bank：您的扣账卡付款{{amount}}已于{{date_time}}完成，商户为{{merchant}}。如非本人操作，请立即致电我们。"}, "Traditional Chinese": {"title": "短訊正文", "body": "MDC Bank：您的扣賬卡付款{{amount}}已於{{date_time}}完成，商戶為{{merchant}}。如非本人操作，請立即致電我們。"}}}};
+const acTexts = ["Whether an English PUSH body is provided.", "Whether a Simplified Chinese PUSH body is provided.", "Whether a Traditional Chinese PUSH body is provided.", "Whether an English SMS body is provided.", "Whether a Simplified Chinese SMS body is provided.", "Whether a Traditional Chinese SMS body is provided.", "Whether an English EMAIL body is provided.", "Whether a Simplified Chinese EMAIL body is provided.", "Whether a Traditional Chinese EMAIL body is provided."];
+
+const $ = id => document.getElementById(id);
+const allKeys = moduleSchema.flatMap(module => module.fields.map(field => field[0]));
+
+const initialStatusByField={
+  line_of_business:"Missing Required",
+  use_case_name:"Missing Required",
+  project_name:"Missing Required",
+  source_system:"Missing Required",
+  delivery_mode:"Missing Required",
+
+  depart_head:"Missing Required",
+  team_head:"Missing Required",
+  message_owner:"Missing Required",
+  business_line_1st_level:"Missing Required",
+  business_line_2nd_level:"Missing Required",
+  delivery_schedule:"Missing Required",
+  high_risk_flag:"Missing Required",
+  message_trigger_conditions:"Not Started",
+
+  channel:"Missing Required",
+  priority:"Waiting for Dependency",
+  router:"Waiting for Dependency",
+  tag:"Waiting for Dependency",
+  Send_to_China_flag:"Waiting for Dependency",
+  traffic_percentage:"Waiting for Dependency",
+  sender:"Waiting for Dependency",
+  sender_name:"Waiting for Dependency",
+  app_name:"Waiting for Dependency",
+  cost_center_id:"Waiting for Dependency",
+
+  push_optin_flag:"Waiting for Dependency",
+
+  bounce_back:"Waiting for Dependency",
+  letter_bounce_back_success_flag:"Waiting for Dependency",
+  push_bounce_back_period:"Waiting for Dependency",
+  sms_bounce_back_period:"Waiting for Dependency",
+  email_bounce_back_period:"Waiting for Dependency",
+  letter_bounce_back_period:"Waiting for Dependency",
+  wechat_bounce_back_period:"Waiting for Dependency",
+  bounce_back_next_channel:"Waiting for Dependency",
+  unknown_bounce_back_status:"Waiting for Dependency"
+};
+
+const formState=Object.fromEntries(allKeys.map(key=>[
+  key,
+  {
+    value:"",
+    status:initialStatusByField[key]||"Not Started",
+    source:"",
+    confidence:null
+  }
+]));
+
+let currentStage = 1;
+let currentQuestion = "WELCOME";
+let selectedReference = null;
+let activeTargets = [];
+let activeChannel = "PUSH";
+let contentConfirmed = false;
+let templateReferencesAdded = false;
+let evidenceCaptured = false;
+let validationRunning = false;
+let assistantOpen = false;
+
+const requirementPrefill={
+  use_case_name:{
+    value:"Debit Card Payment Transaction Notification",
+    status:"AI Prefill",
+    source:"Requirement extraction",
+    confidence:0.96
+  },
+  message_trigger_conditions:{
+    value:"Customer completes a debit card payment transaction.",
+    status:"AI Prefill",
+    source:"Requirement extraction",
+    confidence:0.98
+  },
+  delivery_mode:{
+    value:"REALTIME",
+    status:"AI Prefill",
+    source:"Requirement inference: event-driven notification",
+    confidence:0.91
+  },
+  line_of_business:{
+    value:"WPB",
+    status:"Statistical Prefill",
+    source:"Approved use case statistics",
+    confidence:0.82
+  },
+  delivery_schedule:{
+    value:"Y",
+    status:"Statistical Prefill",
+    source:"Approved realtime use case statistics",
+    confidence:0.78
+  },
+  high_risk_flag:{
+    value:"N",
+    status:"Statistical Prefill",
+    source:"Normal service-notification statistics",
+    confidence:0.76
+  }
+};
+
+function showToast(message){
+  const t=$("toast");t.textContent=message;t.classList.add("show");
+  setTimeout(()=>t.classList.remove("show"),2200);
+}
+function escapeHtml(v){
+  return String(v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
+}
+function scrollAssistant(){
+  requestAnimationFrame(()=>{$("assistantBody").scrollTop=$("assistantBody").scrollHeight;});
+}
+function bot(title,body,hint="",actions="",focusStart=false){
+  const messageId=`assistant-message-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  $("guidedChat").insertAdjacentHTML("beforeend",`
+    <div class="bot" id="${messageId}"><div class="bot-avatar">BOT</div><div class="bubble">
+      <h4>${title}</h4>${body}
+      ${hint?`<div class="hint">${hint}</div>`:""}
+      ${actions?`<div class="quick-options">${actions}</div>`:""}
+    </div></div>`);
+  if(focusStart){
+    requestAnimationFrame(()=>{
+      const message=$(messageId);
+      if(message)$("assistantBody").scrollTo({top:Math.max(0,message.offsetTop-8),behavior:"smooth"});
+    });
+  }else{
+    scrollAssistant();
+  }
+  return messageId;
+}
+function user(text){
+  $("guidedChat").insertAdjacentHTML("beforeend",`<div class="user-message">${escapeHtml(text)}</div>`);
+  scrollAssistant();
+}
+
+const qaSampleQuestion="MDC能够直接通过customer id获取客户的contact information来发notification吗？";
+const qaSampleAnswer=`
+  <div class="qa-answer">
+    <p>Most of the channels are supported.</p>
+    <ul>
+      <li><b>PN, SMS and Email:</b> the upstream system can pass customer ID / permNetID / CUS CIN to MDC. MDC can then check the device token, mobile number or email address and trigger the related notification.</li>
+      <li><b>Letter:</b> the upstream system can pass the account number to MDC, and MDC can call the CUS API to retrieve the correspondence address. The project team still needs to engage CUS to clarify throughput confirmation and testing support.</li>
+      <li><b>WhatsApp:</b> MDC can use the customer ID to retrieve the mobile number and then check whether it is feasible to trigger WhatsApp to the customer.</li>
+      <li><b>WeChat:</b> there is currently no such information.</li>
+    </ul>
+  </div>`;
+
+let assistantMode="GUIDED";
+let qaInitialized=false;
+let guidedComposerSnapshot=null;
+
+function qaBot(title,body,hint="",actions="",focusStart=false){
+  const messageId=`qa-message-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  $("qaChat").insertAdjacentHTML("beforeend",`
+    <div class="bot" id="${messageId}"><div class="bot-avatar">BOT</div><div class="bubble">
+      <h4>${title}</h4>${body}
+      ${hint?`<div class="hint">${hint}</div>`:""}
+      ${actions?`<div class="quick-options">${actions}</div>`:""}
+    </div></div>`);
+  requestAnimationFrame(()=>{
+    const message=$(messageId);
+    if(focusStart && message){
+      $("assistantBody").scrollTo({top:Math.max(0,message.offsetTop-8),behavior:"smooth"});
+    }else{
+      $("assistantBody").scrollTop=$("assistantBody").scrollHeight;
+    }
+  });
+  return messageId;
+}
+
+function qaUser(text){
+  $("qaChat").insertAdjacentHTML(
+    "beforeend",
+    `<div class="user-message">${escapeHtml(text)}</div>`
+  );
+  requestAnimationFrame(()=>{$("assistantBody").scrollTop=$("assistantBody").scrollHeight;});
+}
+
+function snapshotGuidedComposer(){
+  guidedComposerSnapshot={
+    value:$("assistantText").value,
+    placeholder:$("assistantText").placeholder,
+    note:$("assistantNote").textContent,
+    sampleLabel:$("sampleAnswer").textContent,
+    sampleDisabled:$("sampleAnswer").disabled
+  };
+}
+
+function restoreGuidedComposer(){
+  const snapshot=guidedComposerSnapshot;
+  if(snapshot){
+    $("assistantText").value=snapshot.value;
+    $("assistantText").placeholder=snapshot.placeholder;
+    $("assistantNote").textContent=snapshot.note;
+    $("sampleAnswer").textContent=snapshot.sampleLabel;
+    $("sampleAnswer").disabled=snapshot.sampleDisabled;
+  }else{
+    $("assistantText").value="";
+    $("assistantText").placeholder="Ask the Assistant or enter a response...";
+    $("assistantNote").textContent="Continue with the current guided step.";
+    $("sampleAnswer").textContent="Use sample";
+    $("sampleAnswer").disabled=currentQuestion!=="WELCOME"&&currentQuestion!=="OWNERSHIP";
+  }
+}
+
+function switchAssistantMode(mode){
+  if(mode===assistantMode)return;
+
+  if(mode==="QA"){
+    snapshotGuidedComposer();
+    assistantMode="QA";
+    $("guidedChat").classList.add("hidden");
+    $("qaChat").classList.remove("hidden");
+    $("guidedTab").classList.remove("active");
+    $("qaTab").classList.add("active");
+    $("assistantSubtitle").textContent="Ask MDC domain and platform knowledge questions.";
+
+    $("assistantText").value="";
+    $("assistantText").placeholder="Ask an MDC knowledge question...";
+    $("assistantNote").textContent="This prototype uses the prepared knowledge-base sample.";
+    $("sampleAnswer").textContent="Use sample question";
+    $("sampleAnswer").disabled=false;
+
+    if(!qaInitialized){
+      qaInitialized=true;
+      qaBot(
+        "MDC Knowledge Q&A",
+        "Ask a domain or platform question about MDC messaging capabilities.",
+        "<b>Helpful hint</b><br>You can type your own question, or use the sample-question shortcut beside the input box.",
+        "",
+        true
+      );
+    }
+  }else{
+    assistantMode="GUIDED";
+    $("qaChat").classList.add("hidden");
+    $("guidedChat").classList.remove("hidden");
+    $("qaTab").classList.remove("active");
+    $("guidedTab").classList.add("active");
+    $("assistantSubtitle").textContent="Follow the guided conversation to complete this use case.";
+    restoreGuidedComposer();
+    requestAnimationFrame(()=>{$("assistantBody").scrollTop=$("assistantBody").scrollHeight;});
+  }
+}
+
+function sendQaQuestion(){
+  const text=$("assistantText").value.trim();
+  if(!text)return;
+
+  qaUser(text);
+  $("assistantText").value="";
+
+  const normalized=text
+    .toLowerCase()
+    .replace(/[？?。,.，\s]/g,"");
+
+  const sampleNormalized=qaSampleQuestion
+    .toLowerCase()
+    .replace(/[？?。,.，\s]/g,"");
+
+  if(
+    normalized===sampleNormalized ||
+    (normalized.includes("customerid") && normalized.includes("contactinformation"))
+  ){
+    qaBot("Knowledge Base Answer",qaSampleAnswer,"","",true);
+  }else{
+    qaBot(
+      "Knowledge question received",
+      "I could not find a prepared answer for this question in the current demo data. Try the sample-question shortcut, or return to Guided mode to continue the intake flow.",
+      "",
+      "",
+      true
+    );
+  }
+}
+
+function setComposer(placeholder,note,sampleLabel,enabled=true){
+  $("assistantText").placeholder=placeholder || "Ask the Assistant or enter a response...";
+  $("assistantNote").textContent=note || "You can continue typing at any time.";
+  $("sampleAnswer").textContent=sampleLabel || "Use sample";
+
+  // The composer remains available throughout the workflow.
+  $("assistantComposer").classList.remove("hidden");
+  $("assistantText").disabled=false;
+  $("assistantSend").disabled=false;
+
+  // Only the stage-specific sample shortcut is disabled when it is not relevant.
+  $("sampleAnswer").disabled=!enabled;
+}
+
+function metadataFor(key){
+  return fieldMetadata[key]||{};
+}
+
+function optionsForField(key){
+  const metadata=metadataFor(key);
+  if(Array.isArray(metadata.options))return metadata.options;
+  if(!metadata.options_ref)return [];
+
+  const optionSet=optionSets[metadata.options_ref];
+  if(Array.isArray(optionSet))return optionSet;
+
+  if(optionSet && typeof optionSet==="object"){
+    return Object.entries(optionSet).flatMap(([group,options])=>
+      (options||[]).map(option=>({...option,group}))
+    );
+  }
+  return [];
+}
+
+function safeList(items){
+  return (items||[]).filter(Boolean);
+}
+
+function helpList(items){
+  const safe=safeList(items);
+  return safe.length
+    ? `<ul>${safe.map(item=>`<li>${escapeHtml(String(item))}</li>`).join("")}</ul>`
+    : `<span class="help-empty">Not specified in metadata.</span>`;
+}
+
+function optionHelp(key){
+  const options=optionsForField(key);
+  if(!options.length)return `<span class="help-empty">No fixed option set.</span>`;
+
+  const visible=options.slice(0,12);
+  const rows=visible.map(option=>{
+    const label=option.label??option.value??option.router??option.route??"";
+    const value=option.value??option.router??option.route??label;
+    const descriptiveParts=[
+      option.description,
+      option.channel?`Channel: ${option.channel}`:"",
+      option.vendor?`Vendor: ${option.vendor}`:"",
+      option.delivery_mode_hint?`Mode: ${option.delivery_mode_hint}`:"",
+      option.risk_hint?`Risk: ${option.risk_hint}`:"",
+      option.region_hint?`Region: ${option.region_hint}`:"",
+      option.scope_hint?`Scope: ${option.scope_hint}`:"",
+      option.is_legacy===true?"Legacy route":"",
+      option.note
+    ].filter(Boolean);
+    const description=descriptiveParts.length
+      ? ` — ${escapeHtml(descriptiveParts.join(" · "))}`
+      : "";
+    const group=option.group?`<span class="help-option-group">${escapeHtml(option.group)}</span>`:"";
+    return `<li>${group}<b>${escapeHtml(String(label))}</b>${value!==label?` <code>${escapeHtml(String(value))}</code>`:""}${description}</li>`;
+  }).join("");
+
+  const remaining=options.length-visible.length;
+  return `<ul>${rows}${remaining>0?`<li>+ ${remaining} more values in metadata</li>`:""}</ul>`;
+}
+
+function initialSourceForStatus(status){
+  if(status==="Missing Required")return "Business input required";
+  if(status==="Waiting for Dependency")return "Waiting for controlling field";
+  if(status==="Not Started")return "Optional / not yet reviewed";
+  return "";
+}
+
+function isRequiredMetadataField(key){
+  const level=String(metadataFor(key).required_level||"").toLowerCase();
+  return level.startsWith("required");
+}
+
+function normalizedStatusForValue(key,value,status){
+  const valueBackedStatuses=new Set([
+    "AI Prefill",
+    "Reference Prefill",
+    "Statistical Prefill",
+    "Rule Derived",
+    "Needs Confirmation",
+    "Manual Entry",
+    "Confirmed"
+  ]);
+
+  const hasValue=String(value??"").trim()!=="";
+  if(valueBackedStatuses.has(status)&&!hasValue){
+    return isRequiredMetadataField(key)?"Missing Required":"Not Started";
+  }
+  return status;
+}
+
+function setValue(key,value,status,source="",confidence=null){
+  if(!formState[key])return;
+
+  const normalizedStatus=normalizedStatusForValue(key,value,status);
+  const hasValue=String(value??"").trim()!=="";
+
+  formState[key]={
+    value:hasValue?value:"",
+    status:normalizedStatus,
+    source:normalizedStatus===status
+      ? (source||initialSourceForStatus(status))
+      : initialSourceForStatus(normalizedStatus),
+    confidence:normalizedStatus===status?confidence:null
+  };
+}
+
+function normalizeAllStateConsistency(){
+  Object.keys(formState).forEach(key=>{
+    const state=formState[key];
+    const normalized=normalizedStatusForValue(key,state.value,state.status);
+    if(normalized!==state.status){
+      state.status=normalized;
+      state.source=initialSourceForStatus(normalized);
+      state.confidence=null;
+    }
+  });
+}
+
+function moduleMissingCount(module){
+  return module.fields.reduce((count,[key])=>
+    count+(formState[key]?.status==="Missing Required"?1:0),0
+  );
+}
+
+function modulePendingCount(module){
+  const pendingStatuses=new Set([
+    "AI Prefill",
+    "Reference Prefill",
+    "Statistical Prefill",
+    "Rule Derived",
+    "Needs Confirmation",
+    "Manual Entry"
+  ]);
+  return module.fields.reduce((count,[key])=>
+    count+(pendingStatuses.has(formState[key]?.status)?1:0),0
+  );
+}
+
+function moduleWaitingCount(module){
+  return module.fields.reduce((count,[key])=>
+    count+(formState[key]?.status==="Waiting for Dependency"?1:0),0
+  );
+}
+
+function totalMissingCount(){
+  return moduleSchema.reduce((total,module)=>total+moduleMissingCount(module),0);
+}
+
+function totalPendingCount(){
+  return moduleSchema.reduce((total,module)=>total+modulePendingCount(module),0);
+}
+
+function totalNotApplicableCount(){
+  return allKeys.reduce((total,key)=>
+    total+(formState[key]?.status==="Not Applicable"?1:0),0
+  );
+}
+
+function refreshModuleMissingBadges(){
+  const missing=totalMissingCount();
+  const pending=totalPendingCount();
+  const na=totalNotApplicableCount();
+  const summary=$("moduleSummary");
+
+  if(summary){
+    summary.innerHTML=`
+      <strong>${missing}</strong> missing
+      <span class="module-summary-sep">·</span>
+      <strong>${pending}</strong> pending
+      ${na?`<span class="module-summary-sep">·</span><strong>${na}</strong> N/A`:""}
+    `;
+  }
+
+  document.querySelectorAll("[data-missing-module]").forEach(node=>{
+    const module=moduleSchema.find(item=>item.id===node.dataset.missingModule);
+    const moduleMissing=moduleMissingCount(module);
+    const modulePending=modulePendingCount(module);
+    const moduleWaiting=moduleWaitingCount(module);
+
+    node.classList.remove("complete","pending","waiting");
+
+    if(moduleMissing){
+      node.textContent=`${moduleMissing} missing`;
+    }else if(modulePending){
+      node.textContent=`${modulePending} pending`;
+      node.classList.add("pending");
+    }else if(moduleWaiting){
+      node.textContent="Waiting";
+      node.classList.add("waiting");
+    }else{
+      node.textContent="Complete";
+      node.classList.add("complete");
+    }
+  });
+}
+
+function showFieldHelp(key){
+  if(assistantMode!=="GUIDED")switchAssistantMode("GUIDED");
+  const metadata=metadataFor(key);
+  if(!metadata.field_name)return;
+
+  if(!assistantOpen)toggleAssistant();
+
+  const state=formState[key]||{};
+  const guidance=metadata.answer_guidance||{};
+  const ai=metadata.ai_behavior||{};
+  const ui=metadata.ui_behavior||{};
+  const exportTarget=metadata.export_mapping?.target||"Not specified";
+  const providedBy=safeList(metadata.provided_by).join(", ")||"Not specified";
+  const confidence=state.confidence==null
+    ? "Not available"
+    : `${Math.round(state.confidence*100)}%`;
+
+  bot(
+    `Field help: ${escapeHtml(metadata.display_name||metadata.field_name)}`,
+    `<div class="metadata-help">
+      <section class="metadata-help-section">
+        <h5>Business meaning</h5>
+        <p>${escapeHtml(metadata.business_description||"No business description is available.")}</p>
+      </section>
+
+      <section class="metadata-help-section">
+        <h5>How to answer</h5>
+        <p>${escapeHtml(guidance.business_hint||"No business guidance is available.")}</p>
+        <div class="metadata-help-grid">
+          <div><b>Required level</b><span>${escapeHtml(metadata.required_level||"Not specified")}</span></div>
+          <div><b>Provided by</b><span>${escapeHtml(providedBy)}</span></div>
+          <div><b>Field type</b><span>${escapeHtml(metadata.field_type||"Not specified")}</span></div>
+          <div><b>Source confidence</b><span>${escapeHtml(metadata.source_confidence||"Not specified")}</span></div>
+        </div>
+      </section>
+
+      <section class="metadata-help-section">
+        <h5>Examples</h5>
+        ${helpList(metadata.example_answers)}
+      </section>
+
+      <section class="metadata-help-section">
+        <h5>Allowed values</h5>
+        ${optionHelp(key)}
+      </section>
+
+      <section class="metadata-help-section">
+        <h5>Applicability and dependency</h5>
+        <p>${escapeHtml(metadata.raw_depends_on||"No explicit dependency is recorded.")}</p>
+        ${helpList(metadata.dependency_rule_refs)}
+      </section>
+
+      <details class="metadata-technical">
+        <summary>Technical metadata</summary>
+        <div class="metadata-help-grid">
+          <div><b>Domain object</b><span>${escapeHtml(metadata.domain_object||"Not specified")}</span></div>
+          <div><b>Scope</b><span>${escapeHtml(metadata.scope||"Not specified")}</span></div>
+          <div><b>Database table</b><span>${escapeHtml(metadata.db_table||"Not specified")}</span></div>
+          <div><b>Export target</b><span>${escapeHtml(exportTarget)}</span></div>
+          <div><b>Manual edit</b><span>${ui.allow_manual_edit===false?"No":"Yes"}</span></div>
+          <div><b>Hide when N/A</b><span>${ui.hide_when_not_applicable?"Yes":"No"}</span></div>
+        </div>
+        ${safeList(metadata.notes).length?`<div class="metadata-notes"><b>Notes</b>${helpList(metadata.notes)}</div>`:""}
+      </details>
+    </div>`,
+    "",
+    "",
+    true
+  );
+
+  $("assistantText").placeholder=`Ask a follow-up question about ${metadata.display_name||metadata.field_name}...`;
+  $("assistantNote").textContent="Field Help is generated from use_case_metadata.json and does not change the current guided step.";
+  $("assistantText").focus();
+}
+
+function bindFormControls(){
+  document.querySelectorAll("[data-field]").forEach(control=>{
+    const eventName=control.tagName==="SELECT"?"change":"input";
+    control.addEventListener(eventName,()=>{
+      const key=control.dataset.field;
+      let value=control.value;
+      if(value==="Select value")value="";
+
+      const state=formState[key];
+      if(!state||state.status==="Not Applicable"||state.status==="Waiting for Dependency")return;
+
+      state.value=value;
+      state.source="Manual form entry";
+      state.confidence=1;
+
+      if(value){
+        state.status="Manual Entry";
+      }else{
+        const metadata=metadataFor(key);
+        state.status=String(metadata.required_level||"").toLowerCase().startsWith("required")
+          ?"Missing Required"
+          :"Not Started";
+      }
+
+      refreshModuleMissingBadges();
+    });
+  });
+
+  document.querySelectorAll("[data-help-key]").forEach(button=>{
+    button.addEventListener("click",()=>showFieldHelp(button.dataset.helpKey));
+  });
+}
+
+function applyRequirementPrefill(){
+  Object.entries(requirementPrefill).forEach(([key,prefill])=>
+    setValue(key,prefill.value,prefill.status,prefill.source,prefill.confidence)
+  );
+}
+
+function applyReferencePrefill(index){
+  const reference=historicalCases[index];
+  Object.entries(reference.prefill).forEach(([key,value])=>{
+    if(!formState[key]||formState[key].value)return;
+    setValue(
+      key,
+      value,
+      "Reference Prefill",
+      `Historical use case ${reference.id}`,
+      1
+    );
+  });
+}
+
+function setNotApplicable(key,source="Channel applicability rule"){
+  setValue(key,"N/A","Not Applicable",source,1);
+}
+
+function populateDependencies(){
+  setValue(
+    "router",
+    "PUSH:AWS_SG_SNS_PUSH · SMS:HTCL_SVC_RT_SMS · EMAIL:PFP_EU_EMAIL",
+    "Rule Derived",
+    "Channel + delivery mode routing rules",
+    1
+  );
+  setValue(
+    "tag",
+    "PUSH:AOS · SMS:HK",
+    "Rule Derived",
+    "PUSH DaaSC and SMS tag rules",
+    1
+  );
+  setValue(
+    "Send_to_China_flag",
+    "N",
+    "Needs Confirmation",
+    "No China destination detected in requirement",
+    0.83
+  );
+  setValue(
+    "traffic_percentage",
+    "PUSH:100 · SMS:100 · EMAIL:100",
+    "Statistical Prefill",
+    "Approved normal-risk realtime routing statistics",
+    0.88
+  );
+
+  if(!formState.sender.value){
+    setValue(
+      "sender",
+      "SMS:HASE · EMAIL:payment.alert@mail.test.hangseng.com",
+      selectedReference>=0?"Reference Prefill":"Needs Confirmation",
+      selectedReference>=0
+        ? `Historical use case ${historicalCases[selectedReference].id}`
+        : "Recommended sender pattern",
+      selectedReference>=0?1:0.82
+    );
+  }
+  if(!formState.sender_name.value){
+    setValue(
+      "sender_name",
+      "Hang Seng Bank",
+      selectedReference>=0?"Reference Prefill":"Statistical Prefill",
+      selectedReference>=0
+        ? `Historical use case ${historicalCases[selectedReference].id}`
+        : "HASE email sender-name statistics",
+      selectedReference>=0?1:0.85
+    );
+  }
+  if(!formState.app_name.value){
+    setValue(
+      "app_name",
+      "DaaSC",
+      selectedReference>=0?"Reference Prefill":"Needs Confirmation",
+      selectedReference>=0
+        ? `Historical use case ${historicalCases[selectedReference].id}`
+        : "PUSH application recommendation",
+      selectedReference>=0?1:0.85
+    );
+  }
+  if(!formState.cost_center_id.value){
+    setValue(
+      "cost_center_id",
+      "25267613",
+      selectedReference>=0?"Reference Prefill":"Needs Confirmation",
+      selectedReference>=0
+        ? `Historical use case ${historicalCases[selectedReference].id}`
+        : "SMS cost-centre recommendation",
+      selectedReference>=0?1:0.8
+    );
+  }
+
+  setValue(
+    "push_optin_flag",
+    "Y",
+    "Rule Derived",
+    "OPT_IN_MASTER_GENERATED_BY_CHANNEL",
+    1
+  );
+
+  if(!formState.bounce_back.value){
+    setValue(
+      "bounce_back",
+      "Y",
+      "Needs Confirmation",
+      "PUSH callback / bounce-back recommendation",
+      0.84
+    );
+  }
+
+  setValue(
+    "push_bounce_back_period",
+    "15",
+    "Statistical Prefill",
+    "Approved PUSH callback timeout statistics",
+    0.9
+  );
+
+  setValue(
+    "bounce_back_next_channel",
+    "N",
+    "Rule Derived",
+    "All selected channels are mandatory; no fallback sequence selected",
+    1
+  );
+
+  setNotApplicable(
+    "letter_bounce_back_success_flag",
+    "LETTER is not selected"
+  );
+  setNotApplicable(
+    "letter_bounce_back_period",
+    "LETTER is not selected"
+  );
+  setNotApplicable(
+    "wechat_bounce_back_period",
+    "WECHAT is not selected"
+  );
+  setNotApplicable(
+    "sms_bounce_back_period",
+    "Next-channel fallback is disabled"
+  );
+  setNotApplicable(
+    "email_bounce_back_period",
+    "Next-channel fallback is disabled"
+  );
+  setNotApplicable(
+    "unknown_bounce_back_status",
+    "Bounce Back Next Channel is N"
+  );
+}
+
+function confirmAllFields(){
+  Object.keys(formState).forEach(key=>{
+    const state=formState[key];
+
+    // Non-applicable values remain explicitly N/A after save.
+    if(state.status==="Not Applicable")return;
+
+    if(state.status==="Waiting for Dependency"){
+      setNotApplicable(key,"Dependency not activated in the confirmed use case");
+      return;
+    }
+
+    if(!state.value){
+      const metadata=metadataFor(key);
+      const required=String(metadata.required_level||"").toLowerCase().startsWith("required");
+      if(required){
+        state.value="Confirmed by demo";
+      }else{
+        setNotApplicable(key,"Optional field not used in this use case");
+        return;
+      }
+    }
+
+    state.status="Confirmed";
+    state.source=state.source||"User confirmation";
+    state.confidence=1;
+  });
+}
+
+function statusClass(status){
+  if(status==="Confirmed")return"confirm";
+  if(status==="AI Prefill")return"prefill";
+  if(status==="Reference Prefill")return"reference";
+  if(status==="Statistical Prefill")return"statistical";
+  if(status==="Rule Derived")return"rule";
+  if(status==="Needs Confirmation")return"needs";
+  if(status==="Not Applicable")return"na";
+  if(status==="Manual Entry")return"manual";
+  if(status==="Missing Required")return"missing";
+  return"waiting";
+}
+
+function control(key){
+  const state=formState[key];
+  const metadata=metadataFor(key);
+  const disabled=state.status==="Not Applicable"||state.status==="Waiting for Dependency";
+  const disabledAttr=disabled?" disabled":"";
+  const selectKeys=new Set([
+    "line_of_business",
+    "delivery_mode",
+    "delivery_schedule",
+    "high_risk_flag",
+    "channel",
+    "priority",
+    "router",
+    "tag",
+    "Send_to_China_flag",
+    "app_name",
+    "push_optin_flag",
+    "bounce_back",
+    "letter_bounce_back_success_flag",
+    "bounce_back_next_channel",
+    "unknown_bounce_back_status"
+  ]);
+
+  if(selectKeys.has(key)){
+    const metadataOptions=optionsForField(key)
+      .map(option=>option.value??option.label??option.router??option.route)
+      .filter(Boolean);
+    const demoOptions={
+      channel:["PUSH, SMS, EMAIL","PUSH, SMS","EMAIL, SMS"],
+      priority:[
+        "PUSH:0 · SMS:0 · EMAIL:0",
+        "PUSH:0 · SMS:1 · EMAIL:0",
+        "PUSH:0 · EMAIL:1 · SMS:2"
+      ],
+      router:[
+        "PUSH:AWS_SG_SNS_PUSH · SMS:HTCL_SVC_RT_SMS · EMAIL:PFP_EU_EMAIL"
+      ],
+      tag:["PUSH:AOS · SMS:HK"]
+    }[key]||[];
+
+    const options=[state.value,"",...demoOptions,...metadataOptions]
+      .filter((value,index,array)=>array.indexOf(value)===index);
+
+    return `<select class="control" data-field="${key}"${disabledAttr}>
+      ${options.map(option=>`<option ${option===state.value?"selected":""}>${escapeHtml(option||"Select value")}</option>`).join("")}
+    </select>`;
+  }
+
+  if(metadata.field_type==="number"){
+    const inputType=key==="traffic_percentage"?"text":"number";
+    return `<input type="${inputType}" class="control" data-field="${key}" value="${escapeHtml(state.value==="N/A"?"":state.value)}" placeholder="${state.status==="Not Applicable"?"Not applicable":"Add value"}"${disabledAttr}>`;
+  }
+
+  if(key==="message_trigger_conditions"){
+    return `<textarea class="control" data-field="${key}" placeholder="Describe the triggering condition"${disabledAttr}>${escapeHtml(state.value==="N/A"?"":state.value)}</textarea>`;
+  }
+
+  return `<input class="control" data-field="${key}" value="${escapeHtml(state.value==="N/A"?"":state.value)}" placeholder="${state.status==="Not Applicable"?"Not applicable":"Add value"}"${disabledAttr}>`;
+}
+
+function actionLabelForStatus(status){
+  if(status==="Confirmed")return"Edit";
+  if(status==="Not Applicable")return"N/A";
+  if(status==="Waiting for Dependency")return"Waiting";
+  if(status==="Missing Required"||status==="Not Started")return"Add";
+  return"Confirm";
+}
+
+function renderForm(){
+  normalizeAllStateConsistency();
+  const missing=totalMissingCount();
+  const pending=totalPendingCount();
+  const na=totalNotApplicableCount();
+
+  $("moduleLinks").innerHTML=`
+    <div class="module-summary" id="moduleSummary">
+      <strong>${missing}</strong> missing
+      <span class="module-summary-sep">·</span>
+      <strong>${pending}</strong> pending
+      ${na?`<span class="module-summary-sep">·</span><strong>${na}</strong> N/A`:""}
+    </div>
+    ${moduleSchema.map(module=>{
+      const moduleMissing=moduleMissingCount(module);
+      const modulePending=modulePendingCount(module);
+      const moduleWaiting=moduleWaitingCount(module);
+      let text="Complete";
+      let cssClass="complete";
+
+      if(moduleMissing){
+        text=`${moduleMissing} missing`;
+        cssClass="";
+      }else if(modulePending){
+        text=`${modulePending} pending`;
+        cssClass="pending";
+      }else if(moduleWaiting){
+        text="Waiting";
+        cssClass="waiting";
+      }
+
+      return `<button class="module-link" data-module="${module.id}">
+        <span class="module-link-label">${module.name}</span>
+        <span class="module-missing ${cssClass}" data-missing-module="${module.id}">${text}</span>
+      </button>`;
+    }).join("")}`;
+
+  $("formContent").innerHTML=moduleSchema.map(module=>`
+    <section class="form-module" id="module-${module.id}">
+      <div class="module-head">
+        <h4>${module.name}</h4>
+        <p>${module.desc}</p>
+      </div>
+      <div class="field-head">
+        <div>Field</div>
+        <div>Value</div>
+        <div>Help</div>
+        <div>Status</div>
+        <div>Action</div>
+      </div>
+      ${module.fields.map(([key,label])=>{
+        const state=formState[key];
+        const confidence=state.confidence==null?"":` · ${Math.round(state.confidence*100)}% confidence`;
+        const sourceTitle=`${state.source||initialSourceForStatus(state.status)||"No source"}${confidence}`;
+        const rowClass=[
+          activeTargets.includes(key)?"ai":"",
+          state.status==="Not Applicable"?"not-applicable":"",
+          state.status==="Waiting for Dependency"?"dependency-waiting":""
+        ].filter(Boolean).join(" ");
+
+        return `
+          <div class="field-row ${rowClass}" id="field-${key}">
+            <div class="field-label">
+              <b>${label}</b>
+              <span>${key}</span>
+            </div>
+            <div>${control(key)}</div>
+            <button type="button"
+                    class="field-help"
+                    data-help-key="${key}"
+                    aria-label="Open help for ${label}"
+                    title="Explain ${label}">?</button>
+            <div class="status-cell">
+              <span class="status ${statusClass(state.status)}" title="${escapeHtml(sourceTitle)}">${state.status}</span>
+            </div>
+            <button class="row-action"
+                    ${state.status==="Not Applicable"||state.status==="Waiting for Dependency"?"disabled":""}>
+              ${actionLabelForStatus(state.status)}
+            </button>
+          </div>`;
+      }).join("")}
+    </section>`).join("");
+
+  document.querySelectorAll(".module-link").forEach(button=>button.onclick=()=>{
+    document.querySelectorAll(".module-link").forEach(item=>item.classList.remove("active"));
+    button.classList.add("active");
+    $(`module-${button.dataset.module}`).scrollIntoView({behavior:"smooth",block:"start"});
+  });
+
+  document.querySelector(".module-link")?.classList.add("active");
+  bindFormControls();
+  refreshModuleMissingBadges();
+}
+
+function renderHistorical(){
+  $("historicalGrid").innerHTML=historicalCases.map((c,i)=>`
+    <article class="hist-card ${selectedReference===i?"selected":""}">
+      <div class="hist-top"><span class="badge">${c.match}</span><span class="badge green">${c.channels}</span></div>
+      <h4>${c.name}</h4>
+      <div class="hist-meta">${c.project} · ${c.id}</div>
+      <div class="hist-actions">
+        <button class="primary choose-ref" data-index="${i}">${selectedReference===i?"Selected":"Use as reference"}</button>
+        <button class="secondary">Details</button>
+      </div>
+    </article>`).join("");
+  document.querySelectorAll(".choose-ref").forEach(b=>b.onclick=()=>selectReference(Number(b.dataset.index)));
+}
+function updateDraftGuide(mode){
+  const title=$("draftGuideTitle"),copy=$("draftGuideCopy"),action=$("jumpCurrent");
+  if(mode==="start"){
+    title.textContent="Start with the AI Assistant";
+    copy.textContent="Open the green AI Assistant and describe your requirement. Only requirement-derived values will be populated before you choose a historical reference.";
+    action.textContent="Open AI Assistant";
+  }else if(mode==="reference"){
+    title.textContent="Requirement prefill ready";
+    copy.textContent="Only values extracted from the requirement are currently populated. Select a historical use case to apply reference-prefilled values.";
+    action.textContent="View historical matches";
+  }else if(mode==="guided"){
+    title.textContent="AI Prefill Review";
+    copy.textContent="Requirement and selected-reference values are combined. Complete the highlighted fields through the AI Assistant.";
+    action.textContent="Go to current fields";
+  }else{
+    title.textContent="Guided intake complete";
+    copy.textContent="Review the form and click Save as Draft. Saving confirms all fields and unlocks Content Preparation.";
+    action.textContent="Review full form";
+  }
+}
+function jumpCurrent(){
+  if(currentQuestion==="WELCOME"){
+    if(!assistantOpen)toggleAssistant();
+    $("assistantText").focus();
+    return;
+  }
+  if(currentQuestion==="REFERENCE"){
+    $("historicalSection").scrollIntoView({behavior:"smooth",block:"start"});
+    return;
+  }
+  const row=activeTargets.map(k=>$(`field-${k}`)).find(Boolean);
+  (row||$("draftForm")).scrollIntoView({behavior:"smooth",block:"center"});
+}
+
+function selectReference(index){
+  selectedReference=index;
+  applyReferencePrefill(index);
+  renderHistorical();
+  currentQuestion="OWNERSHIP";
+  activeTargets=["depart_head","team_head","message_owner","business_line_1st_level","business_line_2nd_level"];
+  updateDraftGuide("guided");
+  renderForm();
+  bot("Reference selected",`<b>${historicalCases[index].name}</b> has now been applied as a reference. Reference values are marked separately from requirement-prefilled values.`);
+  askOwnership();
+  setComposer("Reply to the ownership question...","Complete the five ownership fields.","Sample answer 1",true);
+  setTimeout(jumpCurrent,300);
+}
+function startNew(){
+  selectedReference=-1;
+  currentQuestion="OWNERSHIP";
+  activeTargets=["depart_head","team_head","message_owner","business_line_1st_level","business_line_2nd_level"];
+  updateDraftGuide("guided");
+  renderForm();
+  askOwnership();
+  setComposer("Reply to the ownership question...","Complete the five ownership fields.","Sample answer 1",true);
+}
+function askOwnership(){
+  bot(
+    "Confirm project and ownership",
+    "Before finalizing, please provide only the remaining ownership details: Message Owner, Department Head, Team Head, Business Line 1st Level, and Business Line 2nd Level.",
+    `<b>Helpful hints</b>
+     <ul>
+       <li>Provide the business owner responsible for the message, GCB 5 or above.</li>
+       <li>Provide the department head.</li>
+       <li>Provide the team head.</li>
+       <li>Use the approved first- and second-level business line names.</li>
+     </ul>`,
+    "",
+    true
+  );
+}
+function showOwnershipPreview(){
+  bot("Action Preview",
+      "I extracted the following values. They will only be written to the form after confirmation:",
+      "",
+      `<div style="width:100%">
+        <ul class="preview-list">
+          <li>Message Owner → Amy Chan</li>
+          <li>Department Head → David Lee</li>
+          <li>Team Head → Sarah Wong</li>
+          <li>Business Line 1st Level → Wealth and Personal Banking</li>
+          <li>Business Line 2nd Level → Payments</li>
+        </ul>
+        <button class="primary" id="confirmOwnership">Confirm and apply</button>
+      </div>`,
+      true);
+  $("confirmOwnership").onclick=applyOwnership;
+}
+function applyOwnership(){
+  setValue("message_owner","Amy Chan","Confirmed","User-confirmed Action Preview",1);
+  setValue("depart_head","David Lee","Confirmed","User-confirmed Action Preview",1);
+  setValue("team_head","Sarah Wong","Confirmed","User-confirmed Action Preview",1);
+  setValue("business_line_1st_level","Wealth and Personal Banking","Confirmed","User-confirmed Action Preview",1);
+  setValue("business_line_2nd_level","Payments","Confirmed","User-confirmed Action Preview",1);
+  currentQuestion="CHANNELS";
+  activeTargets=["channel","priority"];
+  renderForm();
+  bot("Preview applied","The confirmed ownership values have been written to the form.");
+  askChannels();
+  setComposer("Select one of the channel recommendations above.","Selecting an option opens Action Preview directly.","No sample needed",false);
+  setTimeout(jumpCurrent,300);
+}
+
+const channelChoices={
+  "PUSH & SMS & EMAIL":{
+    channel:"PUSH, SMS, EMAIL",
+    priority:"PUSH:0 · SMS:0 · EMAIL:0"
+  },
+  "(PUSH > SMS) & EMAIL":{
+    channel:"PUSH, SMS, EMAIL",
+    priority:"PUSH:0 · SMS:1 · EMAIL:0"
+  },
+  "PUSH > EMAIL > SMS":{
+    channel:"PUSH, EMAIL, SMS",
+    priority:"PUSH:0 · EMAIL:1 · SMS:2"
+  },
+  "(EMAIL > SMS) & PUSH":{
+    channel:"EMAIL, SMS, PUSH",
+    priority:"EMAIL:0 · SMS:1 · PUSH:0"
+  },
+  "PUSH & EMAIL":{
+    channel:"PUSH, EMAIL",
+    priority:"PUSH:0 · EMAIL:0"
+  }
+};
+
+function askChannels(){
+  bot(
+    "Confirm channels and priority",
+    "The selected reference and the new requirement both indicate PUSH, SMS and EMAIL. Choose the final channel combination below. The recommended option will populate only the Channel and Priority fields.",
+    `<b>Helpful hints</b>
+     <ul>
+       <li><b>&amp;</b> means every listed channel is mandatory.</li>
+       <li><b>&gt;</b> means delivery order or fallback sequence.</li>
+       <li>This step does not set Router, Sender, App Name, or any separate Delivery Rule field.</li>
+     </ul>`,
+    `<div class="channel-choice-list">
+       <button class="channel-rule-option recommended" data-channel-rule="PUSH & SMS & EMAIL">
+         PUSH &amp; SMS &amp; EMAIL
+         <span class="recommended-pill">Recommended</span>
+       </button>
+       <button class="channel-rule-option" data-channel-rule="(PUSH > SMS) & EMAIL">(PUSH &gt; SMS) &amp; EMAIL</button>
+       <button class="channel-rule-option" data-channel-rule="PUSH > EMAIL > SMS">PUSH &gt; EMAIL &gt; SMS</button>
+       <button class="channel-rule-option" data-channel-rule="(EMAIL > SMS) & PUSH">(EMAIL &gt; SMS) &amp; PUSH</button>
+       <button class="channel-rule-option" data-channel-rule="PUSH & EMAIL">PUSH &amp; EMAIL</button>
+     </div>`,
+    true
+  );
+
+  document.querySelectorAll("[data-channel-rule]").forEach(button=>{
+    button.onclick=()=>showChannelPreview(button.dataset.channelRule);
+  });
+}
+
+function showChannelPreview(rule){
+  const selected=channelChoices[rule];
+  user(rule);
+  bot(
+    "Action Preview",
+    "The selected recommendation will update only these two Use Case fields:",
+    "",
+    `<div style="width:100%">
+      <ul class="preview-list">
+        <li>Channel → ${selected.channel}</li>
+        <li>Priority → ${selected.priority}</li>
+      </ul>
+      <button class="primary" id="confirmChannels">Confirm and apply</button>
+      <button class="secondary" id="chooseAnotherChannel" style="margin-left:6px">Choose another option</button>
+    </div>`,
+    true
+  );
+
+  $("confirmChannels").onclick=()=>applyChannels(rule);
+  $("chooseAnotherChannel").onclick=()=>{
+    askChannels();
+  };
+}
+function applyChannels(rule="PUSH & SMS & EMAIL"){
+  const selected=channelChoices[rule]||channelChoices["PUSH & SMS & EMAIL"];
+  setValue("channel",selected.channel,"Confirmed","User-confirmed channel recommendation",1);
+  setValue("priority",selected.priority,"Confirmed","User-confirmed channel recommendation",1);
+  populateDependencies();
+  activeTargets=[];
+  currentQuestion="REVIEW";
+  updateDraftGuide("complete");
+  renderForm();
+  bot("Preview applied","Channel and priority were confirmed. Applicable PUSH, SMS and EMAIL dependency fields have been populated.");
+  bot("Review and save the draft","Review the complete use case form and click <b>Save as Draft</b>. Saving confirms all applicable fields and preserves explicit Not Applicable states.");
+  setComposer("Review the form and save the draft.","The guided questions are complete.","No sample needed",false);
+  $("saveDraft").disabled=false;
+}
+function saveDraft(){
+  if(currentQuestion!=="REVIEW")return;
+  confirmAllFields();
+  renderForm();
+  $("saveDraft").disabled=true;
+  $("saveDraft").textContent="Draft saved";
+  $("continueContent").disabled=false;
+  bot("Draft saved","All applicable use case fields are now Confirmed. Fields excluded by channel or fallback rules remain Not Applicable.");
+  bot("Requirement intake complete","You can continue to Content Preparation.");
+  showToast("Applicable fields confirmed; N/A fields preserved.");
+}
+function useSample(){
+  if(assistantMode==="QA"){
+    $("assistantText").value=qaSampleQuestion;
+    $("assistantText").focus();
+    return;
+  }
+
+  if(currentQuestion==="WELCOME")$("assistantText").value=requirement;
+  if(currentQuestion==="OWNERSHIP")$("assistantText").value="Message Owner: Amy Chan; Department Head: David Lee; Team Head: Sarah Wong; Business Line 1st Level: Wealth and Personal Banking; Business Line 2nd Level: Payments.";
+}
+function sendAssistant(){
+  if(assistantMode==="QA"){
+    sendQaQuestion();
+    return;
+  }
+
+  const text=$("assistantText").value.trim();
+  if(!text)return;
+
+  user(text);
+  $("assistantText").value="";
+
+  if(currentQuestion==="WELCOME"){
+    applyRequirementPrefill();
+    renderForm();
+    currentQuestion="REFERENCE";
+    updateDraftGuide("reference");
+    renderHistorical();
+    $("historicalSection").classList.remove("hidden");
+    bot("Requirement understood","I populated only the values extracted from your requirement. No historical reference values have been applied yet.");
+    bot("Related historical use cases found","Select one of the three historical use cases, or start a new use case.");
+    setComposer(
+      "You can ask a question while selecting a reference...",
+      "Choose a reference in the main workspace, or continue asking the Assistant.",
+      "Reference selection required",
+      false
+    );
+    $("historicalSection").scrollIntoView({behavior:"smooth",block:"start"});
+    return;
+  }
+
+  if(currentQuestion==="OWNERSHIP"){
+    showOwnershipPreview();
+    setComposer(
+      "You can revise your answer or ask a question...",
+      "Confirm the Action Preview when the values are correct.",
+      "Preview pending",
+      false
+    );
+    return;
+  }
+
+  if(currentQuestion==="CHANNELS"){
+    const normalized=text.toUpperCase().replace(/\s+/g," ").trim();
+    const matchedRule=Object.keys(channelChoices).find(rule=>
+      rule.toUpperCase()===normalized
+    );
+
+    if(matchedRule){
+      showChannelPreview(matchedRule);
+    }else{
+      bot(
+        "Channel answer received",
+        "Use one of the recommended channel combinations shown above, or type the exact rule such as <b>PUSH &amp; SMS &amp; EMAIL</b>.",
+        "<b>Current form fields</b><br>This question updates Channel and Priority only.",
+        "",
+        true
+      );
+    }
+    return;
+  }
+
+  if(currentQuestion==="REFERENCE"){
+    bot(
+      "Reference selection is still pending",
+      "You can continue asking questions, but reference-prefilled values will only be applied after you select a historical use case or choose Start new use case.",
+      "",
+      "",
+      true
+    );
+    return;
+  }
+
+  if(currentQuestion==="REVIEW"){
+    bot(
+      "Draft review",
+      "The guided questions are complete. You can manually edit any field, open a field Help button, or click <b>Save as Draft</b> to confirm the complete form.",
+      "",
+      "",
+      true
+    );
+    return;
+  }
+
+  const stageGuidance={
+    2:"Review the generated content, select similar templates and capture testing evidence in Content Preparation.",
+    3:"Start validation to check each AC against the captured screenshots.",
+    4:"Enter the IT reviewer, select the review result and add feedback when the review does not pass.",
+    5:"The package is ready for UAT promotion."
+  };
+
+  bot(
+    "Assistant response",
+    stageGuidance[currentStage] || "Your message has been received. Continue with the current workflow action shown in the main workspace.",
+    "",
+    "",
+    true
+  );
+}
+
+function renderSummary(){
+  const items=[
+    ["Use Case",formState.use_case_name.value],
+    ["Trigger",formState.message_trigger_conditions.value],
+    ["Channels",formState.channel.value],
+    ["Languages","English · Simplified Chinese · Traditional Chinese"],
+    ["Priority","0 for all channels"],
+    ["Delivery Mode",formState.delivery_mode.value],
+    ["Source System",formState.source_system.value],
+    ["Reference",selectedReference>=0?historicalCases[selectedReference].name:"New use case"]
+  ];
+  $("summaryGrid").innerHTML=items.map(([label,value])=>`<div class="summary-item"><span>${label}</span><b>${value}</b></div>`).join("");
+}
+function renderChannelTabs(){
+  $("channelTabs").innerHTML=["PUSH","EMAIL","SMS"].map(channel=>`
+    <button class="channel-tab ${channel===activeChannel?"active":""}" data-channel="${channel}">
+      ${channel==="PUSH"?"Push Messages":channel==="EMAIL"?"Email Messages":"SMS Messages"}
+    </button>`).join("");
+  document.querySelectorAll(".channel-tab").forEach(button=>button.onclick=()=>{
+    activeChannel=button.dataset.channel;
+    renderChannelTabs();
+    renderTemplates();
+  });
+}
+function renderTemplates(){
+  const config=templates[activeChannel];
+  $("templateChannel").innerHTML=`
+    <div class="template-toolbar">
+      <div><h4>${activeChannel} Messages</h4><p>Review and edit generated copy for every required language.</p></div>
+      <span class="badge green">3 languages generated</span>
+    </div>
+    <div class="language-grid">
+      ${Object.entries(config.languages).map(([language,copy])=>`
+        <article class="language-card">
+          <span class="language-tag">${language}</span>
+          <label>CopyTitle</label><input value="${escapeHtml(copy.title)}">
+          <label>Copy</label><textarea>${escapeHtml(copy.body)}</textarea>
+          <div class="template-ref" data-ref="${activeChannel}-${language}">AI generated</div>
+        </article>`).join("")}
+    </div>`;
+}
+const templateReferenceOptions={
+  PUSH:[
+    "Debit Card Purchase Confirmation v3",
+    "Card Payment Alert Standard",
+    "Real-time Payment Notification"
+  ],
+  EMAIL:[
+    "Payment Confirmation Email v5",
+    "Debit Card Transaction Receipt",
+    "Secure Payment Completion Notice"
+  ],
+  SMS:[
+    "Debit Card SMS Alert v4",
+    "Transaction Confirmation Short Copy",
+    "Payment Completed SMS Standard"
+  ]
+};
+
+function renderTemplateReferenceRows(){
+  const languages=["Traditional Chinese","English","Simplified Chinese"];
+  $("templateReferenceRows").innerHTML=["PUSH","EMAIL","SMS"].map(channel=>`
+    <div class="template-product-row" data-template-row="${channel}">
+      <div>
+        <div class="template-channel">
+          <span class="channel-marker">${channel.slice(0,1)}</span>
+          <span>${channel} Messages</span>
+        </div>
+        <select data-template-select="${channel}" ${templateReferencesAdded?"disabled":""}>
+          ${templateReferenceOptions[channel].map((name,index)=>`
+            <option ${index===0?"selected":""}>${name}</option>`).join("")}
+        </select>
+      </div>
+      <div>
+        <div class="language-pills">
+          ${languages.map(language=>`<span class="language-pill">${language}</span>`).join("")}
+        </div>
+      </div>
+      <div data-evidence-cell="${channel}">
+        ${renderEvidenceCell(channel)}
+      </div>
+      <div class="template-action-state">
+        <span class="template-state-pill ${evidenceCaptured?"captured":templateReferencesAdded?"selected":""}">
+          ${evidenceCaptured?"Captured":templateReferencesAdded?"Selected":"Not added"}
+        </span>
+      </div>
+    </div>`).join("");
+}
+
+function renderEvidenceCell(channel){
+  if(!evidenceCaptured){
+    return `<div class="evidence-empty">
+      <div><b>No evidence captured</b><br>Use Auto evidence capture after adding similar templates.</div>
+    </div>`;
+  }
+
+  const languageFiles=[
+    ["English","testing_screenshot.jpg"],
+    ["Simplified Chinese","testing_screenshot.jpg"],
+    ["Traditional Chinese","testing_screenshot.jpg"]
+  ];
+
+  return `<div class="evidence-files">
+    ${languageFiles.map(([language,file])=>`
+      <div class="evidence-file">
+        <span class="evidence-file-icon">IMG</span>
+        <div><b>${file}</b><span>${channel} · ${language}</span></div>
+      </div>`).join("")}
+  </div>`;
+}
+
+function confirmContent(){
+  if(contentConfirmed)return;
+  contentConfirmed=true;
+  $("confirmContent").disabled=true;
+  $("confirmContent").textContent="Content confirmed";
+  $("templateWorkbench").classList.remove("hidden");
+  renderTemplateReferenceRows();
+
+  bot("Generated content confirmed","The AI-generated PUSH, EMAIL and SMS copies are confirmed.");
+  bot(
+    "Select similar templates",
+    "I found three similar templates for each channel. Review the preselected references and select <b>Add similar templates</b>.",
+    "<b>Helpful hint</b><br>The Testing Evidence column remains empty until Auto evidence capture is started.",
+    "",
+    true
+  );
+
+  $("templateWorkbench").scrollIntoView({behavior:"smooth",block:"start"});
+}
+
+function applySimilarTemplate(){
+  if(templateReferencesAdded)return;
+  templateReferencesAdded=true;
+  renderTemplateReferenceRows();
+
+  $("applySimilar").disabled=true;
+  $("applySimilar").textContent="Templates added";
+  $("captureAll").disabled=false;
+
+  bot(
+    "Similar templates selected",
+    "The recommended PUSH, EMAIL and SMS historical templates have been added as references.",
+    "<b>Next step</b><br>Testing Evidence is still empty. Select Auto evidence capture to generate the screenshots.",
+    "",
+    true
+  );
+
+  showToast("3 similar templates added.");
+}
+
+function captureEvidence(){
+  if(!templateReferencesAdded||evidenceCaptured)return;
+
+  $("captureAll").disabled=true;
+  $("captureAll").textContent="Capturing...";
+
+  setTimeout(()=>{
+    evidenceCaptured=true;
+    renderTemplateReferenceRows();
+
+    $("captureAll").textContent="Evidence captured";
+    $("startAC").disabled=false;
+
+    bot(
+      "Testing evidence captured",
+      "Nine screenshots were captured automatically for PUSH, EMAIL and SMS across English, Simplified Chinese and Traditional Chinese.",
+      "<b>Files attached</b><br>Each evidence item is stored as testing_screenshot.jpg.",
+      "",
+      true
+    );
+    bot("Ready for AC validation","The content, similar-template references and evidence package are complete. Start AC Validation when ready.");
+    showToast("9 testing screenshots captured.");
+  },900);
+}
+
+function renderAC(){
+  $("acList").innerHTML=acTexts.map((text,index)=>`
+    <div class="ac-row">
+      <div class="ac-id">AC${index+1}</div>
+      <div class="ac-text">${text}</div>
+      <div class="ac-evidence">testing_screenshot.jpg · ${["PUSH","SMS","EMAIL"][Math.floor(index/3)]}</div>
+      <div class="ac-result" id="acResult${index}">Pending</div>
+    </div>`).join("");
+}
+function runValidation(){
+  if(validationRunning)return;
+  validationRunning=true;
+  $("startValidation").disabled=true;
+  let index=0;
+  const timer=setInterval(()=>{
+    if(index>=acTexts.length){
+      clearInterval(timer);
+      $("continueIT").disabled=false;
+      bot("Validation complete","All 9 acceptance criteria passed against the captured screenshots.");
+      showToast("9 / 9 AC passed.");
+      return;
+    }
+    const result=$(`acResult${index}`);
+    result.textContent="Checking";
+    result.classList.add("running");
+    setTimeout(()=>{
+      result.textContent="PASS";
+      result.classList.remove("running");
+      result.classList.add("pass");
+      index+=1;
+      $("acPassed").textContent=String(index);
+      $("acPending").textContent=String(acTexts.length-index);
+    },230);
+  },390);
+}
+
+function submitITReview(){
+  const reviewer=$("itReviewer").value.trim();
+  const decision=$("itDecision").value;
+  const feedback=$("itFeedback").value.trim();
+  if(!reviewer){showToast("Enter the reviewer name.");return;}
+  if(!decision){showToast("Select the review result.");return;}
+  if(decision==="FAIL"&&!feedback){showToast("Feedback is required when the review does not pass.");return;}
+  if(decision==="FAIL"){
+    bot("IT changes required",`Reviewer <b>${escapeHtml(reviewer)}</b> did not approve the use case. Feedback: ${escapeHtml(feedback)}`);
+    showToast("IT feedback recorded. The case remains in IT Review.");
+    return;
+  }
+  bot("IT Review approved",`Reviewer <b>${escapeHtml(reviewer)}</b> approved the use case.`);
+  setStage(5);
+}
+function setStage(stage){
+  currentStage=stage;
+  document.querySelectorAll(".stage-panel").forEach(panel=>panel.classList.add("hidden"));
+  $(`stage${stage}`).classList.remove("hidden");
+  const names=["Drafted","Content Preparation","Generate AC","IT Review","UAT"];
+  $("stageStatus").textContent=names[stage-1];
+  document.querySelectorAll(".step").forEach(step=>{
+    const number=Number(step.dataset.stage);
+    step.classList.toggle("active",number===stage);
+    step.classList.toggle("done",number<stage);
+  });
+  window.scrollTo({top:0,behavior:"smooth"});
+  if(stage===2){
+    renderSummary();renderChannelTabs();renderTemplates();
+    bot("Content generated","I generated PUSH, EMAIL and SMS content in English, Simplified Chinese and Traditional Chinese.");
+    bot("Review generated content","Please review and edit the copy if you want. When the content is ready, select <b>Confirm generated content</b>.");
+  }
+  if(stage===3){
+    renderAC();
+    bot("Acceptance Criteria generated","Nine ACs were generated from the three channels and three required languages. Start validation to check them against the captured screenshots.");
+  }
+  if(stage===4){
+    bot("IT Review ready","AC validation is complete. Enter the reviewer, select whether the review passed, and provide feedback only when it did not pass.");
+  }
+  if(stage===5)bot("Ready for UAT","Requirement intake, content, evidence, AC validation and IT review are complete.");
+}
+
+function toggleAssistant(){
+  assistantOpen=!assistantOpen;
+  $("assistantPanel").classList.toggle("closed",!assistantOpen);
+  if(assistantOpen)scrollAssistant();
+}
+function setupAssistantLauncher(){
+  const launcher=$("assistantLauncher");let drag=null;
+  launcher.addEventListener("pointerdown",event=>{
+    const rect=launcher.getBoundingClientRect();
+    drag={id:event.pointerId,dx:event.clientX-rect.left,dy:event.clientY-rect.top,moved:false,sx:event.clientX,sy:event.clientY};
+    launcher.setPointerCapture(event.pointerId);
+  });
+  launcher.addEventListener("pointermove",event=>{
+    if(!drag||drag.id!==event.pointerId)return;
+    if(Math.hypot(event.clientX-drag.sx,event.clientY-drag.sy)>6)drag.moved=true;
+    if(!drag.moved)return;
+    launcher.classList.add("dragging");
+    launcher.style.left=Math.max(8,Math.min(innerWidth-66,event.clientX-drag.dx))+"px";
+    launcher.style.top=Math.max(8,Math.min(innerHeight-66,event.clientY-drag.dy))+"px";
+    launcher.style.right="auto";launcher.style.bottom="auto";
+  });
+  launcher.addEventListener("pointerup",()=>{
+    if(!drag)return;
+    const moved=drag.moved;drag=null;launcher.classList.remove("dragging");
+    if(!moved)toggleAssistant();
+  });
+}
+function setupAssistantDrag(){
+  const panel=$("assistantPanel"),handle=$("assistantDragHandle");let drag=null;
+  handle.addEventListener("pointerdown",event=>{
+    if(event.target.closest("button"))return;
+    const rect=panel.getBoundingClientRect();
+    drag={id:event.pointerId,dx:event.clientX-rect.left,dy:event.clientY-rect.top};
+    panel.style.left=rect.left+"px";panel.style.top=rect.top+"px";panel.style.right="auto";panel.style.bottom="auto";panel.style.height=rect.height+"px";
+    handle.setPointerCapture(event.pointerId);
+  });
+  handle.addEventListener("pointermove",event=>{
+    if(!drag||drag.id!==event.pointerId)return;
+    panel.style.left=Math.max(8,Math.min(innerWidth-panel.offsetWidth-8,event.clientX-drag.dx))+"px";
+    panel.style.top=Math.max(8,Math.min(innerHeight-panel.offsetHeight-8,event.clientY-drag.dy))+"px";
+  });
+  handle.addEventListener("pointerup",()=>drag=null);
+}
+
+// Initial state
+renderForm();
+updateDraftGuide("start");
+bot("Welcome to MDC Messaging Platform","Describe the messaging requirement you want to create. You can use the prepared sample for this demo.","<b>Helpful hint</b><br>Include the trigger, target customer, channels and required languages.");
+
+$("guidedTab").onclick=()=>switchAssistantMode("GUIDED");
+$("qaTab").onclick=()=>switchAssistantMode("QA");
+$("jumpCurrent").onclick=jumpCurrent;
+$("sampleAnswer").onclick=useSample;
+$("assistantSend").onclick=sendAssistant;
+$("startNewUseCase").onclick=startNew;
+$("saveDraft").onclick=saveDraft;
+$("continueContent").onclick=()=>setStage(2);
+$("confirmContent").onclick=confirmContent;
+$("applySimilar").onclick=applySimilarTemplate;
+$("captureAll").onclick=captureEvidence;
+$("startAC").onclick=()=>setStage(3);
+$("startValidation").onclick=runValidation;
+$("continueIT").onclick=()=>setStage(4);
+$("itDecision").onchange=()=>$("feedbackWrap").classList.toggle("show",$("itDecision").value==="FAIL");
+$("sampleIT").onclick=()=>{$("itReviewer").value="Alex Wong";$("itDecision").value="PASS";$("feedbackWrap").classList.remove("show");};
+$("submitITReview").onclick=submitITReview;
+$("promoteUAT").onclick=()=>$("modalBg").classList.add("show");
+$("closeModal").onclick=()=>$("modalBg").classList.remove("show");
+document.querySelectorAll("[data-go]").forEach(button=>button.onclick=()=>setStage(Number(button.dataset.go)));
+document.querySelectorAll(".step").forEach(step=>step.onclick=()=>{const number=Number(step.dataset.stage);if(number<=currentStage)setStage(number);});
+setupAssistantLauncher();
+setupAssistantDrag();
+</script>
+</body>
+</html>
