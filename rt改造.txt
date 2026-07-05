@@ -1,0 +1,27 @@
+请开始本项目的多版本恢复工作。
+
+请先按顺序读取以下文件，建立必要的项目背景和范围认知：
+
+1. `00_README_执行总览_v2.md`
+2. `inputs/business-rules.md`
+3. `inputs/recovery-notes.md`
+4. `08_项目范围矩阵_v2.md`
+
+这些文件只用于理解项目目标、最终业务规则和范围边界，不代表可以开始自由修改代码。
+
+读取完成后，请严格执行：
+
+`phase-prompts/01_Phase1_冻结现场与机械化盘点_v2.md`
+
+本阶段要求：
+
+* 只能进行只读盘点；
+* 不得修改 `candidates/` 下任何代码；
+* 不得开始合并；
+* 不得选择最终实现；
+* 不得深入分析或迁移完整 MDC Messaging SDLC 的静态页面；
+* 正式恢复范围只有 Requirement、Historical Use Case、AI-Guided Form、AC 和 Validation；
+* 完成 Phase 1 要求的全部报告后，严格按照 Phase 1 Result 格式汇报；
+* 完成后立即停止，不得自动进入 Phase 2。
+
+为节省 token，请直接读取工作区中的文件，不要在聊天中复述完整 README、Business Rules 或源码。
