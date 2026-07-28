@@ -24,6 +24,10 @@
 | D18 | blocked 由后端强制，不能只前端隐藏 | CONFIRMED |
 | D19 | 真实模式必须显式注入 LLM/Gateway，不回退 Mock | CONFIRMED |
 | D20 | 当前不用 LangGraph | CONFIRMED FOR POC |
+| D21 | 真实 `field_catalog_enrich.csv` 是语义主资料 | CONFIRMED |
+| D22 | Mapping 由 MCP 自动读取，只作实际物理 schema 和跨月 drift 校验 | CONFIRMED |
+| D23 | 生产 Policy/RBAC 延后到 I6，不阻塞 I1；I1 使用 Catalog 的 access/sensitivity 和现有技术控制 | CONFIRMED FOR POC |
+| D24 | `failure_rate.v1` 定义已经确认；I4 只做生产报表对账，不重新询问或定义公式 | CONFIRMED |
 
 ## 内网待确认
 
@@ -32,7 +36,7 @@
 | O01 | 真实默认时间字段 | 所有查询 | Mapping + 字段 owner |
 | O02 | 各月 Mapping 是否一致 | 跨月查询 | 多月 Mapping diff |
 | O03 | 真实 Catalog 字段语义 | Semantic Model | 原始 CSV + owner |
-| O04 | 生产 blocked/review 字段 | 安全上线 | 数据分类/RBAC |
+| O04 | 生产 Policy/RBAC | 仅阻塞 I6 production-ready，不阻塞 I1～I5 POC | 数据分类、角色/字段/Index 权限 |
 | O05 | LLM provider/model/helper | 真实 Intent/Summary | 参考项目与平台规范 |
 | O06 | MCP Tool 名称/schema | Gateway | Tool schema/样例 |
 | O07 | MCP partial error 结构 | Data QA | timeout/shard/msearch 样例 |
@@ -49,4 +53,6 @@
 - Metric 定义变化必须新增版本；
 - Policy 变化需要安全评审；
 - Mapping drift 不得通过强制 cast 静默吞掉；
+- Catalog 中 `access=allowed` 只代表当前 POC 可用，不等于生产 RBAC 已批准；
+- I1～I5 必须持续标记 `production_policy_rbac_status=pending`；
 - 未决项在有证据前不能写成生产事实。

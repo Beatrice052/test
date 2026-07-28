@@ -17,8 +17,8 @@
 - [ ] 找到真实 Field Catalog 及版本/owner
 - [ ] 获取真实 Index inventory 和多月 Mapping 计划
 - [ ] 获取 MCP 实际 Tool schema/错误样例
-- [ ] 找到报表口径和对账 owner
-- [ ] 找到生产 Policy/RBAC owner
+- [ ] 确认 `failure_rate.v1` 已冻结，并记录 I4 可用的脱敏报表对账来源
+- [ ] 记录生产 Policy/RBAC 是否可得；缺失不阻塞 I1，但必须留到 I6
 - [ ] 记录 carrier code 资料是否存在
 - [ ] 列明全部缺失项和停止条件
 
@@ -27,18 +27,21 @@ Gate：项目负责人确认认知报告。本阶段不得接生产调用。
 ## I1：真实 Semantic Model
 
 - [ ] 对真实 CSV 做只读 schema/重复/编码/敏感内容检查
+- [ ] 将真实 Catalog 作为语义主资料，记录版本/hash
 - [ ] 验证 `candidate_role` 仍被彻底忽略
-- [ ] 取得代表性及变更月份 Mapping
+- [ ] 只用 MCP `list_indices/get_mapping` 自动取得相关月份 Mapping
 - [ ] 生成字段新增/删除/类型/子字段/date format drift 报告
 - [ ] Mapping-only 和未分类字段默认 review
-- [ ] 完成生产 blocked/review/allowed 审批
+- [ ] POC 按 Catalog 的 access/sensitivity 执行 blocked/review/allowed
+- [ ] 标记 `production_policy_rbac_status=pending`
 - [ ] 确认真实时间字段和聚合能力
 - [ ] 确认 `status` 与 `statusCode/status_code` 不混用
 - [ ] 编译真实模型并生成 Import Report/version/hash
 - [ ] LLM/Resolver/Validator 共用同一模型
 - [ ] 单元、安全和跨月 drift 测试通过
 
-Gate：无未解释 fatal conflict；allowed 字段都有业务与安全依据。
+Gate：无未解释 fatal conflict；Catalog access 分类已被严格执行；生产 Policy/RBAC
+明确保持 pending，不作为 I1 阻塞条件。
 
 ## I2：真实 LLM
 
@@ -105,6 +108,8 @@ Gate：无任何由 LLM 猜测的编码；unknown 可观察且不误分成功/�
 
 ## I6：上线验收
 
+- [ ] 取得并批准生产 Policy/RBAC owner、版本和生效范围
+- [ ] 完成字段 allowed/blocked/review 的生产安全复核
 - [ ] 身份认证、角色和 Index/字段权限
 - [ ] secret/TLS/证书轮换
 - [ ] Session 存储、TTL、隔离和清理
@@ -155,6 +160,7 @@ Gate：只有完成本阶段才可称 production-ready。
 ```powershell
 python -m pytest -q
 python -m ruff check app tests
+python -m ruff format --check app tests
 python -m pyright app tests
 node --check app/static/js/app.js
 ```

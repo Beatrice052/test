@@ -5,6 +5,7 @@
 | 顺序 | 文档 | 用途 |
 |---:|---|---|
 | 0 | `INTRANET_NEW_SESSION_PROMPT.md` | 新 Session 可直接复制的启动提示词 |
+| 0.1 | `INTRANET_PHASE_EXECUTION_PROMPTS.md` | I1～I6 每阶段可直接复制的执行提示词 |
 | 1 | `INTRANET_START_HERE.md` | 接手入口、阶段顺序和禁止事项 |
 | 2 | `docs/PROJECT_BACKGROUND.md` | 业务背景、已确认范围和未完成项 |
 | 3 | `docs/TECHNICAL_EXECUTION_SPEC.md` | 完整技术执行规格 |
@@ -33,9 +34,10 @@
 | 文档 | 作用 |
 |---|---|
 | `INTRANET_NEW_SESSION_PROMPT.md` | 内网新 Session 启动提示词 |
+| `INTRANET_PHASE_EXECUTION_PROMPTS.md` | I1～I6 分阶段新 Session 提示词 |
 | `INTRANET_START_HERE.md` | 内网入口 |
 | `docs/INTRANET_AI_HANDOFF.md` | 接棒运行手册 |
-| `docs/REAL_SEMANTIC_ONBOARDING.md` | 真实 Catalog、多月 Mapping、Policy |
+| `docs/REAL_SEMANTIC_ONBOARDING.md` | Catalog 主资料与 MCP Mapping 物理校验 |
 | `docs/REAL_LLM_INTEGRATION.md` | 学习内网项目并接真实模型 |
 | `docs/REAL_OPENSEARCH_MCP_INTEGRATION.md` | 真实 MCP 窄能力接入 |
 | `docs/INTRANET_EXECUTION_CHECKLIST.md` | 分阶段 Gate 和报告模板 |

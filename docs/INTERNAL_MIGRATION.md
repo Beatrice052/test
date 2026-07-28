@@ -10,7 +10,7 @@
 迁移目标是替换四类依赖：
 
 ```text
-Mock semantic sources → 真实 Catalog/Mapping/Metric/Policy
+Mock semantic sources → 真实 Catalog + MCP Mapping 校验 + Metric/POC Policy
 MockLLMClient          → StructuredLLMClient + 内网批准 transport
 MockOpenSearchGateway  → MCPOpenSearchGateway + 内网批准 client
 开发部署配置            → 内网认证、Session、审计、限流和运维
@@ -25,6 +25,7 @@ Agent 主流程、API 契约和前端结构不应因此重写。
 ```powershell
 python -m pytest -q
 python -m ruff check app tests
+python -m ruff format --check app tests
 python -m pyright app tests
 node --check app/static/js/app.js
 ```
@@ -67,15 +68,16 @@ I6  安全/故障/性能/业务验收
 按 [真实语义资料接入](REAL_SEMANTIC_ONBOARDING.md)：
 
 1. 只读检查真实 `field_catalog_enrich.csv`；
-2. 通过实际 MCP 获取多月 Mapping；
+2. 通过 MCP `list_indices/get_mapping` 自动获取多月 Mapping 作物理校验；
 3. 比较字段/类型/keyword/date/object drift；
 4. Mapping-only 和未分类字段默认 `review_required`；
-5. 编译 Metric、Value Dictionary 和生产 Policy；
+5. 编译 Metric、Value Dictionary、Catalog access 和现有技术 Policy；
 6. 生成 Import Report、model version/hash；
 7. 让 LLM、Resolver 和 Validator 使用同一模型；
 8. 跑隔离、安全、跨月和业务测试。
 
 `candidate_role` 即使在真实 CSV 中存在也继续彻底忽略。
+生产 Policy/RBAC 延后到 I6，不阻塞本阶段；I1～I5 标记 pending。
 
 ## 5. 真实 LLM
 

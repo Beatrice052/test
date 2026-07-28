@@ -288,13 +288,16 @@ JavaScript syntax passed
 
 ```text
 I0  研读项目背景/技术方案，盘点真实来源
-I1  真实 Catalog + 多月 Mapping + Policy
+I1  真实 Catalog + MCP Mapping 校验 + POC access
 I2  真实 LLM transport（参考内网已批准项目）
 I3  真实 OpenSearch MCP 五项窄能力
 I4  Failure Rate 与真实报表对账
 I5  三运营商 statusCode 版本化指标
 I6  认证、安全、故障、性能、业务验收
 ```
+
+生产 Policy/RBAC 延后到 I6，不阻塞 I1～I5；这些阶段使用 Catalog 的
+access/sensitivity 和现有技术 Policy，并明确标记 pending。
 
 内网只应替换/扩展：
 

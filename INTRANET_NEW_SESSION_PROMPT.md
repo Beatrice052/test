@@ -58,9 +58,10 @@ MI_ChatBI
 11. `docs/REAL_LLM_INTEGRATION.md`
 12. `docs/REAL_OPENSEARCH_MCP_INTEGRATION.md`
 13. `docs/INTRANET_EXECUTION_CHECKLIST.md`
-14. `docs/API.md`
-15. `docs/INTERNAL_MIGRATION.md`
-16. `FINAL_EXTERNAL_ACCEPTANCE_REPORT.md`
+14. `INTRANET_PHASE_EXECUTION_PROMPTS.md`
+15. `docs/API.md`
+16. `docs/INTERNAL_MIGRATION.md`
+17. `FINAL_EXTERNAL_ACCEPTANCE_REPORT.md`
 
 然后重点阅读以下代码和测试：
 
@@ -245,8 +246,8 @@ carrier_failure_rate.v1
 7. 月份之间的 Mapping drift；
 8. OpenSearch MCP 实际 Tool schema；
 9. Count、Search、Msearch、ListIndex 和 IndexMapping 的成功及错误响应；
-10. 当前银行报表指标定义和可对账结果；
-11. 生产字段安全分类和 RBAC 资料；
+10. I4 可使用的生产报表脱敏对账结果；`failure_rate.v1` 定义已经确认；
+11. 生产字段安全分类和 RBAC 资料如暂缺，记录为 I6 待办，不阻塞 I1；
 12. 中国移动、电信、联通的 statusCode 编码规则。
 
 找不到的资料必须标记为“待确认”或“blocked”，不得自行编造。
@@ -300,15 +301,21 @@ blocked、review_required 和 candidate_role 不得进入 LLM Prompt。
 
 使用真实 `field_catalog_enrich.csv` 时：
 
+- Catalog 是语义主资料；
+- Mapping 通过 MCP `list_indices/get_mapping` 自动读取，只作物理 schema 校验；
 - candidate_role 必须继续彻底忽略；
 - Mapping-only 字段默认 review_required；
-- 未完成安全分类的字段默认 review_required；
+- Catalog 缺少 access/sensitivity 的字段默认 review_required；
 - blocked 字段不得进入候选、Prompt、DSL、结果或 Evidence；
 - Catalog-only 字段不得查询；
 - Catalog 和 Mapping 类型冲突时停止相关能力；
 - 必须比较多个相关月份的 Mapping；
 - 不能只检查 2026 年 7 月；
 - 不得使用 script 或 runtime_mappings 掩盖 Mapping drift。
+
+生产 Policy/RBAC 延后到 I6，不阻塞 I1～I5。POC 使用 Catalog 的
+access/sensitivity 和现有技术 Policy，并标记
+`production_policy_rbac_status=pending`。
 
 真实 LLM、Resolver 和 Validator 必须共享同一个 `semantic_compilation` 和模型
 版本。
@@ -354,7 +361,7 @@ blocked、review_required 和 candidate_role 不得进入 LLM Prompt。
 
 ```text
 I0：项目研读与真实资料盘点
-I1：真实 Catalog、多月 Mapping 和生产 Policy
+I1：真实 Catalog、MCP Mapping 校验和 POC access
 I2：真实 LLM Transport
 I3：真实 OpenSearch MCP Gateway
 I4：Failure Rate 与真实报表对账

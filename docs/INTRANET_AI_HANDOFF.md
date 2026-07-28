@@ -48,11 +48,11 @@ Mock-first 全链路和真实依赖注入边界；内网任务不是重写系统
 | 资料 | 最低证据 | 不得替代为 |
 |---|---|---|
 | 内网 LLM 调用 | 已批准项目代码、平台说明、配置 owner | 记忆中的 SDK 用法 |
-| Field Catalog | 原始 CSV、版本/日期、字段 owner | Mock CSV 或字段名猜测 |
-| Mapping | MCP 实际返回，覆盖代表月份 | 只看某一个 July 样例 |
+| Field Catalog | 语义主资料：原始 CSV、版本/日期、access/sensitivity | Mock CSV 或字段名猜测 |
+| Mapping | MCP 自动返回的物理 schema，覆盖代表月份 | 人工重复维护的第二份语义表 |
 | MCP Tool | 实际 tool schema、成功/错误样例 | 自造工具名或参数 |
-| Failure Rate | 报表定义和可对账结果 | 图片的大概含义 |
-| 生产 Policy | 安全分级、RBAC、Index 权限 | 外网 Mock blocked 清单 |
+| Failure Rate | v1 定义已经冻结；I4 只找脱敏对账结果 | 重新询问或改写 v1 |
+| 生产 Policy | 延后到 I6；I1～I5 明确标记 pending | 把 POC access 冒充生产批准 |
 | Carrier code | 三运营商版本化码表和生效期 | LLM 常识或网上码表 |
 
 清单中记录来源路径时不要把 token、内网 URL、证书内容或生产数据复制进仓库。
@@ -85,7 +85,7 @@ Mock-first 全链路和真实依赖注入边界；内网任务不是重写系统
 
 - 同一字段在 Catalog 和 Mapping 类型冲突；
 - 月份间同名字段类型或聚合能力不一致；
-- 生产字段尚无安全分类；
+- Catalog 字段缺少 access/sensitivity 且无法安全设为 review_required；
 - LLM 平台不支持可靠的 structured output，且没有批准的校验/重试方案；
 - MCP 只提供 Generic API 或会绕过 Index/字段 allowlist；
 - 报表与 `failure_rate.v1` 对账不一致；
@@ -104,8 +104,9 @@ Mock-first 全链路和真实依赖注入边界；内网任务不是重写系统
 
 ### I1：真实 Semantic Model
 
-导入真实 Catalog；通过 MCP 获取多月 Mapping；先把未知字段设为
-`review_required`；生成 Import Report；解决重复、缺失、类型冲突和指标绑定。
+以真实 Catalog 为语义主资料；仅通过 MCP `list_indices/get_mapping` 自动获取
+多月 Mapping 做物理 schema/drift 校验；未知字段设为 `review_required`；生成
+Import Report；解决重复、缺失、类型冲突和指标绑定。生产 Policy/RBAC 不阻塞 I1。
 详见 [真实语义资料接入](REAL_SEMANTIC_ONBOARDING.md)。
 
 ### I2：真实 LLM
@@ -130,7 +131,8 @@ Mock-first 全链路和真实依赖注入边界；内网任务不是重写系统
 
 ### I6：上线门禁
 
-完成认证/RBAC、日志脱敏、故障演练、限流、性能、安全扫描和业务验收。只有
+在本阶段补齐生产 Policy/RBAC，并完成认证、日志脱敏、故障演练、限流、性能、
+安全扫描和业务验收。只有
 I0～I6 的证据齐全，才可以将环境状态描述为 production-ready。
 
 详细勾选项见 [内网执行清单](INTRANET_EXECUTION_CHECKLIST.md)。

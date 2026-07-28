@@ -18,6 +18,8 @@ Read these files completely before taking implementation actions:
    - `docs/REAL_SEMANTIC_ONBOARDING.md`
    - `docs/REAL_OPENSEARCH_MCP_INTEGRATION.md`
 8. `docs/INTRANET_EXECUTION_CHECKLIST.md`
+9. `INTRANET_PHASE_EXECUTION_PROMPTS.md` for the phase that has been explicitly
+   approved by the project owner
 
 After reading, produce an orientation report listing:
 
@@ -72,6 +74,10 @@ status codes or metric definitions.
 - Blocked fields never enter candidate retrieval, prompts, queries, results,
   charts, summaries or Evidence.
 - Mapping-only production fields default to `review_required`.
+- The real Catalog is the semantic source of truth; MCP Mapping is automatic
+  physical-schema validation, not a second manually maintained semantic table.
+- Production Policy/RBAC is deferred to I6 and must remain explicitly pending
+  throughout I1-I5.
 - Never commit real customer data, credentials, tokens, internal URLs, private
   certificates, raw LLM prompts containing sensitive values or production query
   result dumps.

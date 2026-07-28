@@ -6,6 +6,8 @@
 
 新建内网 AI Session 时，可直接复制
 [`INTRANET_NEW_SESSION_PROMPT.md`](INTRANET_NEW_SESSION_PROMPT.md) 的完整提示词。
+I0 完成后，I1～I6 分阶段新 Session 使用
+[`INTRANET_PHASE_EXECUTION_PROMPTS.md`](INTRANET_PHASE_EXECUTION_PROMPTS.md)。
 
 不要打开代码后立即替换几个路径就运行。内网接入顺序错误会造成字段泄露、指标
 口径错误或把 Mock 行为误当生产行为。
@@ -47,8 +49,8 @@
 - 真实 OpenSearch 月度 Index 列表；
 - 至少一个代表性月份的真实 Mapping，最好覆盖多个有 Mapping 变更的月份；
 - OpenSearch MCP 已暴露 Tool 的真实 schema 和返回样例；
-- 当前银行报表口径或可对账结果；
-- 生产字段安全分级、角色和 Index 权限资料；
+- I4 可使用的生产报表脱敏对账结果；`failure_rate.v1` 定义不再重新询问；
+- 生产字段安全分级、角色和 Index 权限资料如暂缺，记录为 I6 待办；
 - 中国移动/电信/联通 `statusCode/status_code` 解析规则。
 
 如果某项不存在，在报告中标记 blocked/待确认，不得伪造。
@@ -59,13 +61,16 @@
 
 ```text
 Phase I0  内网认知与资料盘点
-Phase I1  真实 Catalog + 多月 Mapping + Policy 编译
+Phase I1  真实 Catalog + MCP Mapping 校验 + POC access 编译
 Phase I2  真实 LLM transport
 Phase I3  真实 OpenSearch MCP Gateway
 Phase I4  指标与真实报表对账
 Phase I5  Carrier statusCode 新指标
 Phase I6  安全、故障、性能和业务验收
 ```
+
+生产 Policy/RBAC 延后到 I6，不阻塞 I1。I1～I5 使用 Catalog 的
+access/sensitivity 和现有技术安全控制，并明确标记 pending。
 
 不能把 I1～I6 一次性做完后再报告。每阶段先跑测试、汇报、确认，再进入下一阶段。
 
@@ -114,7 +119,7 @@ CHATBI_SEMANTIC_MODEL_VERSION=<approved version>
 - 把真实完整 Catalog 或 Mapping 不加过滤地放入 Prompt；
 - 让 LLM 自由调用 MCP Tool；
 - 使用 Generic OpenSearch API；
-- 把生产字段默认当 allowed；
+- 绕过 Catalog access/sensitivity 或把 Mapping-only 字段默认当 allowed；
 - 在前端计算 Failure Rate；
 - 将真实数据、token、URL、证书或客户信息提交到 Git；
 - 为了让测试通过而硬编码固定 Mock 问题。
