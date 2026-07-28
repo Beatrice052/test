@@ -51,8 +51,8 @@ Mock-first 全链路和真实依赖注入边界；内网任务不是重写系统
 | Field Catalog | 语义主资料：原始 CSV、版本/日期、access/sensitivity | Mock CSV 或字段名猜测 |
 | Mapping | MCP 自动返回的物理 schema，覆盖代表月份 | 人工重复维护的第二份语义表 |
 | MCP Tool | 实际 tool schema、成功/错误样例 | 自造工具名或参数 |
-| Failure Rate | v1 定义已经冻结；I4 只找脱敏对账结果 | 重新询问或改写 v1 |
-| 生产 Policy | 延后到 I6；I1～I5 明确标记 pending | 把 POC access 冒充生产批准 |
+| Failure Rate | v1 定义已经冻结；I3 只找脱敏聚合对账结果 | 重新询问或改写 v1 |
+| 生产 Policy | 单列可选生产化；I1～I3 明确标记 pending | 把 POC access 冒充生产批准 |
 | Carrier code | 三运营商版本化码表和生效期 | LLM 常识或网上码表 |
 
 清单中记录来源路径时不要把 token、内网 URL、证书内容或生产数据复制进仓库。
@@ -109,31 +109,27 @@ Mock-first 全链路和真实依赖注入边界；内网任务不是重写系统
 Import Report；解决重复、缺失、类型冲突和指标绑定。生产 Policy/RBAC 不阻塞 I1。
 详见 [真实语义资料接入](REAL_SEMANTIC_ONBOARDING.md)。
 
-### I2：真实 LLM
+### I2：真实 LLM + OpenSearch MCP
 
-先研读批准的内网参考项目，再实现 provider transport。LLM 仍只生成
-`AnalysisPlan` 和总结。详见 [真实 LLM 接入](REAL_LLM_INTEGRATION.md)。
+同一阶段完成两项现成能力的适配：先研读批准的内网参考项目并实现 provider
+transport；再记录实际 MCP Tool schema，实现五项窄能力和统一错误归一化。
+LLM 仍只生成 `AnalysisPlan` 和总结，业务模块不得直接调用 MCP。完成后必须用
+真实依赖从同一个 `/api/chat` 入口跑通端到端场景。详见
+[真实 LLM 接入](REAL_LLM_INTEGRATION.md)与
+[真实 OpenSearch MCP 接入](REAL_OPENSEARCH_MCP_INTEGRATION.md)。
 
-### I3：真实 OpenSearch MCP
-
-先记录实际 Tool schema，再实现五项窄能力和统一错误归一化。禁止业务模块直接
-调用 MCP。详见 [真实 OpenSearch MCP 接入](REAL_OPENSEARCH_MCP_INTEGRATION.md)。
-
-### I4：指标对账
+### I3：指标对账与 POC 最终验收
 
 使用批准的、最小化脱敏聚合结果逐日、逐 Channel、逐 Route 对账。不同口径新增
-版本，不修改 `failure_rate.v1` 的历史含义。
+版本，不修改 `failure_rate.v1` 的历史含义；同时完成 Golden 场景、澄清、
+空结果、Policy、错误和前端验收。有完整运营商码表时可在本阶段追加
+`carrier_failure_rate.v1`，码表缺失不阻塞通用 ChatBI POC。
 
-### I5：运营商指标
+### 可选 Production：生产化门禁
 
-有完整码表后新增 `carrier_failure_rate.v1` 等指标。配置中必须有运营商、匹配
-方法、unknown 策略、版本、生效范围和 owner。
-
-### I6：上线门禁
-
-在本阶段补齐生产 Policy/RBAC，并完成认证、日志脱敏、故障演练、限流、性能、
-安全扫描和业务验收。只有
-I0～I6 的证据齐全，才可以将环境状态描述为 production-ready。
+当目标从 POC 升级为生产时，再补齐生产 Policy/RBAC、认证、持久化 Session、
+日志脱敏、故障演练、限流、性能、安全扫描和业务验收。只有这些证据齐全，
+才可以将环境状态描述为 production-ready。
 
 详细勾选项见 [内网执行清单](INTRANET_EXECUTION_CHECKLIST.md)。
 

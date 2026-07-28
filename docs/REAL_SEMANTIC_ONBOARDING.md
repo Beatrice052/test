@@ -25,7 +25,7 @@
 | `value_dictionary.yaml` | 维值/状态值/别名/未知策略 | 业务 owner |
 | `policy.yaml` | POC 技术控制：blocked/review、只读和查询限制 | 现有配置；不是生产 RBAC |
 
-生产 Policy/RBAC 已明确延后到 I6，不阻塞 I1。I1～I5 必须标记
+生产 Policy/RBAC 已明确单列为可选生产化工作，不阻塞 I1。I1～I3 必须标记
 `production_policy_rbac_status=pending`，不得声称已完成生产安全审批。
 
 真实文件的存储和分支策略遵循银行内部规范。本仓库的 Mock 文件仅用于格式参考。
@@ -155,7 +155,7 @@ zero denominator = null
 rounding = ROUND_HALF_UP, 2 decimals
 ```
 
-生产报表对账属于 I4。若 I4 证明真实报表口径不同，则创建
+生产报表对账属于 I3。若 I3 证明真实报表口径不同，则创建
 `failure_rate.v2`，写明：
 
 - 新公式；
@@ -251,4 +251,5 @@ I1 完成需要：
 - LLM/Agent/Validator 使用同一模型版本；
 - 真实文件没有凭证和客户数据。
 
-生产 Policy/RBAC 不属于 I1 完成 Gate；必须保持 pending 并在 I6 完成。
+生产 Policy/RBAC 不属于 I1～I3 的 POC 完成 Gate；需要生产化时再在可选
+Production 阶段补齐。

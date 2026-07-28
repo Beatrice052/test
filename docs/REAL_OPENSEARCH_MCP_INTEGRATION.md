@@ -41,7 +41,7 @@ Agent/Metric/Resolver 直接调用 MCP。
 
 记录需安全清理，不保存 token、内网 URL、真实 query values 或 document hits。
 
-如果实际 MCP 只有 Generic API，I3 必须停止并请求平台提供窄 Tool，不能把
+如果实际 MCP 只有 Generic API，I2 必须停止并请求平台提供窄 Tool，不能把
 Generic Tool 包一层后声称合规。
 
 ## 3. `AllowedMCPToolClient` 实现
@@ -232,7 +232,7 @@ Mapping hashes
 
 ## 9. 完成门禁
 
-I3 只有在以下条件都满足时完成：
+I2 中的 MCP 接入只有在以下条件都满足时完成：
 
 - 实际 Tool schema 和错误样例已存证；
 - Adapter 只有五项窄能力；

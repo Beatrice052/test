@@ -9,8 +9,8 @@
 
 > **内网 AI/工程师接手：** 不要直接改代码。先完整阅读
 > [`INTRANET_START_HERE.md`](INTRANET_START_HERE.md)，按要求提交认知报告，再按
-> I0～I6 分阶段接入真实 LLM、真实 `field_catalog_enrich.csv`、多月 Mapping、
-> OpenSearch MCP、Metric 和生产 Policy。
+> I0 盘点以及 I1～I3 精简阶段接入真实 `field_catalog_enrich.csv`、多月 Mapping、
+> LLM、OpenSearch MCP 并完成指标对账。生产 Policy/RBAC 单列为可选生产化工作。
 
 内网新 Session 可直接使用：
 [`INTRANET_NEW_SESSION_PROMPT.md`](INTRANET_NEW_SESSION_PROMPT.md)。

@@ -181,6 +181,7 @@ LLM、Resolver 和 Validator 必须使用同一个模型版本。若内网改成
 
 ## 11. 内网阶段门禁
 
-内网采用 I0～I6：认知、Semantic、LLM、MCP、指标对账、Carrier code、上线验收。
-每阶段独立测试和汇报。入口为 `INTRANET_START_HERE.md`，不能跳过背景/技术方案
-研读后直接连接真实系统。
+内网先完成 I0 认知盘点，再采用 I1～I3：真实 Semantic、真实 LLM + MCP、
+指标对账与 POC 验收。Carrier code 在码表就绪时追加；生产化门禁单列为可选
+Production。每阶段独立测试和汇报。入口为 `INTRANET_START_HERE.md`，不能跳过
+背景/技术方案研读后直接连接真实系统。

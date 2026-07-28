@@ -6,7 +6,7 @@
 
 新建内网 AI Session 时，可直接复制
 [`INTRANET_NEW_SESSION_PROMPT.md`](INTRANET_NEW_SESSION_PROMPT.md) 的完整提示词。
-I0 完成后，I1～I6 分阶段新 Session 使用
+I0 完成后，I1～I3 及可选生产化工作的分阶段新 Session 使用
 [`INTRANET_PHASE_EXECUTION_PROMPTS.md`](INTRANET_PHASE_EXECUTION_PROMPTS.md)。
 
 不要打开代码后立即替换几个路径就运行。内网接入顺序错误会造成字段泄露、指标
@@ -49,8 +49,8 @@ I0 完成后，I1～I6 分阶段新 Session 使用
 - 真实 OpenSearch 月度 Index 列表；
 - 至少一个代表性月份的真实 Mapping，最好覆盖多个有 Mapping 变更的月份；
 - OpenSearch MCP 已暴露 Tool 的真实 schema 和返回样例；
-- I4 可使用的生产报表脱敏对账结果；`failure_rate.v1` 定义不再重新询问；
-- 生产字段安全分级、角色和 Index 权限资料如暂缺，记录为 I6 待办；
+- I3 可使用的生产报表脱敏聚合对账结果；`failure_rate.v1` 定义不再重新询问；
+- 生产字段安全分级、角色和 Index 权限资料如暂缺，记录为可选生产化待办；
 - 中国移动/电信/联通 `statusCode/status_code` 解析规则。
 
 如果某项不存在，在报告中标记 blocked/待确认，不得伪造。
@@ -62,17 +62,15 @@ I0 完成后，I1～I6 分阶段新 Session 使用
 ```text
 Phase I0  内网认知与资料盘点
 Phase I1  真实 Catalog + MCP Mapping 校验 + POC access 编译
-Phase I2  真实 LLM transport
-Phase I3  真实 OpenSearch MCP Gateway
-Phase I4  指标与真实报表对账
-Phase I5  Carrier statusCode 新指标
-Phase I6  安全、故障、性能和业务验收
+Phase I2  真实 LLM + OpenSearch MCP 接入和 /api/chat 端到端联调
+Phase I3  Failure Rate 对账和 POC 最终验收；码表就绪时追加 Carrier 指标
+Optional Production  Policy/RBAC、认证、持久化、审计和生产压测
 ```
 
-生产 Policy/RBAC 延后到 I6，不阻塞 I1。I1～I5 使用 Catalog 的
+生产 Policy/RBAC 属于可选生产化工作，不阻塞 I1～I3 POC。POC 使用 Catalog 的
 access/sensitivity 和现有技术安全控制，并明确标记 pending。
 
-不能把 I1～I6 一次性做完后再报告。每阶段先跑测试、汇报、确认，再进入下一阶段。
+I1、I2、I3 各自完成后先跑测试、汇报并停止，获得确认后再进入下一阶段。
 
 ## 当前可直接复用的接入点
 

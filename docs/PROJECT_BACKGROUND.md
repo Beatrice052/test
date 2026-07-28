@@ -162,14 +162,16 @@ LLM 生成 HTML/JavaScript
 - 真实 LLM/MCP 依赖注入边界；
 - 108 项自动化测试（以最新测试报告为准）。
 
-## 6. 内网必须完成什么
+## 6. 内网 POC 必须完成什么
 
 - 研读已有技术方案并保持冻结边界；
 - 学习一个批准的内网 LLM 项目并实现真实 transport；
 - 使用真实 `field_catalog_enrich.csv`；
 - 获取并对齐真实多月 Mapping；
 - 接通真实 OpenSearch MCP Tool；
-- 完成生产 Policy/RBAC；
 - 与真实报表对账；
-- 新增运营商 status code 指标版本；
-- 做故障、安全、性能和业务验收。
+- 经 `/api/chat` 完成端到端、故障和前端验收。
+
+生产 Policy/RBAC、认证、持久化 Session、正式审计和生产压测属于可选生产化
+工作，不阻塞 POC。运营商 status code 码表就绪时可追加独立指标版本；资料不齐时
+也不阻塞通用 ChatBI POC。

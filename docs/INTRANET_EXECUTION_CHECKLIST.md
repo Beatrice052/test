@@ -1,161 +1,106 @@
-# 内网分阶段执行清单
+# 内网精简执行清单
 
 ## 使用规则
 
+- I0 已完成；POC 后续只执行 I1、I2、I3；
 - 一次只完成一个阶段；
-- 阶段开始前记录基线 commit/config/version；
-- 阶段结束先测试，再按模板汇报并取得确认；
-- 方框没有证据不能勾选；
-- 真实数据、秘密和内网 URL 不得进入本清单或 Git。
+- 每阶段开始记录 branch、commit、配置和测试基线；
+- 每阶段结束先测试、再汇报、再等待确认；
+- 真实数据、秘密、内网 URL 和生产 hits 不得进入 Git；
+- Production 是可选阶段，不阻塞 POC。
 
-## I0：认知与资料盘点
+## I1：真实语义模型
 
-- [ ] 完整阅读 `INTRANET_START_HERE.md` 和文档索引中的必读文档
-- [ ] 阅读主流程、契约、Compiler、LLM、Gateway、Metric、Validator 代码和测试
-- [ ] 输出内网接手认知报告
-- [ ] 找到批准的内网 LLM 参考项目及 owner
-- [ ] 找到真实 Field Catalog 及版本/owner
-- [ ] 获取真实 Index inventory 和多月 Mapping 计划
-- [ ] 获取 MCP 实际 Tool schema/错误样例
-- [ ] 确认 `failure_rate.v1` 已冻结，并记录 I4 可用的脱敏报表对账来源
-- [ ] 记录生产 Policy/RBAC 是否可得；缺失不阻塞 I1，但必须留到 I6
-- [ ] 记录 carrier code 资料是否存在
-- [ ] 列明全部缺失项和停止条件
+- [ ] 真实 Catalog 作为语义主资料并记录 version/hash
+- [ ] CSV schema、duplicate、access/sensitivity 校验
+- [ ] `candidate_role` 全路径隔离
+- [ ] MCP `list_indices/get_mapping` 自动取得相关月份 Mapping
+- [ ] 字段存在性、物理类型、keyword/date/object/nested 和聚合能力校验
+- [ ] 多月 Mapping drift 报告
+- [ ] Catalog-only 不可查询
+- [ ] Mapping-only/缺少 access 默认 review_required
+- [ ] 类型冲突和不兼容 drift fail closed
+- [ ] 确认真实时间字段
+- [ ] `failure_rate.v1` 绑定 `status`，不绑定 `statusCode`
+- [ ] CompiledSemanticModel、Import Report、version/hash
+- [ ] semantic compilation 共享和版本 mismatch 测试
+- [ ] `production_policy_rbac_status=pending`
+- [ ] 完整质量命令通过
 
-Gate：项目负责人确认认知报告。本阶段不得接生产调用。
+Gate：真实 Catalog 可编译，Mapping 物理能力经过校验，无未解释 fatal conflict。
+生产 Policy/RBAC 不属于本阶段 Gate。
 
-## I1：真实 Semantic Model
+## I2：真实 LLM + OpenSearch MCP 端到端接入
 
-- [ ] 对真实 CSV 做只读 schema/重复/编码/敏感内容检查
-- [ ] 将真实 Catalog 作为语义主资料，记录版本/hash
-- [ ] 验证 `candidate_role` 仍被彻底忽略
-- [ ] 只用 MCP `list_indices/get_mapping` 自动取得相关月份 Mapping
-- [ ] 生成字段新增/删除/类型/子字段/date format drift 报告
-- [ ] Mapping-only 和未分类字段默认 review
-- [ ] POC 按 Catalog 的 access/sensitivity 执行 blocked/review/allowed
-- [ ] 标记 `production_policy_rbac_status=pending`
-- [ ] 确认真实时间字段和聚合能力
-- [ ] 确认 `status` 与 `statusCode/status_code` 不混用
-- [ ] 编译真实模型并生成 Import Report/version/hash
-- [ ] LLM/Resolver/Validator 共用同一模型
-- [ ] 单元、安全和跨月 drift 测试通过
+- [ ] 研读获批内网 LLM 项目并实现 `StructuredLLMTransport`
+- [ ] structured output、timeout、retry、refusal 和日志脱敏
+- [ ] Prompt 只包含 allowed 字段
+- [ ] blocked/review/candidate_role Prompt 扫描为零
+- [ ] 实现 `AllowedMCPToolClient` 五项窄能力
+- [ ] 无 PPL、Generic API 或任意 path
+- [ ] count/search/msearch 响应和错误归一化
+- [ ] timeout、partial shard、msearch item error fail closed
+- [ ] 真实 LLM/Gateway/semantic compilation 显式注入
+- [ ] 真实模式无 Mock fallback
+- [ ] 单月、分组、趋势、Top N、跨月、澄清、空结果、blocked、Evidence
+- [ ] 全部场景经 `/api/chat`
+- [ ] `production_policy_rbac_status=pending`
+- [ ] 完整质量命令通过
 
-Gate：无未解释 fatal conflict；Catalog access 分类已被严格执行；生产 Policy/RBAC
-明确保持 pending，不作为 I1 阻塞条件。
+Gate：真实 LLM 和 MCP 已通过同一 `/api/chat` 主链路，错误不会产生不完整业务结论。
 
-## I2：真实 LLM
+## I3：指标对账和 POC 最终验收
 
-- [ ] 阅读批准参考项目的 client/factory/config/tests
-- [ ] 记录 structured output、timeout、retry、审计、脱敏方式
-- [ ] 实现 `StructuredLLMTransport`
-- [ ] secret/model 配置不入仓库
-- [ ] 真实模式显式依赖注入
-- [ ] schema error、timeout、auth、refusal 归一化
-- [ ] Prompt 只含 allowed 语义摘要
-- [ ] blocked/review/`candidate_role` Prompt 扫描为零
-- [ ] prompt injection 和未知字段测试通过
-- [ ] `/api/chat` 澄清和 Golden 通过
-- [ ] 证明 structured_llm 模式无 Mock fallback
-
-Gate：模型只能影响 AnalysisPlan/summary，不能影响 DSL/Tool/Metric/HTML。
-
-## I3：真实 OpenSearch MCP
-
-- [ ] 记录五项 Tool 的实际 schema/version
-- [ ] 获取成功、timeout、auth、shard、msearch item error 样例
-- [ ] 实现 `AllowedMCPToolClient`
-- [ ] 只有 list/mapping/count/search/msearch
-- [ ] Index pattern/role/month allowlist 生效
-- [ ] 请求不含 script/runtime mappings/document hits
-- [ ] 响应与错误统一归一化
-- [ ] partial/msearch error 不输出业务 KPI
-- [ ] 日志/Evidence 无 secret/endpoint/raw error
-- [ ] `/api/chat` 单月、跨月、空结果、故障测试通过
-- [ ] 证明 mcp 模式无 Mock fallback
-
-Gate：Gateway 无法绕过 Policy，业务模块无直接 MCP 调用。
-
-## I4：指标和报表对账
-
-- [ ] 使用批准的脱敏聚合对账集
-- [ ] 总量逐日对账
-- [ ] Failure Rate 总体对账
-- [ ] 按 Channel 对账
-- [ ] 按 Route 对账
-- [ ] 跨月边界对账
-- [ ] null/unknown/retry/duplicate 对账
-- [ ] 零分母为 null
-- [ ] 舍入为 ROUND_HALF_UP 两位
-- [ ] 差异有根因、owner 和处理结论
-- [ ] 真实口径不同则新增版本，不改 v1
-
-Gate：差异在批准阈值内；版本、owner、生效范围和证据齐全。
-
-## I5：运营商 `statusCode`
-
-- [ ] 确认 carrier 和 code 真实字段
-- [ ] 取得移动/电信/联通批准码表
-- [ ] 码表包含版本、生效时间、匹配方式和 owner
-- [ ] 定义空码/未知码/新码处理与告警
-- [ ] 定义多回执优先级
-- [ ] 新增独立 Metric ID/version
-- [ ] 规则进入配置和 Metric Engine，不进入 Prompt
-- [ ] 三运营商及 unknown fixture 测试
-- [ ] 历史月份适用版本测试
-- [ ] 与运营商报表对账
-
-Gate：无任何由 LLM 猜测的编码；unknown 可观察且不误分成功/失败。
-
-## I6：上线验收
-
-- [ ] 取得并批准生产 Policy/RBAC owner、版本和生效范围
-- [ ] 完成字段 allowed/blocked/review 的生产安全复核
-- [ ] 身份认证、角色和 Index/字段权限
-- [ ] secret/TLS/证书轮换
-- [ ] Session 存储、TTL、隔离和清理
-- [ ] API/管理接口访问控制
-- [ ] 日志、trace、Evidence 保留和脱敏
-- [ ] 请求/月份/桶/并发限流
-- [ ] timeout、partial shard、msearch partial、LLM/MCP 不可用演练
-- [ ] 常规与峰值性能测试
-- [ ] Prompt/DSL/结果/Evidence blocked 扫描
-- [ ] 全部 Golden 经 `/api/chat`
+- [ ] record_count.v1 对账
+- [ ] failure_rate.v1 总体、每日、Channel、Route 对账
+- [ ] 单月和跨月边界
+- [ ] null/unknown/retry/duplicate/零分母/舍入
+- [ ] 差异根因明确，不静默修改 v1
+- [ ] carrier/statusCode 资料齐全则新增独立指标；缺失不阻塞通用 POC
+- [ ] Golden 全部经 `/api/chat`
+- [ ] KPI/table/chart/clarification/no-data/blocked/Evidence
+- [ ] LLM/MCP timeout 和 partial error
+- [ ] Mock/Connected 状态明确
 - [ ] 前端手工验收
-- [ ] 回滚 Mock/上版配置演练
-- [ ] 业务、数据、安全和平台 owner 签字/记录
+- [ ] 未完成生产化事项明确
+- [ ] 完整质量命令通过
 
-Gate：只有完成本阶段才可称 production-ready。
+Gate：通用 ChatBI POC 有完整对账、E2E、故障和前端验收证据。
 
-## 每阶段报告模板
+## 可选 Production：生产化加固
 
-可复制到新阶段报告：
+只有项目负责人明确授权才执行：
 
-```markdown
-# Phase Ix 报告
+- [ ] 生产 Policy/RBAC
+- [ ] 身份认证和管理接口保护
+- [ ] secret/TLS/证书
+- [ ] 持久化、隔离的 Session
+- [ ] 日志、Prompt、Evidence、审计和留存
+- [ ] 限流、并发、SLO 和性能压测
+- [ ] 全面故障演练
+- [ ] 部署和回滚
+- [ ] 生产业务/安全/平台验收
 
-- 日期：
-- 分支/commit：
-- 环境：
-- 使用来源及版本：
+Gate：全部有证据后才能声明 production-ready。
 
-## 创建或修改文件
+## 每阶段报告
 
-## 实现能力
+报告至少包含：
 
-## 安全与数据处理
-
-## 执行测试
-
-## 测试和对账结果
-
-## 尚未完成/阻塞
-
-## 回滚点
-
-## 下一阶段计划
+```text
+阶段和日期
+branch/commit/config version
+使用的真实来源
+创建或修改文件
+实现能力
+执行测试和完整结果
+安全/数据处理
+未完成或阻塞
+回滚点
+下一步建议
 ```
 
-统一质量命令：
+## 完整质量命令
 
 ```powershell
 python -m pytest -q

@@ -6,8 +6,9 @@
 
 **业务时区：** Asia/Hong_Kong
 
-> 内网接手必须先阅读 `INTRANET_START_HERE.md`、本规格、架构和决策日志，再按
-> I0～I6 执行。不能直接将 Mock client 替换成未经现场 schema 验证的调用。
+> 内网接手必须先阅读 `INTRANET_START_HERE.md`、本规格、架构和决策日志，完成
+> I0 盘点后按 I1～I3 执行。不能直接将 Mock client 替换成未经现场 schema
+> 验证的调用。
 
 ## 1. 目标
 
@@ -289,14 +290,12 @@ JavaScript syntax passed
 ```text
 I0  研读项目背景/技术方案，盘点真实来源
 I1  真实 Catalog + MCP Mapping 校验 + POC access
-I2  真实 LLM transport（参考内网已批准项目）
-I3  真实 OpenSearch MCP 五项窄能力
-I4  Failure Rate 与真实报表对账
-I5  三运营商 statusCode 版本化指标
-I6  认证、安全、故障、性能、业务验收
+I2  真实 LLM transport + OpenSearch MCP 五项窄能力 + /api/chat 联调
+I3  Failure Rate 对账 + POC 最终验收；码表就绪时追加 Carrier 指标
+Optional Production  Policy/RBAC、认证、持久化、审计和生产压测
 ```
 
-生产 Policy/RBAC 延后到 I6，不阻塞 I1～I5；这些阶段使用 Catalog 的
+生产 Policy/RBAC 属于可选生产化工作，不阻塞 I1～I3；这些阶段使用 Catalog 的
 access/sensitivity 和现有技术 Policy，并明确标记 pending。
 
 内网只应替换/扩展：

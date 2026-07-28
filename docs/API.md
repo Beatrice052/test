@@ -88,8 +88,9 @@ intent_backend: mock | structured_llm
 semantic_model_version: <version>
 ```
 
-`connected` 只表示应用已注入真实 Gateway；生产 readiness 还必须通过内网 I0～I6
-门禁。不得把 health 返回 200 当作报表对账或安全审批已经完成。
+`connected` 只表示应用已注入真实 Gateway；POC 仍需通过 I1～I3 门禁，生产
+readiness 还必须完成可选 Production Gate。不得把 health 返回 200 当作报表对账
+或安全审批已经完成。
 
 ## `GET /api/admin/semantic/report`
 

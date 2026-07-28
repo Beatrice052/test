@@ -49,15 +49,11 @@ I0  认知/来源盘点
  ↓
 I1  真实语义模型
  ↓
-I2  真实 LLM
+I2  真实 LLM + OpenSearch MCP + /api/chat 端到端联调
  ↓
-I3  真实 MCP
- ↓
-I4  指标对账
- ↓
-I5  Carrier statusCode
- ↓
-I6  安全/故障/性能/业务验收
+I3  指标对账 + POC 最终验收
+
+Optional Production  Policy/RBAC、认证、持久化、审计和生产压测
 ```
 
 详细 Gate 见 [内网执行清单](INTRANET_EXECUTION_CHECKLIST.md)。每阶段独立提交、
@@ -77,9 +73,9 @@ I6  安全/故障/性能/业务验收
 8. 跑隔离、安全、跨月和业务测试。
 
 `candidate_role` 即使在真实 CSV 中存在也继续彻底忽略。
-生产 Policy/RBAC 延后到 I6，不阻塞本阶段；I1～I5 标记 pending。
+生产 Policy/RBAC 属于可选生产化工作，不阻塞本阶段；I1～I3 标记 pending。
 
-## 5. 真实 LLM
+## 5. 真实 LLM（I2）
 
 按 [真实 LLM 接入](REAL_LLM_INTEGRATION.md)：
 
@@ -92,7 +88,7 @@ I6  安全/故障/性能/业务验收
 
 不要把参考项目的业务 Prompt、凭证或秘密复制进本仓库。
 
-## 6. 真实 OpenSearch MCP
+## 6. 真实 OpenSearch MCP（同属 I2）
 
 按 [真实 MCP 接入](REAL_OPENSEARCH_MCP_INTEGRATION.md)：
 
@@ -105,7 +101,7 @@ I6  安全/故障/性能/业务验收
 
 业务模块不能直接调用底层 MCP。Generic API 和 PPL 不得加入 adapter。
 
-## 7. 指标和运营商规则
+## 7. 指标和运营商规则（I3）
 
 `failure_rate.v1` 必须先与真实报表对账。真实定义不同则新增版本。
 
@@ -159,7 +155,7 @@ app = create_app(
 并验证模型版本与 Settings 一致。内网应注入真实 compilation，确保只编译一次且
 所有组件共享同一版本；不要让默认 Mock 编译与真实 LLM 并存。
 
-## 9. 生产配置与安全
+## 9. 可选生产化配置与安全
 
 最低要求：
 
@@ -188,9 +184,10 @@ Mock Policy 不能作为生产安全验收结果。
 
 Mock 模式只能用于明确标注的离线演示/测试，不能作为生产无提示降级。
 
-## 11. 最终验收
+## 11. POC 与生产化验收
 
-完成判定以 [内网执行清单](INTRANET_EXECUTION_CHECKLIST.md) I6 为准，至少包括：
+I3 的 POC 完成判定以 [内网执行清单](INTRANET_EXECUTION_CHECKLIST.md)为准，
+至少包括：
 
 - 真实语义编译和 Mapping drift；
 - LLM structured output 与 Prompt 安全；
@@ -198,5 +195,7 @@ Mock 模式只能用于明确标注的离线演示/测试，不能作为生产�
 - 真实报表逐日/逐维度对账；
 - carrier 规则版本化（若该能力上线）；
 - blocked 字段全路径零泄露；
-- 全部 Golden 经 `/api/chat`；
-- 认证、RBAC、审计、性能和回滚演练。
+- 全部 Golden 经 `/api/chat`。
+
+认证、生产 RBAC、持久化 Session、正式审计、生产性能和上线回滚演练属于可选
+Production Gate；这些内容未完成时可以验收 POC，但不得声明 production-ready。

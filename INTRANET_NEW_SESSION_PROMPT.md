@@ -246,8 +246,8 @@ carrier_failure_rate.v1
 7. 月份之间的 Mapping drift；
 8. OpenSearch MCP 实际 Tool schema；
 9. Count、Search、Msearch、ListIndex 和 IndexMapping 的成功及错误响应；
-10. I4 可使用的生产报表脱敏对账结果；`failure_rate.v1` 定义已经确认；
-11. 生产字段安全分类和 RBAC 资料如暂缺，记录为 I6 待办，不阻塞 I1；
+10. I3 可使用的生产报表脱敏聚合对账结果；`failure_rate.v1` 定义已经确认；
+11. 生产字段安全分类和 RBAC 资料如暂缺，记录为可选生产化待办，不阻塞 I1～I3；
 12. 中国移动、电信、联通的 statusCode 编码规则。
 
 找不到的资料必须标记为“待确认”或“blocked”，不得自行编造。
@@ -313,7 +313,7 @@ blocked、review_required 和 candidate_role 不得进入 LLM Prompt。
 - 不能只检查 2026 年 7 月；
 - 不得使用 script 或 runtime_mappings 掩盖 Mapping drift。
 
-生产 Policy/RBAC 延后到 I6，不阻塞 I1～I5。POC 使用 Catalog 的
+生产 Policy/RBAC 属于可选生产化工作，不阻塞 I1～I3。POC 使用 Catalog 的
 access/sensitivity 和现有技术 Policy，并标记
 `production_policy_rbac_status=pending`。
 
@@ -362,11 +362,9 @@ access/sensitivity 和现有技术 Policy，并标记
 ```text
 I0：项目研读与真实资料盘点
 I1：真实 Catalog、MCP Mapping 校验和 POC access
-I2：真实 LLM Transport
-I3：真实 OpenSearch MCP Gateway
-I4：Failure Rate 与真实报表对账
-I5：运营商 statusCode 指标
-I6：认证、安全、故障、性能和业务验收
+I2：真实 LLM + OpenSearch MCP 接入和 /api/chat 端到端联调
+I3：Failure Rate 对账和 POC 最终验收；码表就绪时追加运营商指标
+Optional Production：Policy/RBAC、认证、持久化、审计和生产压测
 ```
 
 每个阶段必须：

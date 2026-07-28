@@ -16,7 +16,7 @@
 - 后端安全 Policy 和 DSL Validator；
 - Mock/MCP Gateway 可替换边界；
 - 真实 LLM `StructuredLLMTransport`、严格 schema 校验和显式依赖注入；
-- 内网 AI 必读入口、来源盘点、真实 Semantic/LLM/MCP 专项手册和 I0～I6 门禁；
+- 内网 AI 必读入口、来源盘点、真实 Semantic/LLM/MCP 专项手册和精简执行门禁；
 - Session 与澄清；
 - 本地 ECharts 结构化页面；
 - 阶段报告、API、Mock 字典、内网迁移和手工验收文档。
@@ -101,8 +101,8 @@ PHASE5_REPORT.md
 ## 下一步
 
 进入内网后先从 `INTRANET_START_HERE.md` 研读项目背景和技术方案，提交接手认知
-报告，再按 I0～I6 替换语义源、真实 LLM、Mapping、MCP Gateway、Metric/Policy，
-并用相同 Golden 场景与真实报表对账。Agent、API 和页面不应重写。
+报告，再按 I1～I3 接入真实语义源、LLM、Mapping/MCP Gateway并完成指标对账；
+生产 Policy/RBAC 单列为可选生产化工作。Agent、API 和页面不应重写。
 
 内网交接专项文档：
 

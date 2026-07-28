@@ -26,8 +26,9 @@
 | D20 | 当前不用 LangGraph | CONFIRMED FOR POC |
 | D21 | 真实 `field_catalog_enrich.csv` 是语义主资料 | CONFIRMED |
 | D22 | Mapping 由 MCP 自动读取，只作实际物理 schema 和跨月 drift 校验 | CONFIRMED |
-| D23 | 生产 Policy/RBAC 延后到 I6，不阻塞 I1；I1 使用 Catalog 的 access/sensitivity 和现有技术控制 | CONFIRMED FOR POC |
-| D24 | `failure_rate.v1` 定义已经确认；I4 只做生产报表对账，不重新询问或定义公式 | CONFIRMED |
+| D23 | 生产 Policy/RBAC 属于可选生产化工作，不阻塞 I1～I3；POC 使用 Catalog 的 access/sensitivity 和现有技术控制 | CONFIRMED FOR POC |
+| D24 | `failure_rate.v1` 定义已经确认；I3 只做生产报表对账，不重新询问或定义公式 | CONFIRMED |
+| D25 | I0 后的 POC 收敛为 I1 真实语义、I2 真实 LLM + MCP、I3 对账与最终验收；生产化单列可选 | CONFIRMED |
 
 ## 内网待确认
 
@@ -36,7 +37,7 @@
 | O01 | 真实默认时间字段 | 所有查询 | Mapping + 字段 owner |
 | O02 | 各月 Mapping 是否一致 | 跨月查询 | 多月 Mapping diff |
 | O03 | 真实 Catalog 字段语义 | Semantic Model | 原始 CSV + owner |
-| O04 | 生产 Policy/RBAC | 仅阻塞 I6 production-ready，不阻塞 I1～I5 POC | 数据分类、角色/字段/Index 权限 |
+| O04 | 生产 Policy/RBAC | 仅阻塞 production-ready，不阻塞 I1～I3 POC | 数据分类、角色/字段/Index 权限 |
 | O05 | LLM provider/model/helper | 真实 Intent/Summary | 参考项目与平台规范 |
 | O06 | MCP Tool 名称/schema | Gateway | Tool schema/样例 |
 | O07 | MCP partial error 结构 | Data QA | timeout/shard/msearch 样例 |
@@ -54,5 +55,5 @@
 - Policy 变化需要安全评审；
 - Mapping drift 不得通过强制 cast 静默吞掉；
 - Catalog 中 `access=allowed` 只代表当前 POC 可用，不等于生产 RBAC 已批准；
-- I1～I5 必须持续标记 `production_policy_rbac_status=pending`；
+- I1～I3 必须持续标记 `production_policy_rbac_status=pending`；
 - 未决项在有证据前不能写成生产事实。

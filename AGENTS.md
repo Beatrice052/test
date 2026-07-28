@@ -76,8 +76,8 @@ status codes or metric definitions.
 - Mapping-only production fields default to `review_required`.
 - The real Catalog is the semantic source of truth; MCP Mapping is automatic
   physical-schema validation, not a second manually maintained semantic table.
-- Production Policy/RBAC is deferred to I6 and must remain explicitly pending
-  throughout I1-I5.
+- Production Policy/RBAC is an optional productionization track and must remain
+  explicitly pending throughout I1-I3.
 - Never commit real customer data, credentials, tokens, internal URLs, private
   certificates, raw LLM prompts containing sensitive values or production query
   result dumps.
