@@ -4,6 +4,7 @@
 
 | 顺序 | 文档 | 用途 |
 |---:|---|---|
+| 0 | `INTRANET_NEW_SESSION_PROMPT.md` | 新 Session 可直接复制的启动提示词 |
 | 1 | `INTRANET_START_HERE.md` | 接手入口、阶段顺序和禁止事项 |
 | 2 | `docs/PROJECT_BACKGROUND.md` | 业务背景、已确认范围和未完成项 |
 | 3 | `docs/TECHNICAL_EXECUTION_SPEC.md` | 完整技术执行规格 |
@@ -31,6 +32,7 @@
 
 | 文档 | 作用 |
 |---|---|
+| `INTRANET_NEW_SESSION_PROMPT.md` | 内网新 Session 启动提示词 |
 | `INTRANET_START_HERE.md` | 内网入口 |
 | `docs/INTRANET_AI_HANDOFF.md` | 接棒运行手册 |
 | `docs/REAL_SEMANTIC_ONBOARDING.md` | 真实 Catalog、多月 Mapping、Policy |
@@ -61,3 +63,4 @@
 
 任何真实口径变更都要更新 Decision Log、专项指南、测试和阶段报告，指标变化还要
 新增版本。
+

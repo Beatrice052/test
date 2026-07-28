@@ -4,6 +4,9 @@
 真实 Field Catalog、真实 Mapping、真实 OpenSearch MCP、真实银行 Policy 或
 运营商状态码规则。
 
+新建内网 AI Session 时，可直接复制
+[`INTRANET_NEW_SESSION_PROMPT.md`](INTRANET_NEW_SESSION_PROMPT.md) 的完整提示词。
+
 不要打开代码后立即替换几个路径就运行。内网接入顺序错误会造成字段泄露、指标
 口径错误或把 Mock 行为误当生产行为。
 
@@ -129,3 +132,4 @@ CHATBI_SEMANTIC_MODEL_VERSION=<approved version>
 - blocked 字段在 Prompt/DSL/result/Evidence 全路径扫描为零；
 - 全部 Golden 经 `/api/chat`；
 - 每个新指标有版本、owner、证据和生效日期。
+

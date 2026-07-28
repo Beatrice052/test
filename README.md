@@ -12,6 +12,9 @@
 > I0～I6 分阶段接入真实 LLM、真实 `field_catalog_enrich.csv`、多月 Mapping、
 > OpenSearch MCP、Metric 和生产 Policy。
 
+内网新 Session 可直接使用：
+[`INTRANET_NEW_SESSION_PROMPT.md`](INTRANET_NEW_SESSION_PROMPT.md)。
+
 ## 已实现
 
 - `tbl_os_sub_message_YYYY_MM` 跨月索引解析，当前 Mock 包含 2026-06、07、08；
@@ -130,3 +133,4 @@ docs/
 
 完整文档入口见 [文档索引](docs/DOCUMENT_INDEX.md)，总体迁移导航见
 [内网迁移总指南](docs/INTERNAL_MIGRATION.md)。
+
