@@ -132,4 +132,3 @@ CHATBI_SEMANTIC_MODEL_VERSION=<approved version>
 - blocked 字段在 Prompt/DSL/result/Evidence 全路径扫描为零；
 - 全部 Golden 经 `/api/chat`；
 - 每个新指标有版本、owner、证据和生效日期。
-
