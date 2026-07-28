@@ -1,0 +1,23 @@
+status_values:
+  SENT: Sent successfully.
+  INPROGRESS: In progress and counted as success in failure_rate.v1.
+  FAILED: Failed.
+  ACKFAIL: Acknowledgement failed.
+channels:
+  SMS: SMS channel.
+  Email: Email channel.
+  WhatsApp: WhatsApp channel.
+routes:
+  ROUTE_A: Synthetic primary route.
+  ROUTE_B: Synthetic secondary route.
+  ROUTE_C: Synthetic fallback route.
+providers:
+  PROVIDER_ALPHA: Synthetic provider.
+  PROVIDER_BETA: Synthetic provider.
+  PROVIDER_GAMMA: Synthetic provider.
+ack_flags:
+  "Y": Acknowledged.
+  "N": Not acknowledged.
+carrier_status_codes:
+  __status__: UNCONFIRMED
+  __note__: Carrier code ownership and failure classification must be supplied internally.

@@ -1,0 +1,39 @@
+{
+  "mappings": {
+    "properties": {
+      "createdTime": {"type": "date"},
+      "status": {"type": "keyword"},
+      "statusCode": {"type": "keyword"},
+      "Status": {"type": "keyword"},
+      "pushStatus": {"type": "keyword"},
+      "letterStatus": {"type": "keyword"},
+      "ackFlag": {"type": "keyword"},
+      "channel": {"type": "keyword"},
+      "route": {"type": "keyword"},
+      "providerName": {"type": "keyword"},
+      "retryCount": {"type": "integer"},
+      "latencyMs": {"type": "long"},
+      "subjectText": {
+        "type": "text",
+        "fields": {
+          "keyword": {"type": "keyword", "ignore_above": 256}
+        }
+      },
+      "diagnosticText": {"type": "text"},
+      "deliveryMeta": {
+        "type": "object",
+        "properties": {
+          "attemptId": {"type": "keyword"},
+          "region": {"type": "keyword"}
+        }
+      },
+      "messageBody": {"type": "text"},
+      "customerName": {"type": "keyword"},
+      "phoneNumber": {"type": "keyword"},
+      "emailAddress": {"type": "keyword"},
+      "bankAccount": {"type": "keyword"},
+      "customerId": {"type": "keyword"},
+      "mappingOnlyFlag": {"type": "boolean"}
+    }
+  }
+}

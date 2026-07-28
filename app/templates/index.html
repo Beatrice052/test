@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Mock-first OpenSearch ChatBI POC for controlled message analytics"
+    />
+    <title>{{ app_name }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='/css/app.css') }}" />
+  </head>
+  <body data-source-mode="{{ data_source_mode }}">
+    {% if data_source_mode == "mock" %}
+    <div class="mock-banner" role="status">
+      <strong>MOCK DATA</strong>
+      <span>当前字段、Mapping、状态码和结果均为外网合成数据，不代表银行生产环境。</span>
+    </div>
+    {% else %}
+    <div class="mock-banner connected-banner" role="status">
+      <strong>INTERNAL CONNECTED</strong>
+      <span>当前已连接内网数据源；业务口径与字段权限仍以已编译 Semantic Model 为准。</span>
+    </div>
+    {% endif %}
+
+    <div class="app-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">BANK MESSAGE ANALYTICS · CONTROLLED POC</p>
+          <h1>{{ app_name }}</h1>
+          <p class="subtitle">
+            自然语言分析 · 确定性指标 · OpenSearch Query DSL · 可审计 Evidence
+          </p>
+        </div>
+        <div class="topbar-status" aria-label="运行状态">
+          <span class="status-badge status-badge--online">
+            <i aria-hidden="true"></i> {{ connection_label }}
+          </span>
+          <span class="status-badge">{{ phase }}</span>
+        </div>
+      </header>
+
+      <section class="runtime-strip" aria-label="当前运行信息">
+        <div>
+          <span>数据源</span>
+          <strong>{{ data_source_label }}</strong>
+        </div>
+        <div>
+          <span>可用月度 Index</span>
+          <strong title="{{ available_indices | join(', ') }}">
+            {{ available_indices | join(' · ') }}
+          </strong>
+        </div>
+        <div>
+          <span>默认时间</span>
+          <strong title="{{ default_time_range }}">{{ default_time_range }}</strong>
+        </div>
+        <div>
+          <span>业务时区</span>
+          <strong>{{ business_timezone }}</strong>
+        </div>
+        <div>
+          <span>Semantic Model</span>
+          <strong>{{ semantic_model_version }}</strong>
+        </div>
+      </section>
+
+      <main class="workspace">
+        <aside class="examples-panel" aria-labelledby="examples-title">
+          <div class="panel-header">
+            <p class="eyebrow">QUICK START</p>
+            <h2 id="examples-title">可演示问题</h2>
+            <p class="panel-copy">
+              所有问题都会调用同一个后端主入口，不包含前端硬编码答案。
+            </p>
+          </div>
+          <div class="example-list">
+            <button type="button" class="example-question">
+              <span>01</span>2026年7月各Channel的Failure Rate是多少？
+            </button>
+            <button type="button" class="example-question">
+              <span>02</span>SMS每天的发送记录趋势是什么？
+            </button>
+            <button type="button" class="example-question">
+              <span>03</span>哪个Route的失败记录最多？
+            </button>
+            <button type="button" class="example-question">
+              <span>04</span>比较SMS和Email的记录数量。
+            </button>
+            <button type="button" class="example-question">
+              <span>05</span>看看最近的失败情况。
+            </button>
+          </div>
+          <div class="scope-note">
+            <p><strong>当前固定口径</strong></p>
+            <p>
+              Failure Rate 使用 <code>status</code> 判断；
+              <code>statusCode</code> 的运营商语义待内网补充。
+            </p>
+          </div>
+        </aside>
+
+        <section class="chat-panel" aria-labelledby="conversation-title">
+          <div class="chat-heading">
+            <div>
+              <p class="eyebrow">CONVERSATION</p>
+              <h2 id="conversation-title">ChatBI 对话</h2>
+            </div>
+            <button id="clear-conversation" type="button" class="ghost-button">
+              清空会话
+            </button>
+          </div>
+
+          <div
+            id="conversation"
+            class="conversation"
+            role="log"
+            aria-live="polite"
+            aria-relevant="additions"
+          ></div>
+
+          <div id="loading" class="loading" hidden aria-live="assertive">
+            <div class="loading-dots" aria-hidden="true">
+              <span></span><span></span><span></span>
+            </div>
+            <p>正在规划并校验查询…</p>
+          </div>
+
+          <form id="chat-form" class="composer">
+            <label for="message-input">输入消息数据分析问题</label>
+            <textarea
+              id="message-input"
+              name="message"
+              rows="3"
+              maxlength="2000"
+              placeholder="例如：2026年6月至8月的Failure Rate是多少？"
+              required
+            ></textarea>
+            <div class="composer-footer">
+              <span>Enter 发送 · Shift+Enter 换行</span>
+              <button id="send-button" type="submit" class="send-button">
+                <span>发送</span><b aria-hidden="true">↗</b>
+              </button>
+            </div>
+          </form>
+        </section>
+      </main>
+
+      <footer class="app-footer">
+        <span>Read-only Mock Gateway</span>
+        <span>No PPL · No Generic API · No LLM Tool Loop</span>
+      </footer>
+    </div>
+
+    <template id="message-template">
+      <article class="message">
+        <div class="message-label"></div>
+        <div class="message-card">
+          <p class="message-text"></p>
+          <div class="answer-components">
+            <div class="kpi-grid" hidden></div>
+            <section class="metric-note" hidden></section>
+            <section class="chart-section" hidden>
+              <div class="chart-canvas" role="img"></div>
+            </section>
+            <section class="table-section" hidden>
+              <div class="table-wrap">
+                <table>
+                  <thead></thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+            </section>
+          </div>
+          <div class="message-warnings"></div>
+          <details class="evidence" hidden>
+            <summary>
+              <span>Evidence</span>
+              <small>安全清理后的计划、DSL 与 QA</small>
+            </summary>
+            <div class="evidence-content"></div>
+          </details>
+        </div>
+      </article>
+    </template>
+
+    <script src="{{ url_for('static', path='/vendor/echarts.min.js') }}"></script>
+    <script src="{{ url_for('static', path='/js/app.js') }}" defer></script>
+  </body>
+</html>

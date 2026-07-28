@@ -1,0 +1,35 @@
+metric_pack_id: sub_message_metrics_poc
+dataset_id: sub_message
+status: POC_DEFINED
+version: "1.0.0"
+
+field_bindings:
+  event_time: createdTime
+  lifecycle_status: status
+  carrier_status_code: statusCode
+
+metrics:
+  record_count:
+    metric_id: record_count
+    version: record_count.v1
+    aggregation: count_documents
+    unit: count
+    description: OpenSearch document count without deduplication.
+
+  failure_rate:
+    metric_id: failure_rate
+    version: failure_rate.v1
+    numerator_metric: total_failed_count
+    denominator_metric: total_count
+    lifecycle_field_ref: lifecycle_status
+    success_values: [SENT, INPROGRESS]
+    failed_values: [FAILED, ACKFAIL]
+    normalization: trim_upper
+    formula: "100 * numerator / denominator"
+    zero_denominator: null
+    rounding_digits: 2
+    unit: percent
+    caveats:
+      - POC-defined metric pending internal reconciliation.
+      - Retry and duplicate documents remain in the denominator.
+      - Carrier statusCode is not interpreted externally.

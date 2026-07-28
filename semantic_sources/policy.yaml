@@ -1,0 +1,36 @@
+policy_version: mock-policy.v1
+dataset_id: sub_message
+index_pattern: "tbl_os_sub_message_{yyyy}_{mm}"
+read_only: true
+
+query_limits:
+  max_time_range_days: 366
+  max_month_partitions: 12
+  max_top_n: 50
+  max_buckets: 2000
+  max_detail_size: 5
+  timeout_seconds: 30
+
+allow_scripts: false
+allow_generic_api: false
+allow_raw_details: false
+
+field_rules:
+  blocked:
+    - messageBody
+    - customerName
+    - phoneNumber
+    - emailAddress
+    - bankAccount
+    - customerId
+  review_required:
+    - deliveryMeta
+  explicitly_allowed_mapping_only:
+    - mappingOnlyFlag
+
+role_rules:
+  default:
+    allowed_indices:
+      - "tbl_os_sub_message_{yyyy}_{mm}"
+    blocked_field_groups:
+      - Sensitive
