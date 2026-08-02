@@ -1,0 +1,1 @@
+请读取 GitHub 仓库 Beatrice052/test 的 MI-NEW 分支。先完整阅读根目录 AGENTS.md 和 docs/integration/INTERNAL_AI_START_HERE.md，并以 docs/baseline/ 中的 V6.1 Master Execution Spec 为唯一权威基线。严格按照文档完成剩余内网开发，包括真实 LLM、MCP、OpenSearch、正式语义包和 Shadow 验证。禁止把 RuleBasedMockLLMClient 或任何固定规则带入 live 流程，禁止绕过 Adapter、Schema、QA 和切换门禁。完成后运行文档规定的全部测试，并报告实现内容、测试结果及仍需人工确认的业务口径。
