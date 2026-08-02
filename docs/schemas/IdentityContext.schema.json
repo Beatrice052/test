@@ -1,0 +1,38 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "locale": {
+      "default": "zh-CN",
+      "maxLength": 16,
+      "minLength": 2,
+      "title": "Locale",
+      "type": "string"
+    },
+    "roles": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Roles",
+      "type": "array"
+    },
+    "subject_id": {
+      "maxLength": 256,
+      "minLength": 1,
+      "title": "Subject Id",
+      "type": "string"
+    },
+    "workspace_id": {
+      "default": "default",
+      "maxLength": 128,
+      "minLength": 1,
+      "title": "Workspace Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "subject_id"
+  ],
+  "title": "IdentityContext",
+  "type": "object"
+}

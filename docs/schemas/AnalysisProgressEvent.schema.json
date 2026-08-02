@@ -1,0 +1,109 @@
+{
+  "$defs": {
+    "AnalysisProgressStage": {
+      "enum": [
+        "request",
+        "guardrails",
+        "context",
+        "intent",
+        "query_plan",
+        "dsl",
+        "search",
+        "analytics",
+        "dashboard",
+        "complete"
+      ],
+      "type": "string"
+    },
+    "AnalysisProgressStatus": {
+      "enum": [
+        "running",
+        "completed"
+      ],
+      "type": "string"
+    },
+    "JsonScalar": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "integer"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "JsonValue": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/JsonScalar"
+        },
+        {
+          "items": {},
+          "type": "array"
+        },
+        {
+          "additionalProperties": true,
+          "type": "object"
+        }
+      ]
+    }
+  },
+  "additionalProperties": false,
+  "description": "An auditable stage update; never a model chain-of-thought payload.",
+  "properties": {
+    "detail": {
+      "maxLength": 320,
+      "minLength": 1,
+      "title": "Detail",
+      "type": "string"
+    },
+    "occurred_at": {
+      "format": "date-time",
+      "title": "Occurred At",
+      "type": "string"
+    },
+    "safe_summary": {
+      "additionalProperties": {
+        "$ref": "#/$defs/JsonValue"
+      },
+      "title": "Safe Summary",
+      "type": "object"
+    },
+    "sequence": {
+      "minimum": 1,
+      "title": "Sequence",
+      "type": "integer"
+    },
+    "stage": {
+      "$ref": "#/$defs/AnalysisProgressStage"
+    },
+    "status": {
+      "$ref": "#/$defs/AnalysisProgressStatus"
+    },
+    "title": {
+      "maxLength": 96,
+      "minLength": 1,
+      "title": "Title",
+      "type": "string"
+    }
+  },
+  "required": [
+    "sequence",
+    "stage",
+    "status",
+    "title",
+    "detail",
+    "occurred_at"
+  ],
+  "title": "AnalysisProgressEvent",
+  "type": "object"
+}

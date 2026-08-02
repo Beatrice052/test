@@ -1,0 +1,17 @@
+[
+  {
+    "dictionary_id": "status_group",
+    "null_group": "unknown",
+    "owner": "mock_only",
+    "source_field_id": "sub_message.status",
+    "values": {
+      "DELIVERED": "success",
+      "FAILED": "failure",
+      "PENDING": "pending",
+      "REJECTED": "failure",
+      "SENT": "success",
+      "UNKNOWN": "unknown"
+    },
+    "version": "v1"
+  }
+]

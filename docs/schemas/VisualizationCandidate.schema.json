@@ -1,0 +1,68 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "analytical_question": {
+      "title": "Analytical Question",
+      "type": "string"
+    },
+    "candidate_id": {
+      "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+      "title": "Candidate Id",
+      "type": "string"
+    },
+    "dataset_id": {
+      "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+      "title": "Dataset Id",
+      "type": "string"
+    },
+    "dimension_roles": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "title": "Dimension Roles",
+      "type": "object"
+    },
+    "intent": {
+      "title": "Intent",
+      "type": "string"
+    },
+    "measure_roles": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "title": "Measure Roles",
+      "type": "object"
+    },
+    "preferred_chart_types": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Preferred Chart Types",
+      "type": "array"
+    },
+    "priority": {
+      "enum": [
+        "required",
+        "recommended",
+        "optional"
+      ],
+      "title": "Priority",
+      "type": "string"
+    },
+    "reason": {
+      "title": "Reason",
+      "type": "string"
+    }
+  },
+  "required": [
+    "candidate_id",
+    "analytical_question",
+    "intent",
+    "preferred_chart_types",
+    "dataset_id",
+    "priority",
+    "reason"
+  ],
+  "title": "VisualizationCandidate",
+  "type": "object"
+}

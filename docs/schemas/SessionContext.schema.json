@@ -1,0 +1,228 @@
+{
+  "$defs": {
+    "ActiveAnalyticalContext": {
+      "additionalProperties": false,
+      "properties": {
+        "analytical_base_answer_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Analytical Base Answer Id"
+        },
+        "dataset_ids": {
+          "default": [],
+          "items": {
+            "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+            "type": "string"
+          },
+          "title": "Dataset Ids",
+          "type": "array"
+        },
+        "dimension_ids": {
+          "default": [],
+          "items": {
+            "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+            "type": "string"
+          },
+          "title": "Dimension Ids",
+          "type": "array"
+        },
+        "filter_summary": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Filter Summary",
+          "type": "array"
+        },
+        "grain": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Grain",
+          "type": "array"
+        },
+        "metric_ids": {
+          "default": [],
+          "items": {
+            "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+            "type": "string"
+          },
+          "title": "Metric Ids",
+          "type": "array"
+        },
+        "time_summary": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Time Summary"
+        }
+      },
+      "title": "ActiveAnalyticalContext",
+      "type": "object"
+    },
+    "JsonScalar": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "integer"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "JsonValue": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/JsonScalar"
+        },
+        {
+          "items": {},
+          "type": "array"
+        },
+        {
+          "additionalProperties": true,
+          "type": "object"
+        }
+      ]
+    },
+    "Provenance": {
+      "additionalProperties": false,
+      "description": "Traceable origin without credentials or large raw payloads.",
+      "properties": {
+        "metadata": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Metadata",
+          "type": "object"
+        },
+        "producer": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+          "title": "Producer",
+          "type": "string"
+        },
+        "source_hashes": {
+          "additionalProperties": {
+            "pattern": "^sha256:[0-9a-f]{64}$",
+            "type": "string"
+          },
+          "title": "Source Hashes",
+          "type": "object"
+        },
+        "source_ids": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Source Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "producer"
+      ],
+      "title": "Provenance",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "active_context": {
+      "$ref": "#/$defs/ActiveAnalyticalContext"
+    },
+    "archived": {
+      "default": false,
+      "title": "Archived",
+      "type": "boolean"
+    },
+    "content_hash": {
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "title": "Content Hash",
+      "type": "string"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "latest_answer_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Latest Answer Id"
+    },
+    "object_id": {
+      "pattern": "^[a-z][a-z0-9_-]{2,127}$",
+      "title": "Object Id",
+      "type": "string"
+    },
+    "provenance": {
+      "$ref": "#/$defs/Provenance"
+    },
+    "schema_version": {
+      "default": "1.0",
+      "pattern": "^[1-9][0-9]*\\.[0-9]+$",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "subject_id": {
+      "title": "Subject Id",
+      "type": "string"
+    },
+    "title": {
+      "title": "Title",
+      "type": "string"
+    },
+    "updated_at": {
+      "format": "date-time",
+      "title": "Updated At",
+      "type": "string"
+    },
+    "version": {
+      "minimum": 0,
+      "title": "Version",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "object_id",
+    "created_at",
+    "content_hash",
+    "provenance",
+    "subject_id",
+    "title",
+    "version",
+    "updated_at"
+  ],
+  "title": "SessionContext",
+  "type": "object"
+}

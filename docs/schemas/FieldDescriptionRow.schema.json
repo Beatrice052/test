@@ -1,0 +1,134 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "aliases": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Aliases",
+      "type": "array"
+    },
+    "business_domain": {
+      "anyOf": [
+        {
+          "maxLength": 128,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Business Domain"
+    },
+    "confirmed": {
+      "default": false,
+      "title": "Confirmed",
+      "type": "boolean"
+    },
+    "description": {
+      "maxLength": 2000,
+      "minLength": 1,
+      "title": "Description",
+      "type": "string"
+    },
+    "field_path": {
+      "maxLength": 512,
+      "minLength": 1,
+      "title": "Field Path",
+      "type": "string"
+    },
+    "metric_caveat": {
+      "anyOf": [
+        {
+          "maxLength": 1000,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Metric Caveat"
+    },
+    "original_description_hash": {
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "title": "Original Description Hash",
+      "type": "string"
+    },
+    "owner": {
+      "anyOf": [
+        {
+          "maxLength": 256,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Owner"
+    },
+    "sanitizer_events": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Sanitizer Events",
+      "type": "array"
+    },
+    "sensitivity": {
+      "anyOf": [
+        {
+          "maxLength": 64,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Sensitivity"
+    },
+    "source_row": {
+      "minimum": 2,
+      "title": "Source Row",
+      "type": "integer"
+    },
+    "usage_guidance": {
+      "anyOf": [
+        {
+          "maxLength": 1000,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Usage Guidance"
+    },
+    "value_meaning": {
+      "anyOf": [
+        {
+          "maxLength": 1000,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Value Meaning"
+    }
+  },
+  "required": [
+    "field_path",
+    "description",
+    "source_row",
+    "original_description_hash"
+  ],
+  "title": "FieldDescriptionRow",
+  "type": "object"
+}

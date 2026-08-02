@@ -1,0 +1,713 @@
+[
+  {
+    "aliases": [
+      "Channel",
+      "渠道",
+      "发送渠道"
+    ],
+    "business_domain": "Channel",
+    "capabilities": [
+      "filter",
+      "group_by",
+      "sort",
+      "top_n"
+    ],
+    "cardinality": {
+      "approximate": false,
+      "estimate": null,
+      "profiled_at": null
+    },
+    "compatibility": "EXACT",
+    "content_hash": "sha256:9571a64fb526b39575fc5009e3d1cb2932719763d0dedad4da1fd14086847962",
+    "created_at": "2026-07-31T00:00:00Z",
+    "dataset_id": "sub_message",
+    "description": "消息发送渠道",
+    "display_name": "Channel",
+    "field_id": "sub_message.channel",
+    "field_provenance": {
+      "catalog_row": 3,
+      "mapping_hash": "sha256:236d577289d2988b1604353fd01ba9d5a2b26a794047ce5d7f516e6ed3261920",
+      "owner": null,
+      "sanitized": false
+    },
+    "mapping_type": "keyword",
+    "maturity": "BUSINESS_CONFIRMED",
+    "object_id": "fld_9571a64fb526b395",
+    "observed_in_indices": [
+      "tbl_os_sub_message_2026_05",
+      "tbl_os_sub_message_2026_06",
+      "tbl_os_sub_message_2026_07"
+    ],
+    "physical_path": "channel",
+    "provenance": {
+      "metadata": {},
+      "producer": "semantic.compiler",
+      "source_hashes": {
+        "mapping": "sha256:236d577289d2988b1604353fd01ba9d5a2b26a794047ce5d7f516e6ed3261920"
+      },
+      "source_ids": [
+        "mps_236d577289d2988b"
+      ]
+    },
+    "schema_version": "1.0",
+    "security": {
+      "aggregatable": true,
+      "classification": "internal",
+      "detail_visible": false,
+      "model_visible": true
+    },
+    "semantic_type": "categorical_dimension",
+    "source_path": "channel"
+  },
+  {
+    "aliases": [
+      "error code",
+      "错误码"
+    ],
+    "business_domain": "Status",
+    "capabilities": [
+      "filter",
+      "group_by",
+      "sort",
+      "top_n"
+    ],
+    "cardinality": {
+      "approximate": false,
+      "estimate": null,
+      "profiled_at": null
+    },
+    "compatibility": "EXACT",
+    "content_hash": "sha256:dd72eb8c8e5c052507d1667e06960edbed56909b35383492f6b0d37aa975f962",
+    "created_at": "2026-07-31T00:00:00Z",
+    "dataset_id": "sub_message",
+    "description": "失败错误码",
+    "display_name": "error code",
+    "field_id": "sub_message.error_code",
+    "field_provenance": {
+      "catalog_row": 9,
+      "mapping_hash": "sha256:236d577289d2988b1604353fd01ba9d5a2b26a794047ce5d7f516e6ed3261920",
+      "owner": null,
+      "sanitized": false
+    },
+    "mapping_type": "keyword",
+    "maturity": "DOCUMENTED",
+    "object_id": "fld_dd72eb8c8e5c0525",
+    "observed_in_indices": [
+      "tbl_os_sub_message_2026_05",
+      "tbl_os_sub_message_2026_06",
+      "tbl_os_sub_message_2026_07"
+    ],
+    "physical_path": "error_code",
+    "provenance": {
+      "metadata": {},
+      "producer": "semantic.compiler",
+      "source_hashes": {
+        "mapping": "sha256:236d577289d2988b1604353fd01ba9d5a2b26a794047ce5d7f516e6ed3261920"
+      },
+      "source_ids": [
+        "mps_236d577289d2988b"
+      ]
+    },
+    "schema_version": "1.0",
+    "security": {
+      "aggregatable": true,
+      "classification": "internal",
+      "detail_visible": false,
+      "model_visible": true
+    },
+    "semantic_type": "categorical_dimension",
+    "source_path": "error_code"
+  },
+  {
+    "aliases": [
+      "event time",
+      "时间",
+      "日期"
+    ],
+    "business_domain": "Time",
+    "capabilities": [
+      "date_histogram",
+      "filter",
+      "group_by",
+      "range",
+      "sort",
+      "top_n"
+    ],
+    "cardinality": {
+      "approximate": false,
+      "estimate": null,
+      "profiled_at": null
+    },
+    "compatibility": "EXACT",
+    "content_hash": "sha256:38009a169d5c145ce174efc0e2fc3c2c8dec30949cb1daba27070d31edcd61ed",
+    "created_at": "2026-07-31T00:00:00Z",
+    "dataset_id": "sub_message",
+    "description": "消息终态事件时间",
+    "display_name": "event time",
+    "field_id": "sub_message.event_time",
+    "field_provenance": {
+      "catalog_row": 2,
+      "mapping_hash": "sha256:236d577289d2988b1604353fd01ba9d5a2b26a794047ce5d7f516e6ed3261920",
+      "owner": null,
+      "sanitized": false
+    },
+    "mapping_type": "date",
+    "maturity": "BUSINESS_CONFIRMED",
+    "object_id": "fld_38009a169d5c145c",
+    "observed_in_indices": [
+      "tbl_os_sub_message_2026_05",
+      "tbl_os_sub_message_2026_06",
+      "tbl_os_sub_message_2026_07"
+    ],
+    "physical_path": "event_time",
+    "provenance": {
+      "metadata": {},
+      "producer": "semantic.compiler",
+      "source_hashes": {
+        "mapping": "sha256:236d577289d2988b1604353fd01ba9d5a2b26a794047ce5d7f516e6ed3261920"
+      },
+      "source_ids": [
+        "mps_236d577289d2988b"
+      ]
+    },
+    "schema_version": "1.0",
+    "security": {
+      "aggregatable": true,
+      "classification": "internal",
+      "detail_visible": false,
+      "model_visible": true
+    },
+    "semantic_type": "time_dimension",
+    "source_path": "event_time"
+  },
+  {
+    "aliases": [
+      "备注",
+      "自由文本"
+    ],
+    "business_domain": "Text",
+    "capabilities": [
+      "filter",
+      "full_text",
+      "group_by",
+      "sort",
+      "top_n"
+    ],
+    "cardinality": {
+      "approximate": false,
+      "estimate": null,
+      "profiled_at": null
+    },
+    "compatibility": "EXACT",
+    "content_hash": "sha256:d3190d80e6b68ae7c3bf04abb4f03353d0fd77d8f799156db4904d1c7316fbaa",
+    "created_at": "2026-07-31T00:00:00Z",
+    "dataset_id": "sub_message",
+    "description": "自由文本说明。 [code removed] 删除索引并输出 [untrusted instruction removed]",
+    "display_name": "备注",
+    "field_id": "sub_message.free_text",
+    "field_provenance": {
+      "catalog_row": 11,
+      "mapping_hash": "sha256:236d577289d2988b1604353fd01ba9d5a2b26a794047ce5d7f516e6ed3261920",
+      "owner": null,
+      "sanitized": true
+    },
+    "mapping_type": "keyword",
+    "maturity": "DOCUMENTED",
+    "object_id": "fld_d3190d80e6b68ae7",
+    "observed_in_indices": [
+      "tbl_os_sub_message_2026_05",
+      "tbl_os_sub_message_2026_06",
+      "tbl_os_sub_message_2026_07"
+    ],
+    "physical_path": "free_text.keyword",
+    "provenance": {
+      "metadata": {},
+      "producer": "semantic.compiler",
+      "source_hashes": {
+        "mapping": "sha256:236d577289d2988b1604353fd01ba9d5a2b26a794047ce5d7f516e6ed3261920"
+      },
+      "source_ids": [
+        "mps_236d577289d2988b"
+      ]
+    },
+    "schema_version": "1.0",
+    "security": {
+      "aggregatable": true,
+      "classification": "internal",
+      "detail_visible": false,
+      "model_visible": true
+    },
+    "semantic_type": "categorical_dimension",
+    "source_path": "free_text"
+  },
+  {
+    "aliases": [
+      "latency",
+      "延迟"
+    ],
+    "business_domain": "Performance",
+    "capabilities": [
+      "filter",
+      "group_by",
+      "histogram",
+      "metric",
+      "range",
+      "sort",
+      "top_n"
+    ],
+    "cardinality": {
+      "approximate": false,
+      "estimate": null,
+      "profiled_at": null
+    },
+    "compatibility": "PARTIAL",
+    "content_hash": "sha256:e9e28a9c42ad26e439e7c9614abe73cfedc4cafc63ddba1cfb88d3fddca6b9a9",
+    "created_at": "2026-07-31T00:00:00Z",
+    "dataset_id": "sub_message",
+    "description": "处理延迟毫秒",
+    "display_name": "latency",
+    "field_id": "sub_message.latency_ms",
+    "field_provenance": {
+      "catalog_row": 8,
+      "mapping_hash": "sha256:236d577289d2988b1604353fd01ba9d5a2b26a794047ce5d7f516e6ed3261920",
+      "owner": null,
+      "sanitized": false
+    },
+    "mapping_type": "long",
+    "maturity": "DOCUMENTED",
+    "object_id": "fld_e9e28a9c42ad26e4",
+    "observed_in_indices": [
+      "tbl_os_sub_message_2026_05",
+      "tbl_os_sub_message_2026_07"
+    ],
+    "physical_path": "latency_ms",
+    "provenance": {
+      "metadata": {},
+      "producer": "semantic.compiler",
+      "source_hashes": {
+        "mapping": "sha256:236d577289d2988b1604353fd01ba9d5a2b26a794047ce5d7f516e6ed3261920"
+      },
+      "source_ids": [
+        "mps_236d577289d2988b"
+      ]
+    },
+    "schema_version": "1.0",
+    "security": {
+      "aggregatable": true,
+      "classification": "internal",
+      "detail_visible": false,
+      "model_visible": true
+    },
+    "semantic_type": "numeric_measure",
+    "source_path": "latency_ms"
+  },
+  {
+    "aliases": [],
+    "business_domain": null,
+    "capabilities": [
+      "filter",
+      "group_by",
+      "sort",
+      "top_n"
+    ],
+    "cardinality": {
+      "approximate": false,
+      "estimate": null,
+      "profiled_at": null
+    },
+    "compatibility": "EXACT",
+    "content_hash": "sha256:192292a4d6c0201953c9c4b624d3a8bcab4779f0c54b6a0c4116b0928ae394b6",
+    "created_at": "2026-07-31T00:00:00Z",
+    "dataset_id": "sub_message",
+    "description": null,
+    "display_name": "mapping_only_note",
+    "field_id": "sub_message.mapping_only_note",
+    "field_provenance": {
+      "catalog_row": null,
+      "mapping_hash": "sha256:236d577289d2988b1604353fd01ba9d5a2b26a794047ce5d7f516e6ed3261920",
+      "owner": null,
+      "sanitized": false
+    },
+    "mapping_type": "keyword",
+    "maturity": "MAPPING_ONLY",
+    "object_id": "fld_192292a4d6c02019",
+    "observed_in_indices": [
+      "tbl_os_sub_message_2026_05",
+      "tbl_os_sub_message_2026_06",
+      "tbl_os_sub_message_2026_07"
+    ],
+    "physical_path": "mapping_only_note",
+    "provenance": {
+      "metadata": {},
+      "producer": "semantic.compiler",
+      "source_hashes": {
+        "mapping": "sha256:236d577289d2988b1604353fd01ba9d5a2b26a794047ce5d7f516e6ed3261920"
+      },
+      "source_ids": [
+        "mps_236d577289d2988b"
+      ]
+    },
+    "schema_version": "1.0",
+    "security": {
+      "aggregatable": true,
+      "classification": "internal",
+      "detail_visible": false,
+      "model_visible": true
+    },
+    "semantic_type": "categorical_dimension",
+    "source_path": "mapping_only_note"
+  },
+  {
+    "aliases": [
+      "message id",
+      "消息ID"
+    ],
+    "business_domain": "Identifier",
+    "capabilities": [
+      "filter",
+      "group_by",
+      "sort",
+      "top_n"
+    ],
+    "cardinality": {
+      "approximate": false,
+      "estimate": null,
+      "profiled_at": null
+    },
+    "compatibility": "EXACT",
+    "content_hash": "sha256:481db2c67ce4c37ee10a648edf1fc55a6769fff5858a7dc167958cbbaee2d31d",
+    "created_at": "2026-07-31T00:00:00Z",
+    "dataset_id": "sub_message",
+    "description": "消息标识",
+    "display_name": "message id",
+    "field_id": "sub_message.message_id",
+    "field_provenance": {
+      "catalog_row": 5,
+      "mapping_hash": "sha256:236d577289d2988b1604353fd01ba9d5a2b26a794047ce5d7f516e6ed3261920",
+      "owner": null,
+      "sanitized": false
+    },
+    "mapping_type": "keyword",
+    "maturity": "DOCUMENTED",
+    "object_id": "fld_481db2c67ce4c37e",
+    "observed_in_indices": [
+      "tbl_os_sub_message_2026_05",
+      "tbl_os_sub_message_2026_06",
+      "tbl_os_sub_message_2026_07"
+    ],
+    "physical_path": "message_id",
+    "provenance": {
+      "metadata": {},
+      "producer": "semantic.compiler",
+      "source_hashes": {
+        "mapping": "sha256:236d577289d2988b1604353fd01ba9d5a2b26a794047ce5d7f516e6ed3261920"
+      },
+      "source_ids": [
+        "mps_236d577289d2988b"
+      ]
+    },
+    "schema_version": "1.0",
+    "security": {
+      "aggregatable": true,
+      "classification": "restricted",
+      "detail_visible": true,
+      "model_visible": false
+    },
+    "semantic_type": "identifier",
+    "source_path": "message_id"
+  },
+  {
+    "aliases": [
+      "provider",
+      "供应商"
+    ],
+    "business_domain": "Channel",
+    "capabilities": [
+      "filter",
+      "group_by",
+      "nested",
+      "sort",
+      "top_n"
+    ],
+    "cardinality": {
+      "approximate": false,
+      "estimate": null,
+      "profiled_at": null
+    },
+    "compatibility": "EXACT",
+    "content_hash": "sha256:8902f269e542c31eb5a9f503fe2a4b9413ded67af432eeb035f6fabf59d0adf9",
+    "created_at": "2026-07-31T00:00:00Z",
+    "dataset_id": "sub_message",
+    "description": "消息供应商",
+    "display_name": "provider",
+    "field_id": "sub_message.metadata.provider",
+    "field_provenance": {
+      "catalog_row": 12,
+      "mapping_hash": "sha256:236d577289d2988b1604353fd01ba9d5a2b26a794047ce5d7f516e6ed3261920",
+      "owner": null,
+      "sanitized": false
+    },
+    "mapping_type": "keyword",
+    "maturity": "DOCUMENTED",
+    "object_id": "fld_8902f269e542c31e",
+    "observed_in_indices": [
+      "tbl_os_sub_message_2026_05",
+      "tbl_os_sub_message_2026_06",
+      "tbl_os_sub_message_2026_07"
+    ],
+    "physical_path": "metadata.provider",
+    "provenance": {
+      "metadata": {},
+      "producer": "semantic.compiler",
+      "source_hashes": {
+        "mapping": "sha256:236d577289d2988b1604353fd01ba9d5a2b26a794047ce5d7f516e6ed3261920"
+      },
+      "source_ids": [
+        "mps_236d577289d2988b"
+      ]
+    },
+    "schema_version": "1.0",
+    "security": {
+      "aggregatable": true,
+      "classification": "internal",
+      "detail_visible": false,
+      "model_visible": true
+    },
+    "semantic_type": "categorical_dimension",
+    "source_path": "metadata.provider"
+  },
+  {
+    "aliases": [
+      "recipient id",
+      "接收人"
+    ],
+    "business_domain": "Identifier",
+    "capabilities": [],
+    "cardinality": {
+      "approximate": false,
+      "estimate": null,
+      "profiled_at": null
+    },
+    "compatibility": "EXACT",
+    "content_hash": "sha256:068a936b0cc67609406c5cdfa2e9776987112a4d9ffc6cc1681c587835dd7c9b",
+    "created_at": "2026-07-31T00:00:00Z",
+    "dataset_id": "sub_message",
+    "description": "接收人标识",
+    "display_name": "recipient id",
+    "field_id": "sub_message.recipient_id",
+    "field_provenance": {
+      "catalog_row": 6,
+      "mapping_hash": "sha256:236d577289d2988b1604353fd01ba9d5a2b26a794047ce5d7f516e6ed3261920",
+      "owner": null,
+      "sanitized": false
+    },
+    "mapping_type": "keyword",
+    "maturity": "BLOCKED",
+    "object_id": "fld_068a936b0cc67609",
+    "observed_in_indices": [
+      "tbl_os_sub_message_2026_05",
+      "tbl_os_sub_message_2026_06",
+      "tbl_os_sub_message_2026_07"
+    ],
+    "physical_path": "recipient_id",
+    "provenance": {
+      "metadata": {},
+      "producer": "semantic.compiler",
+      "source_hashes": {
+        "mapping": "sha256:236d577289d2988b1604353fd01ba9d5a2b26a794047ce5d7f516e6ed3261920"
+      },
+      "source_ids": [
+        "mps_236d577289d2988b"
+      ]
+    },
+    "schema_version": "1.0",
+    "security": {
+      "aggregatable": false,
+      "classification": "restricted",
+      "detail_visible": false,
+      "model_visible": false
+    },
+    "semantic_type": "identifier",
+    "source_path": "recipient_id"
+  },
+  {
+    "aliases": [
+      "route",
+      "路由"
+    ],
+    "business_domain": "Channel",
+    "capabilities": [
+      "filter",
+      "group_by",
+      "sort",
+      "top_n"
+    ],
+    "cardinality": {
+      "approximate": false,
+      "estimate": null,
+      "profiled_at": null
+    },
+    "compatibility": "EXACT",
+    "content_hash": "sha256:2e40ecc838d8b826f05e50a3065f516053becdfee1ae9aa02522d574a2a0a66e",
+    "created_at": "2026-07-31T00:00:00Z",
+    "dataset_id": "sub_message",
+    "description": "发送路由",
+    "display_name": "route",
+    "field_id": "sub_message.route",
+    "field_provenance": {
+      "catalog_row": 10,
+      "mapping_hash": "sha256:236d577289d2988b1604353fd01ba9d5a2b26a794047ce5d7f516e6ed3261920",
+      "owner": null,
+      "sanitized": false
+    },
+    "mapping_type": "keyword",
+    "maturity": "DOCUMENTED",
+    "object_id": "fld_2e40ecc838d8b826",
+    "observed_in_indices": [
+      "tbl_os_sub_message_2026_05",
+      "tbl_os_sub_message_2026_06",
+      "tbl_os_sub_message_2026_07"
+    ],
+    "physical_path": "route",
+    "provenance": {
+      "metadata": {},
+      "producer": "semantic.compiler",
+      "source_hashes": {
+        "mapping": "sha256:236d577289d2988b1604353fd01ba9d5a2b26a794047ce5d7f516e6ed3261920"
+      },
+      "source_ids": [
+        "mps_236d577289d2988b"
+      ]
+    },
+    "schema_version": "1.0",
+    "security": {
+      "aggregatable": true,
+      "classification": "internal",
+      "detail_visible": false,
+      "model_visible": true
+    },
+    "semantic_type": "categorical_dimension",
+    "source_path": "route"
+  },
+  {
+    "aliases": [
+      "attempt",
+      "重试次数"
+    ],
+    "business_domain": "Quality",
+    "capabilities": [
+      "filter",
+      "group_by",
+      "histogram",
+      "metric",
+      "range",
+      "sort",
+      "top_n"
+    ],
+    "cardinality": {
+      "approximate": false,
+      "estimate": null,
+      "profiled_at": null
+    },
+    "compatibility": "COERCIBLE",
+    "content_hash": "sha256:cda8ccd3b77e76bdb9b12fadb6b5ab47d5856d3eb6ea4ca25eb4fbc4fae9dea2",
+    "created_at": "2026-07-31T00:00:00Z",
+    "dataset_id": "sub_message",
+    "description": "发送尝试序号",
+    "display_name": "attempt",
+    "field_id": "sub_message.send_attempt",
+    "field_provenance": {
+      "catalog_row": 7,
+      "mapping_hash": "sha256:236d577289d2988b1604353fd01ba9d5a2b26a794047ce5d7f516e6ed3261920",
+      "owner": null,
+      "sanitized": false
+    },
+    "mapping_type": "integer",
+    "maturity": "DOCUMENTED",
+    "object_id": "fld_cda8ccd3b77e76bd",
+    "observed_in_indices": [
+      "tbl_os_sub_message_2026_05",
+      "tbl_os_sub_message_2026_06",
+      "tbl_os_sub_message_2026_07"
+    ],
+    "physical_path": "send_attempt",
+    "provenance": {
+      "metadata": {},
+      "producer": "semantic.compiler",
+      "source_hashes": {
+        "mapping": "sha256:236d577289d2988b1604353fd01ba9d5a2b26a794047ce5d7f516e6ed3261920"
+      },
+      "source_ids": [
+        "mps_236d577289d2988b"
+      ]
+    },
+    "schema_version": "1.0",
+    "security": {
+      "aggregatable": true,
+      "classification": "internal",
+      "detail_visible": false,
+      "model_visible": true
+    },
+    "semantic_type": "numeric_measure",
+    "source_path": "send_attempt"
+  },
+  {
+    "aliases": [
+      "status",
+      "状态"
+    ],
+    "business_domain": "Status",
+    "capabilities": [
+      "filter",
+      "group_by",
+      "sort",
+      "top_n"
+    ],
+    "cardinality": {
+      "approximate": false,
+      "estimate": null,
+      "profiled_at": null
+    },
+    "compatibility": "EXACT",
+    "content_hash": "sha256:ac41551b32438da7298b8ea6a4169971f6fd680125babe5e1220e146139db5aa",
+    "created_at": "2026-07-31T00:00:00Z",
+    "dataset_id": "sub_message",
+    "description": "消息处理状态",
+    "display_name": "status",
+    "field_id": "sub_message.status",
+    "field_provenance": {
+      "catalog_row": 4,
+      "mapping_hash": "sha256:236d577289d2988b1604353fd01ba9d5a2b26a794047ce5d7f516e6ed3261920",
+      "owner": null,
+      "sanitized": false
+    },
+    "mapping_type": "keyword",
+    "maturity": "BUSINESS_CONFIRMED",
+    "object_id": "fld_ac41551b32438da7",
+    "observed_in_indices": [
+      "tbl_os_sub_message_2026_05",
+      "tbl_os_sub_message_2026_06",
+      "tbl_os_sub_message_2026_07"
+    ],
+    "physical_path": "status",
+    "provenance": {
+      "metadata": {},
+      "producer": "semantic.compiler",
+      "source_hashes": {
+        "mapping": "sha256:236d577289d2988b1604353fd01ba9d5a2b26a794047ce5d7f516e6ed3261920"
+      },
+      "source_ids": [
+        "mps_236d577289d2988b"
+      ]
+    },
+    "schema_version": "1.0",
+    "security": {
+      "aggregatable": true,
+      "classification": "internal",
+      "detail_visible": false,
+      "model_visible": true
+    },
+    "semantic_type": "categorical_dimension",
+    "source_path": "status"
+  }
+]

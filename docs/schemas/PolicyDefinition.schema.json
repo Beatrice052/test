@@ -1,0 +1,82 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "allowed_dataset_ids": {
+      "items": {
+        "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+        "type": "string"
+      },
+      "title": "Allowed Dataset Ids",
+      "type": "array"
+    },
+    "allowed_index_patterns": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Allowed Index Patterns",
+      "type": "array"
+    },
+    "blocked_field_ids": {
+      "default": [],
+      "items": {
+        "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+        "type": "string"
+      },
+      "title": "Blocked Field Ids",
+      "type": "array"
+    },
+    "detail_allowed_field_ids": {
+      "default": [],
+      "items": {
+        "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+        "type": "string"
+      },
+      "title": "Detail Allowed Field Ids",
+      "type": "array"
+    },
+    "max_detail_hits": {
+      "default": 100,
+      "maximum": 1000,
+      "minimum": 0,
+      "title": "Max Detail Hits",
+      "type": "integer"
+    },
+    "max_total_buckets": {
+      "default": 5000,
+      "minimum": 1,
+      "title": "Max Total Buckets",
+      "type": "integer"
+    },
+    "policy_id": {
+      "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+      "title": "Policy Id",
+      "type": "string"
+    },
+    "scripts_allowed": {
+      "default": false,
+      "title": "Scripts Allowed",
+      "type": "boolean"
+    },
+    "sensitive_field_ids": {
+      "default": [],
+      "items": {
+        "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+        "type": "string"
+      },
+      "title": "Sensitive Field Ids",
+      "type": "array"
+    },
+    "version": {
+      "title": "Version",
+      "type": "string"
+    }
+  },
+  "required": [
+    "policy_id",
+    "version",
+    "allowed_dataset_ids",
+    "allowed_index_patterns"
+  ],
+  "title": "PolicyDefinition",
+  "type": "object"
+}

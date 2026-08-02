@@ -1,0 +1,17 @@
+{
+  "fixture_id": "sub_message_may_to_july_2026",
+  "rows": [
+    {"sub_message.event_time": "2026-05-05T08:00:00+08:00", "sub_message.channel": "SMS", "sub_message.status": "DELIVERED", "sub_message.error_code": null, "sub_message.latency_ms": 85, "record_count": 45},
+    {"sub_message.event_time": "2026-05-05T08:00:00+08:00", "sub_message.channel": "EMAIL", "sub_message.status": "FAILED", "sub_message.error_code": "SMTP_TIMEOUT", "sub_message.latency_ms": 940, "record_count": 8},
+    {"sub_message.event_time": "2026-06-10T09:00:00+08:00", "sub_message.channel": "SMS", "sub_message.status": "DELIVERED", "sub_message.error_code": null, "sub_message.latency_ms": 78, "record_count": 55},
+    {"sub_message.event_time": "2026-06-10T09:00:00+08:00", "sub_message.channel": "PUSH", "sub_message.status": "FAILED", "sub_message.error_code": "PROVIDER_REJECTED", "sub_message.latency_ms": 410, "record_count": 6},
+    {"sub_message.event_time": "2026-07-01T00:00:00+08:00", "sub_message.channel": "SMS", "sub_message.status": "DELIVERED", "sub_message.error_code": null, "sub_message.latency_ms": 72, "record_count": 70},
+    {"sub_message.event_time": "2026-07-01T00:00:00+08:00", "sub_message.channel": "SMS", "sub_message.status": "FAILED", "sub_message.error_code": "PROVIDER_TIMEOUT", "sub_message.latency_ms": 680, "record_count": 20},
+    {"sub_message.event_time": "2026-07-01T00:00:00+08:00", "sub_message.channel": "SMS", "sub_message.status": "PENDING", "sub_message.error_code": null, "sub_message.latency_ms": 110, "record_count": 5},
+    {"sub_message.event_time": "2026-07-01T00:00:00+08:00", "sub_message.channel": "SMS", "sub_message.status": "UNKNOWN", "sub_message.error_code": null, "sub_message.latency_ms": 130, "record_count": 5},
+    {"sub_message.event_time": "2026-07-01T00:00:00+08:00", "sub_message.channel": "EMAIL", "sub_message.status": "SENT", "sub_message.error_code": null, "sub_message.latency_ms": 190, "record_count": 30},
+    {"sub_message.event_time": "2026-07-01T00:00:00+08:00", "sub_message.channel": "EMAIL", "sub_message.status": "REJECTED", "sub_message.error_code": "MAILBOX_REJECTED", "sub_message.latency_ms": 520, "record_count": 10},
+    {"sub_message.event_time": "2026-07-02T00:00:00+08:00", "sub_message.channel": "PUSH", "sub_message.status": "DELIVERED", "sub_message.error_code": null, "sub_message.latency_ms": 45, "record_count": 12},
+    {"sub_message.event_time": "2026-07-02T00:00:00+08:00", "sub_message.channel": "PUSH", "sub_message.status": "FAILED", "sub_message.error_code": "PROVIDER_TIMEOUT", "sub_message.latency_ms": 390, "record_count": 3}
+  ]
+}

@@ -1,0 +1,113 @@
+{
+  "turn_and_analysis_plan": {
+    "default": {
+      "analysis_goal": "统计指定月份的消息记录数",
+      "question_archetype": "operational_overview",
+      "turn_relation": "NEW_ANALYSIS",
+      "scope": {
+        "dataset_ids": ["sub_message"],
+        "time_range": {
+          "from_inclusive": "2026-07-01T00:00:00+08:00",
+          "to_exclusive": "2026-08-01T00:00:00+08:00",
+          "timezone": "Asia/Hong_Kong"
+        },
+        "filters": []
+      },
+      "metric_decisions": [
+        {
+          "metric_id": "message_record_count.v1",
+          "decision": "required",
+          "role": "scale",
+          "reason": "直接回答记录数问题",
+          "rejection_code": null,
+          "required_capabilities": [],
+          "confidence": 1.0
+        }
+      ],
+      "tasks": [
+        {
+          "task_id": "task_primary",
+          "analytical_question": "统计消息记录数",
+          "analysis_type": "summary",
+          "priority": "required",
+          "metric_ids": ["message_record_count.v1"],
+          "dimension_ids": [],
+          "grain": [],
+          "statistical_method_ids": [],
+          "visualization_intents": [],
+          "business_value": "提供可核查的直接回答",
+          "drop_conditions": []
+        }
+      ],
+      "clarification": null,
+      "assumptions": [],
+      "limitations": [],
+      "budget": {
+        "max_queries": 3,
+        "max_buckets": 5000,
+        "max_blocks": 8
+      }
+    }
+  },
+  "logical_query_plan": {
+    "default": {
+      "analysis_plan_id": "${resolved.analysis_plan_id}",
+      "steps": [
+        {
+          "step_id": "q1_base",
+          "purpose_task_ids": ["task_primary"],
+          "dataset_id": "sub_message",
+          "index_patterns": [
+            "tbl_os_sub_message_2026_05",
+            "tbl_os_sub_message_2026_06",
+            "tbl_os_sub_message_2026_07"
+          ],
+          "time_range": {
+            "from_inclusive": "2026-07-01T00:00:00+08:00",
+            "to_exclusive": "2026-08-01T00:00:00+08:00",
+            "timezone": "Asia/Hong_Kong"
+          },
+          "time_field_id": "sub_message.event_time",
+          "filters": [],
+          "dimensions": [],
+          "measures": ["message_record_count.v1"],
+          "grain": [],
+          "result_contract_id": "dc_q1_base",
+          "depends_on": [],
+          "parameter_bindings": [],
+          "estimated_buckets": 1,
+          "timeout_ms": 30000,
+          "required": true
+        }
+      ],
+      "reuse_strategy": "dataset_fingerprint",
+      "consolidation_notes": ["fixture logical query plan"]
+    }
+  },
+  "post_query_insight_dashboard": {
+    "default": {
+      "answer_summary": "Validated message record results are ready.",
+      "claims": [
+        {
+          "claim_type": "value",
+          "template": "The validated message record count is {value}.",
+          "importance": "primary",
+          "bindings": [
+            {
+              "name": "value",
+              "dataset_id": "${feature_summaries.0.dataset_id}",
+              "selector": "first",
+              "column": "message_record_count.v1"
+            }
+          ]
+        }
+      ],
+      "visualizations": [],
+      "dropped_candidate_ids": [],
+      "limitations": [],
+      "follow_up_suggestions": [],
+      "fallback_requested": false,
+      "metadata": {"fixture": "default"}
+    }
+  }
+}

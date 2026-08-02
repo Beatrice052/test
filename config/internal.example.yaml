@@ -1,0 +1,31 @@
+gateway:
+  mode: mcp
+  mcp:
+    transport: streamable_http
+    endpoint_env: OPENSEARCH_MCP_ENDPOINT
+    call_timeout_seconds: 35
+    tool_bindings:
+      list_indices: ListIndexTool
+      get_mapping: IndexMappingTool
+      execute_search: SearchIndexTool
+      health: ClusterHealthTool
+      count: CountTool
+      msearch: MsearchTool
+    allowed_capabilities:
+      - list_indices
+      - get_mapping
+      - execute_search
+      - health
+    forbidden_tools:
+      - GenericOpenSearchApiTool
+      - PPLQueryTool
+
+llm:
+  mode: openai_compatible
+  base_url_env: CHATBI_LLM_BASE_URL
+  model_env: CHATBI_LLM_MODEL
+  api_key_env: CHATBI_LLM_API_KEY
+  structured_output: strict_json_schema
+
+# 真实 endpoint、LLM key、OpenSearch credentials、IAM 或证书只能放在环境变量、
+# Secret Store 或不提交的 .env 中。本文件不得出现凭证值。

@@ -1,0 +1,45 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "client_turn_id": {
+      "maxLength": 128,
+      "minLength": 8,
+      "title": "Client Turn Id",
+      "type": "string"
+    },
+    "message": {
+      "maxLength": 8000,
+      "minLength": 1,
+      "title": "Message",
+      "type": "string"
+    },
+    "mode": {
+      "default": "standard",
+      "enum": [
+        "standard",
+        "debug"
+      ],
+      "title": "Mode",
+      "type": "string"
+    },
+    "session_id": {
+      "anyOf": [
+        {
+          "pattern": "^ses_[a-zA-Z0-9_-]+$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Session Id"
+    }
+  },
+  "required": [
+    "message",
+    "client_turn_id"
+  ],
+  "title": "ChatRequest",
+  "type": "object"
+}

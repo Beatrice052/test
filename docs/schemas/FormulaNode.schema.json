@@ -1,0 +1,69 @@
+{
+  "$defs": {
+    "FormulaNode": {
+      "additionalProperties": false,
+      "properties": {
+        "column": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Column"
+        },
+        "operands": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/FormulaNode"
+          },
+          "title": "Operands",
+          "type": "array"
+        },
+        "operator": {
+          "enum": [
+            "constant",
+            "column",
+            "filtered_count",
+            "add",
+            "subtract",
+            "multiply",
+            "divide",
+            "sum"
+          ],
+          "title": "Operator",
+          "type": "string"
+        },
+        "status_groups": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Status Groups",
+          "type": "array"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Value"
+        }
+      },
+      "required": [
+        "operator"
+      ],
+      "title": "FormulaNode",
+      "type": "object"
+    }
+  },
+  "$ref": "#/$defs/FormulaNode"
+}

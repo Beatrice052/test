@@ -1,0 +1,13 @@
+dictionary_id: status_group
+version: v1
+source_field_id: sub_message.status
+values:
+  SENT: success
+  DELIVERED: success
+  FAILED: failure
+  REJECTED: failure
+  PENDING: pending
+  UNKNOWN: unknown
+null_group: unknown
+owner: mock_only
+

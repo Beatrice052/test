@@ -1,0 +1,365 @@
+{
+  "$defs": {
+    "CardinalityProfile": {
+      "additionalProperties": false,
+      "properties": {
+        "approximate": {
+          "default": false,
+          "title": "Approximate",
+          "type": "boolean"
+        },
+        "estimate": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Estimate"
+        },
+        "profiled_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Profiled At"
+        }
+      },
+      "title": "CardinalityProfile",
+      "type": "object"
+    },
+    "FieldMaturity": {
+      "enum": [
+        "MAPPING_ONLY",
+        "DOCUMENTED",
+        "PROFILED",
+        "BUSINESS_CONFIRMED",
+        "BLOCKED"
+      ],
+      "title": "FieldMaturity",
+      "type": "string"
+    },
+    "FieldProvenance": {
+      "additionalProperties": false,
+      "properties": {
+        "catalog_row": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Catalog Row"
+        },
+        "mapping_hash": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Mapping Hash",
+          "type": "string"
+        },
+        "owner": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Owner"
+        },
+        "sanitized": {
+          "default": false,
+          "title": "Sanitized",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "mapping_hash"
+      ],
+      "title": "FieldProvenance",
+      "type": "object"
+    },
+    "FieldSecurity": {
+      "additionalProperties": false,
+      "properties": {
+        "aggregatable": {
+          "default": true,
+          "title": "Aggregatable",
+          "type": "boolean"
+        },
+        "classification": {
+          "default": "internal",
+          "enum": [
+            "public",
+            "internal",
+            "confidential",
+            "restricted"
+          ],
+          "title": "Classification",
+          "type": "string"
+        },
+        "detail_visible": {
+          "default": false,
+          "title": "Detail Visible",
+          "type": "boolean"
+        },
+        "model_visible": {
+          "default": true,
+          "title": "Model Visible",
+          "type": "boolean"
+        }
+      },
+      "title": "FieldSecurity",
+      "type": "object"
+    },
+    "JsonScalar": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "integer"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "JsonValue": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/JsonScalar"
+        },
+        {
+          "items": {},
+          "type": "array"
+        },
+        {
+          "additionalProperties": true,
+          "type": "object"
+        }
+      ]
+    },
+    "MappingCompatibility": {
+      "enum": [
+        "EXACT",
+        "COERCIBLE",
+        "PARTIAL",
+        "CONFLICT"
+      ],
+      "title": "MappingCompatibility",
+      "type": "string"
+    },
+    "Provenance": {
+      "additionalProperties": false,
+      "description": "Traceable origin without credentials or large raw payloads.",
+      "properties": {
+        "metadata": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Metadata",
+          "type": "object"
+        },
+        "producer": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+          "title": "Producer",
+          "type": "string"
+        },
+        "source_hashes": {
+          "additionalProperties": {
+            "pattern": "^sha256:[0-9a-f]{64}$",
+            "type": "string"
+          },
+          "title": "Source Hashes",
+          "type": "object"
+        },
+        "source_ids": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Source Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "producer"
+      ],
+      "title": "Provenance",
+      "type": "object"
+    },
+    "SemanticType": {
+      "enum": [
+        "categorical_dimension",
+        "time_dimension",
+        "numeric_measure",
+        "identifier",
+        "boolean_dimension",
+        "free_text",
+        "unknown"
+      ],
+      "title": "SemanticType",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "aliases": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Aliases",
+      "type": "array"
+    },
+    "business_domain": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Business Domain"
+    },
+    "capabilities": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Capabilities",
+      "type": "array"
+    },
+    "cardinality": {
+      "$ref": "#/$defs/CardinalityProfile"
+    },
+    "compatibility": {
+      "$ref": "#/$defs/MappingCompatibility"
+    },
+    "content_hash": {
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "title": "Content Hash",
+      "type": "string"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "dataset_id": {
+      "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+      "title": "Dataset Id",
+      "type": "string"
+    },
+    "description": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Description"
+    },
+    "display_name": {
+      "title": "Display Name",
+      "type": "string"
+    },
+    "field_id": {
+      "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+      "title": "Field Id",
+      "type": "string"
+    },
+    "field_provenance": {
+      "$ref": "#/$defs/FieldProvenance"
+    },
+    "mapping_type": {
+      "title": "Mapping Type",
+      "type": "string"
+    },
+    "maturity": {
+      "$ref": "#/$defs/FieldMaturity"
+    },
+    "object_id": {
+      "pattern": "^[a-z][a-z0-9_-]{2,127}$",
+      "title": "Object Id",
+      "type": "string"
+    },
+    "observed_in_indices": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Observed In Indices",
+      "type": "array"
+    },
+    "physical_path": {
+      "title": "Physical Path",
+      "type": "string"
+    },
+    "provenance": {
+      "$ref": "#/$defs/Provenance"
+    },
+    "schema_version": {
+      "default": "1.0",
+      "pattern": "^[1-9][0-9]*\\.[0-9]+$",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "security": {
+      "$ref": "#/$defs/FieldSecurity"
+    },
+    "semantic_type": {
+      "$ref": "#/$defs/SemanticType"
+    },
+    "source_path": {
+      "title": "Source Path",
+      "type": "string"
+    }
+  },
+  "required": [
+    "object_id",
+    "created_at",
+    "content_hash",
+    "provenance",
+    "field_id",
+    "dataset_id",
+    "physical_path",
+    "source_path",
+    "mapping_type",
+    "semantic_type",
+    "display_name",
+    "maturity",
+    "capabilities",
+    "compatibility",
+    "field_provenance",
+    "observed_in_indices"
+  ],
+  "title": "CanonicalField",
+  "type": "object"
+}

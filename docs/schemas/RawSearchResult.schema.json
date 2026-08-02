@@ -1,0 +1,143 @@
+{
+  "$defs": {
+    "JsonScalar": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "integer"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "JsonValue": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/JsonScalar"
+        },
+        {
+          "items": {},
+          "type": "array"
+        },
+        {
+          "additionalProperties": true,
+          "type": "object"
+        }
+      ]
+    },
+    "ShardSummary": {
+      "additionalProperties": false,
+      "properties": {
+        "failed": {
+          "minimum": 0,
+          "title": "Failed",
+          "type": "integer"
+        },
+        "skipped": {
+          "minimum": 0,
+          "title": "Skipped",
+          "type": "integer"
+        },
+        "successful": {
+          "minimum": 0,
+          "title": "Successful",
+          "type": "integer"
+        },
+        "total": {
+          "minimum": 0,
+          "title": "Total",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "total",
+        "successful",
+        "skipped",
+        "failed"
+      ],
+      "title": "ShardSummary",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "aggregations": {
+      "additionalProperties": {
+        "$ref": "#/$defs/JsonValue"
+      },
+      "title": "Aggregations",
+      "type": "object"
+    },
+    "gateway_metadata": {
+      "additionalProperties": {
+        "$ref": "#/$defs/JsonValue"
+      },
+      "title": "Gateway Metadata",
+      "type": "object"
+    },
+    "hits": {
+      "default": [],
+      "items": {
+        "additionalProperties": {
+          "$ref": "#/$defs/JsonValue"
+        },
+        "type": "object"
+      },
+      "title": "Hits",
+      "type": "array"
+    },
+    "hits_total": {
+      "anyOf": [
+        {
+          "minimum": 0,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Hits Total"
+    },
+    "query_id": {
+      "title": "Query Id",
+      "type": "string"
+    },
+    "raw_size_bytes": {
+      "minimum": 0,
+      "title": "Raw Size Bytes",
+      "type": "integer"
+    },
+    "shards": {
+      "$ref": "#/$defs/ShardSummary"
+    },
+    "timed_out": {
+      "title": "Timed Out",
+      "type": "boolean"
+    },
+    "took_ms": {
+      "minimum": 0,
+      "title": "Took Ms",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "query_id",
+    "took_ms",
+    "timed_out",
+    "shards",
+    "aggregations",
+    "raw_size_bytes"
+  ],
+  "title": "RawSearchResult",
+  "type": "object"
+}

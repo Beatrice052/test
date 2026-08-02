@@ -1,0 +1,72 @@
+{
+  "$defs": {
+    "JsonScalar": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "integer"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "default_params": {
+      "additionalProperties": {
+        "$ref": "#/$defs/JsonScalar"
+      },
+      "title": "Default Params",
+      "type": "object"
+    },
+    "display_name": {
+      "title": "Display Name",
+      "type": "string"
+    },
+    "exploratory_label_required": {
+      "default": true,
+      "title": "Exploratory Label Required",
+      "type": "boolean"
+    },
+    "method_id": {
+      "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+      "title": "Method Id",
+      "type": "string"
+    },
+    "minimum_rows": {
+      "minimum": 0,
+      "title": "Minimum Rows",
+      "type": "integer"
+    },
+    "required_semantic_types": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Required Semantic Types",
+      "type": "array"
+    },
+    "version": {
+      "title": "Version",
+      "type": "string"
+    }
+  },
+  "required": [
+    "method_id",
+    "version",
+    "display_name",
+    "minimum_rows"
+  ],
+  "title": "MethodDefinition",
+  "type": "object"
+}

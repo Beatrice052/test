@@ -1,0 +1,22 @@
+gateway:
+  mode: mcp
+  mcp:
+    transport: streamable_http
+    endpoint_env: OPENSEARCH_MCP_ENDPOINT
+    startup_timeout_seconds: 20
+    call_timeout_seconds: 35
+    tool_bindings:
+      list_indices: ListIndexTool
+      get_mapping: IndexMappingTool
+      execute_search: SearchIndexTool
+      health: ClusterHealthTool
+      count: CountTool
+      msearch: MsearchTool
+    allowed_capabilities:
+      - list_indices
+      - get_mapping
+      - execute_search
+      - health
+    forbidden_tools:
+      - GenericOpenSearchApiTool
+      - PPLQueryTool

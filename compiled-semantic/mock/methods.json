@@ -1,0 +1,149 @@
+[
+  {
+    "default_params": {
+      "n": 5
+    },
+    "display_name": "Rank / Top N",
+    "exploratory_label_required": true,
+    "method_id": "rank",
+    "minimum_rows": 2,
+    "required_semantic_types": [
+      "categorical_dimension",
+      "numeric_measure"
+    ],
+    "version": "v1"
+  },
+  {
+    "default_params": {},
+    "display_name": "变化贡献",
+    "exploratory_label_required": true,
+    "method_id": "contribution",
+    "minimum_rows": 2,
+    "required_semantic_types": [
+      "categorical_dimension",
+      "numeric_measure"
+    ],
+    "version": "v1"
+  },
+  {
+    "default_params": {
+      "threshold": 3.5
+    },
+    "display_name": "MAD Robust Z-score",
+    "exploratory_label_required": true,
+    "method_id": "mad_robust_zscore",
+    "minimum_rows": 14,
+    "required_semantic_types": [
+      "time_dimension",
+      "numeric_measure"
+    ],
+    "version": "v1"
+  },
+  {
+    "default_params": {},
+    "display_name": "Mean / Median",
+    "exploratory_label_required": true,
+    "method_id": "mean_median",
+    "minimum_rows": 1,
+    "required_semantic_types": [
+      "numeric_measure"
+    ],
+    "version": "v1"
+  },
+  {
+    "default_params": {},
+    "display_name": "Percentiles",
+    "exploratory_label_required": true,
+    "method_id": "percentiles",
+    "minimum_rows": 1,
+    "required_semantic_types": [
+      "numeric_measure"
+    ],
+    "version": "v1"
+  },
+  {
+    "default_params": {},
+    "display_name": "Standard deviation / CV",
+    "exploratory_label_required": true,
+    "method_id": "std_cv",
+    "minimum_rows": 7,
+    "required_semantic_types": [
+      "time_dimension",
+      "numeric_measure"
+    ],
+    "version": "v1"
+  },
+  {
+    "default_params": {
+      "window": 7
+    },
+    "display_name": "Moving Average",
+    "exploratory_label_required": true,
+    "method_id": "moving_average",
+    "minimum_rows": 7,
+    "required_semantic_types": [
+      "time_dimension",
+      "numeric_measure"
+    ],
+    "version": "v1"
+  },
+  {
+    "default_params": {},
+    "display_name": "HHI Concentration",
+    "exploratory_label_required": true,
+    "method_id": "hhi",
+    "minimum_rows": 2,
+    "required_semantic_types": [
+      "categorical_dimension",
+      "numeric_measure"
+    ],
+    "version": "v1"
+  },
+  {
+    "default_params": {},
+    "display_name": "Pareto Contribution",
+    "exploratory_label_required": true,
+    "method_id": "pareto",
+    "minimum_rows": 2,
+    "required_semantic_types": [
+      "categorical_dimension",
+      "numeric_measure"
+    ],
+    "version": "v1"
+  },
+  {
+    "default_params": {},
+    "display_name": "Peak-to-average Ratio",
+    "exploratory_label_required": true,
+    "method_id": "peak_to_average",
+    "minimum_rows": 2,
+    "required_semantic_types": [
+      "numeric_measure"
+    ],
+    "version": "v1"
+  },
+  {
+    "default_params": {},
+    "display_name": "Trend Slope",
+    "exploratory_label_required": true,
+    "method_id": "trend_slope",
+    "minimum_rows": 2,
+    "required_semantic_types": [
+      "time_dimension",
+      "numeric_measure"
+    ],
+    "version": "v1"
+  },
+  {
+    "default_params": {},
+    "display_name": "Period Change",
+    "exploratory_label_required": true,
+    "method_id": "period_change",
+    "minimum_rows": 2,
+    "required_semantic_types": [
+      "time_dimension",
+      "numeric_measure"
+    ],
+    "version": "v1"
+  }
+]

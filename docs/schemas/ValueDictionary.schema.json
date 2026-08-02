@@ -1,0 +1,51 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "dictionary_id": {
+      "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+      "title": "Dictionary Id",
+      "type": "string"
+    },
+    "null_group": {
+      "title": "Null Group",
+      "type": "string"
+    },
+    "owner": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Owner"
+    },
+    "source_field_id": {
+      "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+      "title": "Source Field Id",
+      "type": "string"
+    },
+    "values": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "title": "Values",
+      "type": "object"
+    },
+    "version": {
+      "title": "Version",
+      "type": "string"
+    }
+  },
+  "required": [
+    "dictionary_id",
+    "version",
+    "source_field_id",
+    "values",
+    "null_group"
+  ],
+  "title": "ValueDictionary",
+  "type": "object"
+}

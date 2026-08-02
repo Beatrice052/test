@@ -1,0 +1,12 @@
+app:
+  environment: mock
+
+llm:
+  mode: fixture
+
+gateway:
+  mode: mock
+
+semantic:
+  package_dir: ../compiled-semantic/mock
+

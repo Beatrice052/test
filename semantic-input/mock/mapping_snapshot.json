@@ -1,0 +1,68 @@
+{
+  "captured_at": "2026-07-31T00:00:00Z",
+  "indices": {
+    "tbl_os_sub_message_2026_05": {
+      "mappings": {
+        "properties": {
+          "event_time": {"type": "date", "format": "strict_date_optional_time||epoch_millis"},
+          "channel": {"type": "keyword"},
+          "status": {"type": "keyword"},
+          "message_id": {"type": "keyword"},
+          "recipient_id": {"type": "keyword"},
+          "send_attempt": {"type": "integer"},
+          "latency_ms": {"type": "long"},
+          "error_code": {"type": "keyword"},
+          "route": {"type": "keyword"},
+          "free_text": {"type": "text", "fields": {"keyword": {"type": "keyword"}}},
+          "mapping_only_note": {"type": "keyword"},
+          "metadata": {
+            "type": "nested",
+            "properties": {"provider": {"type": "keyword"}}
+          }
+        }
+      }
+    },
+    "tbl_os_sub_message_2026_06": {
+      "mappings": {
+        "properties": {
+          "event_time": {"type": "date", "format": "strict_date_optional_time||epoch_millis"},
+          "channel": {"type": "keyword"},
+          "status": {"type": "keyword"},
+          "message_id": {"type": "keyword"},
+          "recipient_id": {"type": "keyword"},
+          "send_attempt": {"type": "long"},
+          "error_code": {"type": "keyword"},
+          "route": {"type": "keyword"},
+          "free_text": {"type": "text", "fields": {"keyword": {"type": "keyword"}}},
+          "mapping_only_note": {"type": "keyword"},
+          "metadata": {
+            "type": "nested",
+            "properties": {"provider": {"type": "keyword"}}
+          }
+        }
+      }
+    },
+    "tbl_os_sub_message_2026_07": {
+      "mappings": {
+        "properties": {
+          "event_time": {"type": "date", "format": "strict_date_optional_time||epoch_millis"},
+          "channel": {"type": "keyword"},
+          "status": {"type": "keyword"},
+          "message_id": {"type": "keyword"},
+          "recipient_id": {"type": "keyword"},
+          "send_attempt": {"type": "long"},
+          "latency_ms": {"type": "long"},
+          "error_code": {"type": "keyword"},
+          "route": {"type": "keyword"},
+          "free_text": {"type": "text", "fields": {"keyword": {"type": "keyword"}}},
+          "mapping_only_note": {"type": "keyword"},
+          "metadata": {
+            "type": "nested",
+            "properties": {"provider": {"type": "keyword"}}
+          }
+        }
+      }
+    }
+  }
+}
+

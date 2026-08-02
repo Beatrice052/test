@@ -1,0 +1,187 @@
+{
+  "$defs": {
+    "EvidenceRef": {
+      "additionalProperties": false,
+      "properties": {
+        "column": {
+          "title": "Column",
+          "type": "string"
+        },
+        "dataset_id": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+          "title": "Dataset Id",
+          "type": "string"
+        },
+        "metric_id": {
+          "anyOf": [
+            {
+              "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Metric Id"
+        },
+        "row_id": {
+          "title": "Row Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "dataset_id",
+        "row_id",
+        "column"
+      ],
+      "title": "EvidenceRef",
+      "type": "object"
+    },
+    "JsonScalar": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "integer"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "JsonValue": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/JsonScalar"
+        },
+        {
+          "items": {},
+          "type": "array"
+        },
+        {
+          "additionalProperties": true,
+          "type": "object"
+        }
+      ]
+    },
+    "Provenance": {
+      "additionalProperties": false,
+      "description": "Traceable origin without credentials or large raw payloads.",
+      "properties": {
+        "metadata": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Metadata",
+          "type": "object"
+        },
+        "producer": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+          "title": "Producer",
+          "type": "string"
+        },
+        "source_hashes": {
+          "additionalProperties": {
+            "pattern": "^sha256:[0-9a-f]{64}$",
+            "type": "string"
+          },
+          "title": "Source Hashes",
+          "type": "object"
+        },
+        "source_ids": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Source Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "producer"
+      ],
+      "title": "Provenance",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "claim_type": {
+      "title": "Claim Type",
+      "type": "string"
+    },
+    "content_hash": {
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "title": "Content Hash",
+      "type": "string"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "evidence_refs": {
+      "items": {
+        "$ref": "#/$defs/EvidenceRef"
+      },
+      "title": "Evidence Refs",
+      "type": "array"
+    },
+    "importance": {
+      "enum": [
+        "primary",
+        "secondary",
+        "supporting"
+      ],
+      "title": "Importance",
+      "type": "string"
+    },
+    "object_id": {
+      "pattern": "^[a-z][a-z0-9_-]{2,127}$",
+      "title": "Object Id",
+      "type": "string"
+    },
+    "provenance": {
+      "$ref": "#/$defs/Provenance"
+    },
+    "schema_version": {
+      "default": "1.0",
+      "pattern": "^[1-9][0-9]*\\.[0-9]+$",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "task_ids": {
+      "default": [],
+      "items": {
+        "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+        "type": "string"
+      },
+      "title": "Task Ids",
+      "type": "array"
+    },
+    "text": {
+      "title": "Text",
+      "type": "string"
+    }
+  },
+  "required": [
+    "object_id",
+    "created_at",
+    "content_hash",
+    "provenance",
+    "claim_type",
+    "text",
+    "importance",
+    "evidence_refs"
+  ],
+  "title": "ClaimSpec",
+  "type": "object"
+}

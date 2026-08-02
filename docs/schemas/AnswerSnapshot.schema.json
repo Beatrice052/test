@@ -1,0 +1,2275 @@
+{
+  "$defs": {
+    "AdvancedEvidence": {
+      "additionalProperties": false,
+      "properties": {
+        "compiled_queries": {
+          "default": [],
+          "items": {
+            "additionalProperties": {
+              "$ref": "#/$defs/JsonValue"
+            },
+            "type": "object"
+          },
+          "title": "Compiled Queries",
+          "type": "array"
+        },
+        "execution_summaries": {
+          "default": [],
+          "items": {
+            "additionalProperties": {
+              "$ref": "#/$defs/JsonValue"
+            },
+            "type": "object"
+          },
+          "title": "Execution Summaries",
+          "type": "array"
+        },
+        "query_plan": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Query Plan",
+          "type": "object"
+        },
+        "result_contracts": {
+          "default": [],
+          "items": {
+            "additionalProperties": {
+              "$ref": "#/$defs/JsonValue"
+            },
+            "type": "object"
+          },
+          "title": "Result Contracts",
+          "type": "array"
+        }
+      },
+      "required": [
+        "query_plan"
+      ],
+      "title": "AdvancedEvidence",
+      "type": "object"
+    },
+    "AnalysisBudget": {
+      "additionalProperties": false,
+      "properties": {
+        "max_blocks": {
+          "default": 8,
+          "maximum": 20,
+          "minimum": 1,
+          "title": "Max Blocks",
+          "type": "integer"
+        },
+        "max_buckets": {
+          "default": 5000,
+          "minimum": 1,
+          "title": "Max Buckets",
+          "type": "integer"
+        },
+        "max_queries": {
+          "default": 3,
+          "maximum": 10,
+          "minimum": 1,
+          "title": "Max Queries",
+          "type": "integer"
+        }
+      },
+      "title": "AnalysisBudget",
+      "type": "object"
+    },
+    "AnalysisPlan": {
+      "additionalProperties": false,
+      "properties": {
+        "analysis_goal": {
+          "title": "Analysis Goal",
+          "type": "string"
+        },
+        "assumptions": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Assumptions",
+          "type": "array"
+        },
+        "budget": {
+          "$ref": "#/$defs/AnalysisBudget"
+        },
+        "clarification": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Clarification"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "content_hash": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Content Hash",
+          "type": "string"
+        },
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        },
+        "limitations": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Limitations",
+          "type": "array"
+        },
+        "metric_decisions": {
+          "items": {
+            "$ref": "#/$defs/MetricDecision"
+          },
+          "title": "Metric Decisions",
+          "type": "array"
+        },
+        "object_id": {
+          "pattern": "^[a-z][a-z0-9_-]{2,127}$",
+          "title": "Object Id",
+          "type": "string"
+        },
+        "presentation_preference": {
+          "$ref": "#/$defs/PresentationPreference"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        },
+        "question_archetype": {
+          "title": "Question Archetype",
+          "type": "string"
+        },
+        "schema_version": {
+          "default": "1.0",
+          "pattern": "^[1-9][0-9]*\\.[0-9]+$",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "scope": {
+          "$ref": "#/$defs/AnalysisScope"
+        },
+        "tasks": {
+          "items": {
+            "$ref": "#/$defs/AnalyticalTask"
+          },
+          "title": "Tasks",
+          "type": "array"
+        },
+        "turn_relation": {
+          "$ref": "#/$defs/TurnKind"
+        }
+      },
+      "required": [
+        "object_id",
+        "created_at",
+        "content_hash",
+        "provenance",
+        "analysis_goal",
+        "question_archetype",
+        "turn_relation",
+        "scope",
+        "metric_decisions",
+        "tasks"
+      ],
+      "title": "AnalysisPlan",
+      "type": "object"
+    },
+    "AnalysisScope": {
+      "additionalProperties": false,
+      "properties": {
+        "dataset_ids": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+            "type": "string"
+          },
+          "title": "Dataset Ids",
+          "type": "array"
+        },
+        "filters": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/FilterIntent"
+          },
+          "title": "Filters",
+          "type": "array"
+        },
+        "time_range": {
+          "$ref": "#/$defs/TimeRange"
+        }
+      },
+      "required": [
+        "dataset_ids",
+        "time_range"
+      ],
+      "title": "AnalysisScope",
+      "type": "object"
+    },
+    "AnalyticalTask": {
+      "additionalProperties": false,
+      "properties": {
+        "analysis_type": {
+          "title": "Analysis Type",
+          "type": "string"
+        },
+        "analytical_question": {
+          "title": "Analytical Question",
+          "type": "string"
+        },
+        "business_value": {
+          "title": "Business Value",
+          "type": "string"
+        },
+        "dimension_ids": {
+          "default": [],
+          "items": {
+            "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+            "type": "string"
+          },
+          "title": "Dimension Ids",
+          "type": "array"
+        },
+        "drop_conditions": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Drop Conditions",
+          "type": "array"
+        },
+        "grain": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Grain",
+          "type": "array"
+        },
+        "metric_ids": {
+          "default": [],
+          "items": {
+            "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+            "type": "string"
+          },
+          "title": "Metric Ids",
+          "type": "array"
+        },
+        "priority": {
+          "enum": [
+            "required",
+            "recommended",
+            "optional"
+          ],
+          "title": "Priority",
+          "type": "string"
+        },
+        "statistical_method_ids": {
+          "default": [],
+          "items": {
+            "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+            "type": "string"
+          },
+          "title": "Statistical Method Ids",
+          "type": "array"
+        },
+        "task_id": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+          "title": "Task Id",
+          "type": "string"
+        },
+        "visualization_intents": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Visualization Intents",
+          "type": "array"
+        }
+      },
+      "required": [
+        "task_id",
+        "analytical_question",
+        "analysis_type",
+        "priority",
+        "business_value"
+      ],
+      "title": "AnalyticalTask",
+      "type": "object"
+    },
+    "AnswerStatus": {
+      "enum": [
+        "ANSWERED",
+        "CLARIFICATION_REQUIRED",
+        "UNANSWERABLE",
+        "EMPTY",
+        "PARTIAL",
+        "FORBIDDEN",
+        "FAILED",
+        "CANCELLED"
+      ],
+      "title": "AnswerStatus",
+      "type": "string"
+    },
+    "BusinessEvidence": {
+      "additionalProperties": false,
+      "properties": {
+        "data_tables": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Data Tables",
+          "type": "array"
+        },
+        "downloads": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Downloads",
+          "type": "array"
+        },
+        "metric_definitions": {
+          "default": [],
+          "items": {
+            "additionalProperties": {
+              "$ref": "#/$defs/JsonValue"
+            },
+            "type": "object"
+          },
+          "title": "Metric Definitions",
+          "type": "array"
+        },
+        "quality": {
+          "default": [],
+          "items": {
+            "additionalProperties": {
+              "$ref": "#/$defs/JsonValue"
+            },
+            "type": "object"
+          },
+          "title": "Quality",
+          "type": "array"
+        },
+        "reconciliations": {
+          "default": [],
+          "items": {
+            "additionalProperties": {
+              "$ref": "#/$defs/JsonValue"
+            },
+            "type": "object"
+          },
+          "title": "Reconciliations",
+          "type": "array"
+        },
+        "scope": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Scope",
+          "type": "object"
+        }
+      },
+      "required": [
+        "scope"
+      ],
+      "title": "BusinessEvidence",
+      "type": "object"
+    },
+    "ChartEncoding": {
+      "additionalProperties": false,
+      "properties": {
+        "category": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Category"
+        },
+        "color": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Color"
+        },
+        "series": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Series"
+        },
+        "tooltip_fields": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Tooltip Fields",
+          "type": "array"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Value"
+        },
+        "x": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "X"
+        },
+        "y": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Y"
+        }
+      },
+      "title": "ChartEncoding",
+      "type": "object"
+    },
+    "ClaimSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "claim_type": {
+          "title": "Claim Type",
+          "type": "string"
+        },
+        "content_hash": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Content Hash",
+          "type": "string"
+        },
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        },
+        "evidence_refs": {
+          "items": {
+            "$ref": "#/$defs/EvidenceRef"
+          },
+          "title": "Evidence Refs",
+          "type": "array"
+        },
+        "importance": {
+          "enum": [
+            "primary",
+            "secondary",
+            "supporting"
+          ],
+          "title": "Importance",
+          "type": "string"
+        },
+        "object_id": {
+          "pattern": "^[a-z][a-z0-9_-]{2,127}$",
+          "title": "Object Id",
+          "type": "string"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        },
+        "schema_version": {
+          "default": "1.0",
+          "pattern": "^[1-9][0-9]*\\.[0-9]+$",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "task_ids": {
+          "default": [],
+          "items": {
+            "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+            "type": "string"
+          },
+          "title": "Task Ids",
+          "type": "array"
+        },
+        "text": {
+          "title": "Text",
+          "type": "string"
+        }
+      },
+      "required": [
+        "object_id",
+        "created_at",
+        "content_hash",
+        "provenance",
+        "claim_type",
+        "text",
+        "importance",
+        "evidence_refs"
+      ],
+      "title": "ClaimSpec",
+      "type": "object"
+    },
+    "Clarification": {
+      "additionalProperties": false,
+      "properties": {
+        "allowed_answers": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Allowed Answers",
+          "type": "array"
+        },
+        "question": {
+          "title": "Question",
+          "type": "string"
+        },
+        "reason_code": {
+          "title": "Reason Code",
+          "type": "string"
+        }
+      },
+      "required": [
+        "question",
+        "reason_code"
+      ],
+      "title": "Clarification",
+      "type": "object"
+    },
+    "DashboardBlock": {
+      "additionalProperties": false,
+      "properties": {
+        "axis_format": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Axis Format",
+          "type": "object"
+        },
+        "block_id": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+          "title": "Block Id",
+          "type": "string"
+        },
+        "chart_type": {
+          "anyOf": [
+            {
+              "enum": [
+                "bar",
+                "line",
+                "heatmap",
+                "stacked_bar",
+                "donut",
+                "dot",
+                "pareto",
+                "table",
+                "pivot"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Chart Type"
+        },
+        "content": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Content",
+          "type": "object"
+        },
+        "dataset_id": {
+          "anyOf": [
+            {
+              "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Dataset Id"
+        },
+        "description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description"
+        },
+        "encoding": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ChartEncoding"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "evidence_refs": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence Refs",
+          "type": "array"
+        },
+        "insights": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Insights",
+          "type": "array"
+        },
+        "kpis": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/KpiItem"
+          },
+          "title": "Kpis",
+          "type": "array"
+        },
+        "legend": {
+          "default": true,
+          "title": "Legend",
+          "type": "boolean"
+        },
+        "sort": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Sort",
+          "type": "array"
+        },
+        "stack": {
+          "default": false,
+          "title": "Stack",
+          "type": "boolean"
+        },
+        "suggestions": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Suggestions",
+          "type": "array"
+        },
+        "title": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Title"
+        },
+        "type": {
+          "enum": [
+            "answer_summary",
+            "context_summary",
+            "kpi_group",
+            "chart",
+            "data_table",
+            "pivot_table",
+            "insight_list",
+            "warning",
+            "empty_state",
+            "clarification",
+            "follow_up_suggestions"
+          ],
+          "title": "Type",
+          "type": "string"
+        },
+        "visualization_intent": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Visualization Intent"
+        }
+      },
+      "required": [
+        "block_id",
+        "type"
+      ],
+      "title": "DashboardBlock",
+      "type": "object"
+    },
+    "DashboardSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "blocks": {
+          "items": {
+            "$ref": "#/$defs/DashboardBlock"
+          },
+          "title": "Blocks",
+          "type": "array"
+        },
+        "content_hash": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Content Hash",
+          "type": "string"
+        },
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        },
+        "layout": {
+          "const": "auto_grid",
+          "default": "auto_grid",
+          "title": "Layout",
+          "type": "string"
+        },
+        "object_id": {
+          "pattern": "^[a-z][a-z0-9_-]{2,127}$",
+          "title": "Object Id",
+          "type": "string"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        },
+        "schema_version": {
+          "default": "1.0",
+          "pattern": "^[1-9][0-9]*\\.[0-9]+$",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "title": {
+          "title": "Title",
+          "type": "string"
+        },
+        "warnings": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        }
+      },
+      "required": [
+        "object_id",
+        "created_at",
+        "content_hash",
+        "provenance",
+        "title",
+        "blocks"
+      ],
+      "title": "DashboardSpec",
+      "type": "object"
+    },
+    "DataQARecord": {
+      "additionalProperties": false,
+      "properties": {
+        "dataset_id": {
+          "anyOf": [
+            {
+              "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Dataset Id"
+        },
+        "details": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Details",
+          "type": "object"
+        },
+        "evidence_row_ids": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence Row Ids",
+          "type": "array"
+        },
+        "message": {
+          "title": "Message",
+          "type": "string"
+        },
+        "metric_id": {
+          "anyOf": [
+            {
+              "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Metric Id"
+        },
+        "passed": {
+          "title": "Passed",
+          "type": "boolean"
+        },
+        "rule_id": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+          "title": "Rule Id",
+          "type": "string"
+        },
+        "severity": {
+          "enum": [
+            "INFO",
+            "WARNING",
+            "ERROR",
+            "FATAL"
+          ],
+          "title": "Severity",
+          "type": "string"
+        }
+      },
+      "required": [
+        "rule_id",
+        "severity",
+        "passed",
+        "message"
+      ],
+      "title": "DataQARecord",
+      "type": "object"
+    },
+    "DatasetBundle": {
+      "additionalProperties": false,
+      "properties": {
+        "complete": {
+          "title": "Complete",
+          "type": "boolean"
+        },
+        "content_hash": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Content Hash",
+          "type": "string"
+        },
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        },
+        "data_qa": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/DataQARecord"
+          },
+          "title": "Data Qa",
+          "type": "array"
+        },
+        "datasets": {
+          "items": {
+            "$ref": "#/$defs/TabularDataset"
+          },
+          "title": "Datasets",
+          "type": "array"
+        },
+        "object_id": {
+          "pattern": "^[a-z][a-z0-9_-]{2,127}$",
+          "title": "Object Id",
+          "type": "string"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        },
+        "reconciliation": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ReconciliationRecord"
+          },
+          "title": "Reconciliation",
+          "type": "array"
+        },
+        "schema_version": {
+          "default": "1.0",
+          "pattern": "^[1-9][0-9]*\\.[0-9]+$",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "warnings": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        }
+      },
+      "required": [
+        "object_id",
+        "created_at",
+        "content_hash",
+        "provenance",
+        "datasets",
+        "complete"
+      ],
+      "title": "DatasetBundle",
+      "type": "object"
+    },
+    "DatasetColumn": {
+      "additionalProperties": false,
+      "properties": {
+        "business_domain": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Business Domain"
+        },
+        "data_type": {
+          "enum": [
+            "string",
+            "integer",
+            "number",
+            "boolean",
+            "datetime",
+            "metric"
+          ],
+          "title": "Data Type",
+          "type": "string"
+        },
+        "display_name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Display Name"
+        },
+        "field_id": {
+          "anyOf": [
+            {
+              "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Field Id"
+        },
+        "metric_id": {
+          "anyOf": [
+            {
+              "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Metric Id"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "nullable": {
+          "default": false,
+          "title": "Nullable",
+          "type": "boolean"
+        },
+        "security_classification": {
+          "default": "internal",
+          "enum": [
+            "public",
+            "internal",
+            "confidential",
+            "restricted"
+          ],
+          "title": "Security Classification",
+          "type": "string"
+        },
+        "semantic_role": {
+          "enum": [
+            "dimension",
+            "measure",
+            "metric",
+            "metadata"
+          ],
+          "title": "Semantic Role",
+          "type": "string"
+        },
+        "semantic_type": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Semantic Type"
+        },
+        "unit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Unit"
+        }
+      },
+      "required": [
+        "name",
+        "data_type",
+        "semantic_role"
+      ],
+      "title": "DatasetColumn",
+      "type": "object"
+    },
+    "DatasetCompleteness": {
+      "enum": [
+        "COMPLETE",
+        "TOP_N_WITH_OTHERS",
+        "TRUNCATED",
+        "PARTIAL",
+        "UNKNOWN"
+      ],
+      "title": "DatasetCompleteness",
+      "type": "string"
+    },
+    "DatasetRow": {
+      "additionalProperties": false,
+      "properties": {
+        "row_id": {
+          "pattern": "^row_[0-9a-f]{16}$",
+          "title": "Row Id",
+          "type": "string"
+        },
+        "values": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Values",
+          "type": "object"
+        }
+      },
+      "required": [
+        "row_id",
+        "values"
+      ],
+      "title": "DatasetRow",
+      "type": "object"
+    },
+    "EvidencePackage": {
+      "additionalProperties": false,
+      "properties": {
+        "advanced": {
+          "$ref": "#/$defs/AdvancedEvidence"
+        },
+        "business": {
+          "$ref": "#/$defs/BusinessEvidence"
+        },
+        "content_hash": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Content Hash",
+          "type": "string"
+        },
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        },
+        "debug_ref": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Debug Ref"
+        },
+        "object_id": {
+          "pattern": "^[a-z][a-z0-9_-]{2,127}$",
+          "title": "Object Id",
+          "type": "string"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        },
+        "redaction": {
+          "$ref": "#/$defs/EvidenceRedaction"
+        },
+        "schema_version": {
+          "default": "1.0",
+          "pattern": "^[1-9][0-9]*\\.[0-9]+$",
+          "title": "Schema Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "object_id",
+        "created_at",
+        "content_hash",
+        "provenance",
+        "business",
+        "advanced"
+      ],
+      "title": "EvidencePackage",
+      "type": "object"
+    },
+    "EvidenceRedaction": {
+      "additionalProperties": false,
+      "properties": {
+        "masked_fields": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Masked Fields",
+          "type": "array"
+        },
+        "policy_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Policy Id"
+        },
+        "removed_fields": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Removed Fields",
+          "type": "array"
+        }
+      },
+      "title": "EvidenceRedaction",
+      "type": "object"
+    },
+    "EvidenceRef": {
+      "additionalProperties": false,
+      "properties": {
+        "column": {
+          "title": "Column",
+          "type": "string"
+        },
+        "dataset_id": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+          "title": "Dataset Id",
+          "type": "string"
+        },
+        "metric_id": {
+          "anyOf": [
+            {
+              "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Metric Id"
+        },
+        "row_id": {
+          "title": "Row Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "dataset_id",
+        "row_id",
+        "column"
+      ],
+      "title": "EvidenceRef",
+      "type": "object"
+    },
+    "FilterIntent": {
+      "additionalProperties": false,
+      "properties": {
+        "field_id": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+          "title": "Field Id",
+          "type": "string"
+        },
+        "operator": {
+          "enum": [
+            "eq",
+            "in",
+            "range",
+            "exists",
+            "not"
+          ],
+          "title": "Operator",
+          "type": "string"
+        },
+        "values": {
+          "default": [],
+          "items": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean"
+              }
+            ]
+          },
+          "title": "Values",
+          "type": "array"
+        }
+      },
+      "required": [
+        "field_id",
+        "operator"
+      ],
+      "title": "FilterIntent",
+      "type": "object"
+    },
+    "GovernedChartType": {
+      "enum": [
+        "bar",
+        "line",
+        "heatmap",
+        "stacked_bar",
+        "donut",
+        "dot",
+        "pareto",
+        "table",
+        "pivot"
+      ],
+      "type": "string"
+    },
+    "JsonScalar": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "integer"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "JsonValue": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/JsonScalar"
+        },
+        {
+          "items": {},
+          "type": "array"
+        },
+        {
+          "additionalProperties": true,
+          "type": "object"
+        }
+      ]
+    },
+    "KpiItem": {
+      "additionalProperties": false,
+      "properties": {
+        "definition": {
+          "title": "Definition",
+          "type": "string"
+        },
+        "evidence_row_ids": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence Row Ids",
+          "type": "array"
+        },
+        "formatted_value": {
+          "title": "Formatted Value",
+          "type": "string"
+        },
+        "kpi_id": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+          "title": "Kpi Id",
+          "type": "string"
+        },
+        "label": {
+          "title": "Label",
+          "type": "string"
+        },
+        "quality": {
+          "default": "valid",
+          "enum": [
+            "valid",
+            "insufficient_sample",
+            "not_applicable"
+          ],
+          "title": "Quality",
+          "type": "string"
+        },
+        "semantic_level": {
+          "enum": [
+            "certified",
+            "governed",
+            "operational",
+            "exploratory"
+          ],
+          "title": "Semantic Level",
+          "type": "string"
+        },
+        "unit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Unit"
+        },
+        "value": {
+          "$ref": "#/$defs/JsonScalar"
+        }
+      },
+      "required": [
+        "kpi_id",
+        "label",
+        "value",
+        "formatted_value",
+        "semantic_level",
+        "definition"
+      ],
+      "title": "KpiItem",
+      "type": "object"
+    },
+    "MetricDecision": {
+      "additionalProperties": false,
+      "properties": {
+        "confidence": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Confidence",
+          "type": "number"
+        },
+        "decision": {
+          "enum": [
+            "required",
+            "recommended",
+            "optional",
+            "rejected",
+            "downgraded"
+          ],
+          "title": "Decision",
+          "type": "string"
+        },
+        "metric_id": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+          "title": "Metric Id",
+          "type": "string"
+        },
+        "reason": {
+          "title": "Reason",
+          "type": "string"
+        },
+        "rejection_code": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Rejection Code"
+        },
+        "required_capabilities": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Required Capabilities",
+          "type": "array"
+        },
+        "role": {
+          "title": "Role",
+          "type": "string"
+        }
+      },
+      "required": [
+        "metric_id",
+        "decision",
+        "role",
+        "reason",
+        "confidence"
+      ],
+      "title": "MetricDecision",
+      "type": "object"
+    },
+    "ParameterBinding": {
+      "additionalProperties": false,
+      "properties": {
+        "metric_id": {
+          "anyOf": [
+            {
+              "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Metric Id"
+        },
+        "n": {
+          "anyOf": [
+            {
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "N"
+        },
+        "parameter": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+          "title": "Parameter",
+          "type": "string"
+        },
+        "selection": {
+          "enum": [
+            "top_n",
+            "distinct",
+            "scalar"
+          ],
+          "title": "Selection",
+          "type": "string"
+        },
+        "source_dataset_contract": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+          "title": "Source Dataset Contract",
+          "type": "string"
+        }
+      },
+      "required": [
+        "parameter",
+        "source_dataset_contract",
+        "selection"
+      ],
+      "title": "ParameterBinding",
+      "type": "object"
+    },
+    "PresentationPreference": {
+      "additionalProperties": false,
+      "description": "A user presentation request interpreted by Agent A, not by the renderer.",
+      "properties": {
+        "requested_chart_type": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/GovernedChartType"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "unsupported_chart_label": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Unsupported Chart Label"
+        },
+        "user_specified": {
+          "default": false,
+          "title": "User Specified",
+          "type": "boolean"
+        }
+      },
+      "title": "PresentationPreference",
+      "type": "object"
+    },
+    "Provenance": {
+      "additionalProperties": false,
+      "description": "Traceable origin without credentials or large raw payloads.",
+      "properties": {
+        "metadata": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Metadata",
+          "type": "object"
+        },
+        "producer": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+          "title": "Producer",
+          "type": "string"
+        },
+        "source_hashes": {
+          "additionalProperties": {
+            "pattern": "^sha256:[0-9a-f]{64}$",
+            "type": "string"
+          },
+          "title": "Source Hashes",
+          "type": "object"
+        },
+        "source_ids": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Source Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "producer"
+      ],
+      "title": "Provenance",
+      "type": "object"
+    },
+    "QueryFilter": {
+      "additionalProperties": false,
+      "properties": {
+        "field_id": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+          "title": "Field Id",
+          "type": "string"
+        },
+        "operator": {
+          "enum": [
+            "eq",
+            "in",
+            "range",
+            "exists",
+            "not"
+          ],
+          "title": "Operator",
+          "type": "string"
+        },
+        "values": {
+          "default": [],
+          "items": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean"
+              }
+            ]
+          },
+          "title": "Values",
+          "type": "array"
+        }
+      },
+      "required": [
+        "field_id",
+        "operator"
+      ],
+      "title": "QueryFilter",
+      "type": "object"
+    },
+    "QueryPlan": {
+      "additionalProperties": false,
+      "properties": {
+        "analysis_plan_id": {
+          "title": "Analysis Plan Id",
+          "type": "string"
+        },
+        "consolidation_notes": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Consolidation Notes",
+          "type": "array"
+        },
+        "content_hash": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Content Hash",
+          "type": "string"
+        },
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        },
+        "object_id": {
+          "pattern": "^[a-z][a-z0-9_-]{2,127}$",
+          "title": "Object Id",
+          "type": "string"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        },
+        "reuse_strategy": {
+          "const": "dataset_fingerprint",
+          "default": "dataset_fingerprint",
+          "title": "Reuse Strategy",
+          "type": "string"
+        },
+        "schema_version": {
+          "default": "1.0",
+          "pattern": "^[1-9][0-9]*\\.[0-9]+$",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "steps": {
+          "items": {
+            "$ref": "#/$defs/QueryStep"
+          },
+          "title": "Steps",
+          "type": "array"
+        },
+        "total_estimated_buckets": {
+          "minimum": 0,
+          "title": "Total Estimated Buckets",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "object_id",
+        "created_at",
+        "content_hash",
+        "provenance",
+        "analysis_plan_id",
+        "steps",
+        "total_estimated_buckets"
+      ],
+      "title": "QueryPlan",
+      "type": "object"
+    },
+    "QueryStep": {
+      "additionalProperties": false,
+      "properties": {
+        "dataset_id": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+          "title": "Dataset Id",
+          "type": "string"
+        },
+        "depends_on": {
+          "default": [],
+          "items": {
+            "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+            "type": "string"
+          },
+          "title": "Depends On",
+          "type": "array"
+        },
+        "dimensions": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+            "type": "string"
+          },
+          "title": "Dimensions",
+          "type": "array"
+        },
+        "estimated_buckets": {
+          "minimum": 0,
+          "title": "Estimated Buckets",
+          "type": "integer"
+        },
+        "filters": {
+          "items": {
+            "$ref": "#/$defs/QueryFilter"
+          },
+          "title": "Filters",
+          "type": "array"
+        },
+        "grain": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Grain",
+          "type": "array"
+        },
+        "index_patterns": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Index Patterns",
+          "type": "array"
+        },
+        "measures": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+            "type": "string"
+          },
+          "title": "Measures",
+          "type": "array"
+        },
+        "parameter_bindings": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ParameterBinding"
+          },
+          "title": "Parameter Bindings",
+          "type": "array"
+        },
+        "purpose_task_ids": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+            "type": "string"
+          },
+          "title": "Purpose Task Ids",
+          "type": "array"
+        },
+        "required": {
+          "default": true,
+          "title": "Required",
+          "type": "boolean"
+        },
+        "result_contract_id": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+          "title": "Result Contract Id",
+          "type": "string"
+        },
+        "step_id": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+          "title": "Step Id",
+          "type": "string"
+        },
+        "time_field_id": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+          "title": "Time Field Id",
+          "type": "string"
+        },
+        "time_range": {
+          "$ref": "#/$defs/TimeRange"
+        },
+        "timeout_ms": {
+          "default": 30000,
+          "maximum": 120000,
+          "minimum": 100,
+          "title": "Timeout Ms",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "step_id",
+        "purpose_task_ids",
+        "dataset_id",
+        "index_patterns",
+        "time_range",
+        "time_field_id",
+        "filters",
+        "dimensions",
+        "measures",
+        "grain",
+        "result_contract_id",
+        "estimated_buckets"
+      ],
+      "title": "QueryStep",
+      "type": "object"
+    },
+    "ReconciliationRecord": {
+      "additionalProperties": false,
+      "properties": {
+        "actual": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Actual"
+        },
+        "dataset_ids": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+            "type": "string"
+          },
+          "title": "Dataset Ids",
+          "type": "array"
+        },
+        "expected": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Expected"
+        },
+        "message": {
+          "title": "Message",
+          "type": "string"
+        },
+        "passed": {
+          "title": "Passed",
+          "type": "boolean"
+        },
+        "reconciliation_id": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+          "title": "Reconciliation Id",
+          "type": "string"
+        },
+        "tolerance": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Tolerance",
+          "type": "number"
+        }
+      },
+      "required": [
+        "reconciliation_id",
+        "passed",
+        "expected",
+        "actual",
+        "message",
+        "dataset_ids"
+      ],
+      "title": "ReconciliationRecord",
+      "type": "object"
+    },
+    "TabularDataset": {
+      "additionalProperties": false,
+      "properties": {
+        "columns": {
+          "items": {
+            "$ref": "#/$defs/DatasetColumn"
+          },
+          "title": "Columns",
+          "type": "array"
+        },
+        "complete": {
+          "title": "Complete",
+          "type": "boolean"
+        },
+        "completeness": {
+          "$ref": "#/$defs/DatasetCompleteness"
+        },
+        "content_hash": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Content Hash",
+          "type": "string"
+        },
+        "contract_id": {
+          "title": "Contract Id",
+          "type": "string"
+        },
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        },
+        "dataset_id": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+          "title": "Dataset Id",
+          "type": "string"
+        },
+        "derivation_id": {
+          "anyOf": [
+            {
+              "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Derivation Id"
+        },
+        "grain": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Grain",
+          "type": "array"
+        },
+        "kind": {
+          "enum": [
+            "base",
+            "derived"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "object_id": {
+          "pattern": "^[a-z][a-z0-9_-]{2,127}$",
+          "title": "Object Id",
+          "type": "string"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        },
+        "rows": {
+          "items": {
+            "$ref": "#/$defs/DatasetRow"
+          },
+          "title": "Rows",
+          "type": "array"
+        },
+        "schema_version": {
+          "default": "1.0",
+          "pattern": "^[1-9][0-9]*\\.[0-9]+$",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "source_dataset_ids": {
+          "default": [],
+          "items": {
+            "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+            "type": "string"
+          },
+          "title": "Source Dataset Ids",
+          "type": "array"
+        },
+        "truncated": {
+          "title": "Truncated",
+          "type": "boolean"
+        },
+        "warnings": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        }
+      },
+      "required": [
+        "object_id",
+        "created_at",
+        "content_hash",
+        "provenance",
+        "dataset_id",
+        "contract_id",
+        "kind",
+        "grain",
+        "columns",
+        "rows",
+        "completeness",
+        "complete",
+        "truncated"
+      ],
+      "title": "TabularDataset",
+      "type": "object"
+    },
+    "TimeRange": {
+      "additionalProperties": false,
+      "description": "Half-open business time range.",
+      "properties": {
+        "from_inclusive": {
+          "format": "date-time",
+          "title": "From Inclusive",
+          "type": "string"
+        },
+        "timezone": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Timezone",
+          "type": "string"
+        },
+        "to_exclusive": {
+          "format": "date-time",
+          "title": "To Exclusive",
+          "type": "string"
+        }
+      },
+      "required": [
+        "from_inclusive",
+        "to_exclusive",
+        "timezone"
+      ],
+      "title": "TimeRange",
+      "type": "object"
+    },
+    "TurnKind": {
+      "enum": [
+        "NEW_ANALYSIS",
+        "CLARIFICATION",
+        "FILTER_CHANGE",
+        "TIME_CHANGE",
+        "DIMENSION_CHANGE",
+        "PRESENTATION_CHANGE",
+        "EXPLANATION",
+        "NEW_TOPIC"
+      ],
+      "title": "TurnKind",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "analysis_plan": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/AnalysisPlan"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "analytical_base_answer_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Analytical Base Answer Id"
+    },
+    "chronological_parent_answer_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Chronological Parent Answer Id"
+    },
+    "claims": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/ClaimSpec"
+      },
+      "title": "Claims",
+      "type": "array"
+    },
+    "content_hash": {
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "title": "Content Hash",
+      "type": "string"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "dashboard_spec": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/DashboardSpec"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "dataset_bundle": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/DatasetBundle"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "evidence_package": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/EvidencePackage"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "limitations": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Limitations",
+      "type": "array"
+    },
+    "metric_versions": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Metric Versions",
+      "type": "array"
+    },
+    "object_id": {
+      "pattern": "^[a-z][a-z0-9_-]{2,127}$",
+      "title": "Object Id",
+      "type": "string"
+    },
+    "provenance": {
+      "$ref": "#/$defs/Provenance"
+    },
+    "query_plan": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/QueryPlan"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "schema_version": {
+      "default": "1.0",
+      "pattern": "^[1-9][0-9]*\\.[0-9]+$",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "semantic_package_version": {
+      "title": "Semantic Package Version",
+      "type": "string"
+    },
+    "session_id": {
+      "title": "Session Id",
+      "type": "string"
+    },
+    "status": {
+      "$ref": "#/$defs/AnswerStatus"
+    },
+    "turn_kind": {
+      "$ref": "#/$defs/TurnKind"
+    },
+    "warnings": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Warnings",
+      "type": "array"
+    }
+  },
+  "required": [
+    "object_id",
+    "created_at",
+    "content_hash",
+    "provenance",
+    "session_id",
+    "turn_kind",
+    "status",
+    "semantic_package_version",
+    "metric_versions"
+  ],
+  "title": "AnswerSnapshot",
+  "type": "object"
+}

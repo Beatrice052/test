@@ -1,0 +1,9 @@
+recipe_id: channel_operational_overview
+version: v1
+question_archetype: operational_overview
+metric_ids: [message_record_count.v1, failure_rate.v1]
+method_ids: [rank, contribution]
+dimension_roles: [channel, time, status_group]
+visualization_intents: [ranked_comparison, time_trend, composition]
+minimum_capabilities: [group_by, date_histogram]
+

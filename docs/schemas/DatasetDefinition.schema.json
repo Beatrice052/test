@@ -1,0 +1,57 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "dataset_id": {
+      "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+      "title": "Dataset Id",
+      "type": "string"
+    },
+    "default_timezone": {
+      "title": "Default Timezone",
+      "type": "string"
+    },
+    "description": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Description"
+    },
+    "display_name": {
+      "title": "Display Name",
+      "type": "string"
+    },
+    "index_pattern": {
+      "title": "Index Pattern",
+      "type": "string"
+    },
+    "missing_index_policy": {
+      "default": "empty",
+      "enum": [
+        "empty",
+        "error"
+      ],
+      "title": "Missing Index Policy",
+      "type": "string"
+    },
+    "primary_time_field_id": {
+      "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+      "title": "Primary Time Field Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "dataset_id",
+    "display_name",
+    "index_pattern",
+    "default_timezone",
+    "primary_time_field_id"
+  ],
+  "title": "DatasetDefinition",
+  "type": "object"
+}

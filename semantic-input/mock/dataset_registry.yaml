@@ -1,0 +1,9 @@
+datasets:
+  - dataset_id: sub_message
+    display_name: 消息发送记录
+    description: 月度 OpenSearch 消息发送记录 Dataset
+    index_pattern: tbl_os_sub_message_{YYYY}_{MM}
+    default_timezone: Asia/Hong_Kong
+    primary_time_field_id: sub_message.event_time
+    missing_index_policy: empty
+

@@ -1,0 +1,56 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "allowed_chart_types": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Allowed Chart Types",
+      "type": "array"
+    },
+    "intent": {
+      "title": "Intent",
+      "type": "string"
+    },
+    "maximum_categories": {
+      "default": 20,
+      "minimum": 1,
+      "title": "Maximum Categories",
+      "type": "integer"
+    },
+    "minimum_rows": {
+      "default": 1,
+      "minimum": 0,
+      "title": "Minimum Rows",
+      "type": "integer"
+    },
+    "minimum_time_points": {
+      "default": 1,
+      "minimum": 1,
+      "title": "Minimum Time Points",
+      "type": "integer"
+    },
+    "requires_complete_distribution": {
+      "default": false,
+      "title": "Requires Complete Distribution",
+      "type": "boolean"
+    },
+    "version": {
+      "title": "Version",
+      "type": "string"
+    },
+    "visualization_id": {
+      "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+      "title": "Visualization Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "visualization_id",
+    "version",
+    "intent",
+    "allowed_chart_types"
+  ],
+  "title": "VisualizationDefinition",
+  "type": "object"
+}

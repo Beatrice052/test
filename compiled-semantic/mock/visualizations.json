@@ -1,0 +1,69 @@
+[
+  {
+    "allowed_chart_types": [
+      "bar",
+      "dot"
+    ],
+    "intent": "ranked_comparison",
+    "maximum_categories": 20,
+    "minimum_rows": 2,
+    "minimum_time_points": 1,
+    "requires_complete_distribution": false,
+    "version": "v1",
+    "visualization_id": "ranked_comparison"
+  },
+  {
+    "allowed_chart_types": [
+      "line",
+      "bar",
+      "heatmap",
+      "stacked_bar"
+    ],
+    "intent": "time_trend",
+    "maximum_categories": 8,
+    "minimum_rows": 2,
+    "minimum_time_points": 2,
+    "requires_complete_distribution": false,
+    "version": "v1",
+    "visualization_id": "time_trend"
+  },
+  {
+    "allowed_chart_types": [
+      "stacked_bar",
+      "donut",
+      "heatmap"
+    ],
+    "intent": "composition",
+    "maximum_categories": 12,
+    "minimum_rows": 2,
+    "minimum_time_points": 1,
+    "requires_complete_distribution": true,
+    "version": "v1",
+    "visualization_id": "composition"
+  },
+  {
+    "allowed_chart_types": [
+      "pareto",
+      "bar"
+    ],
+    "intent": "pareto",
+    "maximum_categories": 20,
+    "minimum_rows": 2,
+    "minimum_time_points": 1,
+    "requires_complete_distribution": true,
+    "version": "v1",
+    "visualization_id": "pareto"
+  },
+  {
+    "allowed_chart_types": [
+      "line"
+    ],
+    "intent": "anomaly",
+    "maximum_categories": 8,
+    "minimum_rows": 4,
+    "minimum_time_points": 4,
+    "requires_complete_distribution": false,
+    "version": "v1",
+    "visualization_id": "anomaly"
+  }
+]

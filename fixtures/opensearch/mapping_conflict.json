@@ -1,0 +1,12 @@
+{
+  "captured_at": "2026-07-31T00:00:00Z",
+  "indices": {
+    "tbl_os_sub_message_2026_06": {
+      "mappings": {"properties": {"channel": {"type": "keyword"}}}
+    },
+    "tbl_os_sub_message_2026_07": {
+      "mappings": {"properties": {"channel": {"type": "long"}}}
+    }
+  }
+}
+

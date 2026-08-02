@@ -1,0 +1,101 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "approximate": {
+      "default": false,
+      "title": "Approximate",
+      "type": "boolean"
+    },
+    "denominator": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Denominator"
+    },
+    "evidence_row_ids": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Evidence Row Ids",
+      "type": "array"
+    },
+    "excluded": {
+      "additionalProperties": {
+        "type": "integer"
+      },
+      "title": "Excluded",
+      "type": "object"
+    },
+    "metric_id": {
+      "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+      "title": "Metric Id",
+      "type": "string"
+    },
+    "metric_version": {
+      "title": "Metric Version",
+      "type": "string"
+    },
+    "numerator": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Numerator"
+    },
+    "quality": {
+      "enum": [
+        "VALID",
+        "INSUFFICIENT_SAMPLE",
+        "INVALID",
+        "NOT_APPLICABLE"
+      ],
+      "title": "Quality",
+      "type": "string"
+    },
+    "unit": {
+      "title": "Unit",
+      "type": "string"
+    },
+    "value": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Value"
+    }
+  },
+  "required": [
+    "metric_id",
+    "metric_version",
+    "value",
+    "unit",
+    "quality"
+  ],
+  "title": "MetricValue",
+  "type": "object"
+}

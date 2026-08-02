@@ -1,0 +1,41 @@
+visualizations:
+  - visualization_id: ranked_comparison
+    version: v1
+    intent: ranked_comparison
+    allowed_chart_types: [bar, dot]
+    minimum_rows: 2
+    maximum_categories: 20
+    minimum_time_points: 1
+    requires_complete_distribution: false
+  - visualization_id: time_trend
+    version: v1
+    intent: time_trend
+    allowed_chart_types: [line, bar, heatmap, stacked_bar]
+    minimum_rows: 2
+    maximum_categories: 8
+    minimum_time_points: 2
+    requires_complete_distribution: false
+  - visualization_id: composition
+    version: v1
+    intent: composition
+    allowed_chart_types: [stacked_bar, donut, heatmap]
+    minimum_rows: 2
+    maximum_categories: 12
+    minimum_time_points: 1
+    requires_complete_distribution: true
+  - visualization_id: pareto
+    version: v1
+    intent: pareto
+    allowed_chart_types: [pareto, bar]
+    minimum_rows: 2
+    maximum_categories: 20
+    minimum_time_points: 1
+    requires_complete_distribution: true
+  - visualization_id: anomaly
+    version: v1
+    intent: anomaly
+    allowed_chart_types: [line]
+    minimum_rows: 4
+    maximum_categories: 8
+    minimum_time_points: 4
+    requires_complete_distribution: false

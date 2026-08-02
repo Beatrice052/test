@@ -1,0 +1,14 @@
+metric_id: message_record_count
+version: v1
+level: governed_derived
+display_name: 消息记录数
+business_definition: 过滤范围内的 OpenSearch 文档记录数，不自动称为去重发送量
+formula:
+  operator: column
+  column: record_count
+dimensions: [channel, status_group, day, month]
+minimum_denominator: 0
+unit: count
+precision: 0
+owner: framework
+

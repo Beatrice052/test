@@ -1,0 +1,38 @@
+{
+  "ambiguous_rows": [],
+  "blocked_fields": [
+    "sub_message.recipient_id"
+  ],
+  "catalog_hash": "sha256:79a282dc10b7a28484a17616fc42b19ae857f2d3eb620cd69975511b4b9e577f",
+  "catalog_only_fields": [],
+  "catalog_row_count": 11,
+  "content_hash": "sha256:5a4e0e4f5bc6ceafc6ef8584f0ffd830e25d0aaebbe70d8ab12b34967ba5854e",
+  "created_at": "2026-07-31T00:00:00Z",
+  "duplicate_field_paths": [],
+  "invalid_metric_bindings": [],
+  "issues": [],
+  "mapping_field_count": 15,
+  "mapping_hash": "sha256:236d577289d2988b1604353fd01ba9d5a2b26a794047ce5d7f516e6ed3261920",
+  "mapping_only_fields": [
+    "sub_message.mapping_only_note"
+  ],
+  "matched_count": 11,
+  "object_id": "imr_5a4e0e4f5bc6ceaf",
+  "provenance": {
+    "metadata": {},
+    "producer": "semantic.compiler",
+    "source_hashes": {
+      "catalog": "sha256:79a282dc10b7a28484a17616fc42b19ae857f2d3eb620cd69975511b4b9e577f",
+      "mapping": "sha256:236d577289d2988b1604353fd01ba9d5a2b26a794047ce5d7f516e6ed3261920"
+    },
+    "source_ids": [
+      "mps_236d577289d2988b"
+    ]
+  },
+  "sanitized_descriptions": [
+    "sub_message.free_text"
+  ],
+  "schema_version": "1.0",
+  "status": "PASSED",
+  "type_conflicts": []
+}

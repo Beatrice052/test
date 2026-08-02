@@ -1,0 +1,11 @@
+policies:
+  - policy_id: internal_business_policy
+    version: v1
+    allowed_dataset_ids: [sub_message]
+    allowed_index_patterns: []
+    blocked_field_ids: [sub_message.recipient_id]
+    sensitive_field_ids: [sub_message.recipient_id, sub_message.message_id]
+    detail_allowed_field_ids: []
+    max_detail_hits: 100
+    max_total_buckets: 5000
+    scripts_allowed: false

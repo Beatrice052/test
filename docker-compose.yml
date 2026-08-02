@@ -1,0 +1,183 @@
+x-backend-common: &backend-common
+  build:
+    context: .
+    dockerfile: backend/Dockerfile
+  healthcheck:
+    test:
+      - CMD
+      - python
+      - -c
+      - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health/ready')"
+    interval: 5s
+    timeout: 3s
+    retries: 20
+    start_period: 10s
+
+x-frontend-common: &frontend-common
+  build:
+    context: ./frontend
+
+services:
+  backend-mock:
+    <<: *backend-common
+    profiles: ["mock"]
+    environment:
+      APP_ENV: mock
+      CHATBI_IDENTITY_MODE: mock
+      CHATBI_LLM_MODE: rule_based
+      CHATBI_GATEWAY_MODE: mock
+    networks:
+      default:
+        aliases: [backend]
+    volumes:
+      - backend-mock-data:/app/backend/var
+
+  frontend-mock:
+    <<: *frontend-common
+    profiles: ["mock"]
+    depends_on:
+      backend-mock:
+        condition: service_healthy
+    ports:
+      - "5173:80"
+
+  opensearch:
+    image: opensearchproject/opensearch:3.6.0
+    profiles: ["local-os"]
+    environment:
+      discovery.type: single-node
+      DISABLE_SECURITY_PLUGIN: "true"
+      DISABLE_INSTALL_DEMO_CONFIG: "true"
+      bootstrap.memory_lock: "true"
+      OPENSEARCH_JAVA_OPTS: -Xms512m -Xmx512m
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    volumes:
+      - opensearch-local-data:/usr/share/opensearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:9200/_cluster/health >/dev/null"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+
+  fixture-loader:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    profiles: ["local-os"]
+    depends_on:
+      opensearch:
+        condition: service_healthy
+    environment:
+      OPENSEARCH_URL: http://opensearch:9200
+    command:
+      - uv
+      - run
+      - python
+      - /app/scripts/load_local_opensearch.py
+      - --mapping
+      - /app/semantic-input/mock/mapping_snapshot.json
+      - --fixture
+      - /app/fixtures/gateway/sub_message_rows.json
+
+  opensearch-mcp:
+    build:
+      context: .
+      dockerfile: docker/mcp/Dockerfile
+    profiles: ["local-os"]
+    depends_on:
+      opensearch:
+        condition: service_healthy
+      fixture-loader:
+        condition: service_completed_successfully
+    environment:
+      OPENSEARCH_URL: http://opensearch:9200
+      OPENSEARCH_NO_AUTH: "true"
+      OPENSEARCH_SSL_VERIFY: "false"
+      OPENSEARCH_DYNAMIC_CONNECTION: "false"
+      OPENSEARCH_ENABLED_TOOLS: ListIndexTool,IndexMappingTool,SearchIndexTool,ClusterHealthTool
+      OPENSEARCH_DISABLED_TOOLS: GenericOpenSearchApiTool,PPLQueryTool
+      OPENSEARCH_SETTINGS_ALLOW_WRITE: "false"
+      OPENSEARCH_QUERY_TIMEOUT: 10s
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import socket; s=socket.create_connection(('127.0.0.1',9900),3); s.close()"
+      interval: 5s
+      timeout: 4s
+      retries: 20
+      start_period: 15s
+
+  backend-local-os:
+    <<: *backend-common
+    profiles: ["local-os"]
+    depends_on:
+      opensearch-mcp:
+        condition: service_healthy
+    environment:
+      APP_ENV: local-os
+      CHATBI_IDENTITY_MODE: mock
+      CHATBI_LLM_MODE: rule_based
+      CHATBI_GATEWAY_MODE: mcp
+      CHATBI_GATEWAY_CONFIG_PATH: ../config/local-os.mcp.yaml
+      OPENSEARCH_MCP_TRANSPORT: streamable_http
+      OPENSEARCH_MCP_ENDPOINT: http://opensearch-mcp:9900/mcp
+    networks:
+      default:
+        aliases: [backend]
+    volumes:
+      - backend-local-os-data:/app/backend/var
+
+  frontend-local-os:
+    <<: *frontend-common
+    profiles: ["local-os"]
+    depends_on:
+      backend-local-os:
+        condition: service_healthy
+    ports:
+      - "5173:80"
+
+  backend-mcp:
+    <<: *backend-common
+    profiles: ["mcp"]
+    environment:
+      APP_ENV: mcp
+      CHATBI_IDENTITY_MODE: trusted_headers
+      CHATBI_LLM_MODE: ${CHATBI_LLM_MODE:-openai_compatible}
+      CHATBI_LLM_BASE_URL: ${CHATBI_LLM_BASE_URL:-}
+      CHATBI_LLM_API_KEY: ${CHATBI_LLM_API_KEY:-}
+      CHATBI_LLM_MODEL: ${CHATBI_LLM_MODEL:-}
+      CHATBI_SEMANTIC_PACKAGE_DIR: ${CHATBI_SEMANTIC_PACKAGE_DIR:-../compiled-semantic/internal}
+      CHATBI_SEMANTIC_INPUT_DIR: ${CHATBI_SEMANTIC_INPUT_DIR:-../semantic-input/internal}
+      CHATBI_GATEWAY_MODE: mcp
+      CHATBI_GATEWAY_CONFIG_PATH: ../config/gateway.mcp.yaml
+      OPENSEARCH_MCP_TRANSPORT: ${OPENSEARCH_MCP_TRANSPORT:-streamable_http}
+      OPENSEARCH_MCP_ENDPOINT: ${OPENSEARCH_MCP_ENDPOINT:-}
+    networks:
+      default:
+        aliases: [backend]
+    volumes:
+      - backend-mcp-data:/app/backend/var
+
+  frontend-mcp:
+    <<: *frontend-common
+    profiles: ["mcp"]
+    depends_on:
+      backend-mcp:
+        condition: service_healthy
+    ports:
+      - "5173:80"
+
+volumes:
+  backend-mock-data:
+  backend-local-os-data:
+  backend-mcp-data:
+  opensearch-local-data:

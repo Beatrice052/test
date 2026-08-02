@@ -1,0 +1,20 @@
+app:
+  environment: local
+  default_timezone: Asia/Hong_Kong
+  default_locale: zh-CN
+  debug_api_enabled: false
+
+llm:
+  mode: fixture
+
+gateway:
+  mode: mock
+
+budgets:
+  max_queries_per_turn: 3
+  max_total_buckets: 5000
+  max_composite_pages: 20
+  max_raw_response_bytes: 10000000
+  max_detail_hits: 100
+  turn_timeout_seconds: 90
+

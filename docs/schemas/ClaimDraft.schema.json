@@ -1,0 +1,87 @@
+{
+  "$defs": {
+    "ClaimBinding": {
+      "additionalProperties": false,
+      "properties": {
+        "column": {
+          "title": "Column",
+          "type": "string"
+        },
+        "dataset_id": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+          "title": "Dataset Id",
+          "type": "string"
+        },
+        "name": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+          "title": "Name",
+          "type": "string"
+        },
+        "selector": {
+          "title": "Selector",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "dataset_id",
+        "selector",
+        "column"
+      ],
+      "title": "ClaimBinding",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "bindings": {
+      "items": {
+        "$ref": "#/$defs/ClaimBinding"
+      },
+      "title": "Bindings",
+      "type": "array"
+    },
+    "claim_type": {
+      "enum": [
+        "value",
+        "ranking",
+        "comparison",
+        "trend",
+        "share",
+        "anomaly"
+      ],
+      "title": "Claim Type",
+      "type": "string"
+    },
+    "importance": {
+      "default": "secondary",
+      "enum": [
+        "primary",
+        "secondary",
+        "supporting"
+      ],
+      "title": "Importance",
+      "type": "string"
+    },
+    "task_ids": {
+      "default": [],
+      "items": {
+        "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+        "type": "string"
+      },
+      "title": "Task Ids",
+      "type": "array"
+    },
+    "template": {
+      "title": "Template",
+      "type": "string"
+    }
+  },
+  "required": [
+    "claim_type",
+    "template",
+    "bindings"
+  ],
+  "title": "ClaimDraft",
+  "type": "object"
+}

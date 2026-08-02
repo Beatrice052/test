@@ -1,0 +1,29 @@
+[
+  {
+    "dimension_roles": [
+      "channel",
+      "time",
+      "status_group"
+    ],
+    "method_ids": [
+      "rank",
+      "contribution"
+    ],
+    "metric_ids": [
+      "message_record_count.v1",
+      "failure_rate.v1"
+    ],
+    "minimum_capabilities": [
+      "group_by",
+      "date_histogram"
+    ],
+    "question_archetype": "operational_overview",
+    "recipe_id": "channel_operational_overview",
+    "version": "v1",
+    "visualization_intents": [
+      "ranked_comparison",
+      "time_trend",
+      "composition"
+    ]
+  }
+]

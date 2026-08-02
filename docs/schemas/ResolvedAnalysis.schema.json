@@ -1,0 +1,339 @@
+{
+  "$defs": {
+    "JsonScalar": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "integer"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "JsonValue": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/JsonScalar"
+        },
+        {
+          "items": {},
+          "type": "array"
+        },
+        {
+          "additionalProperties": true,
+          "type": "object"
+        }
+      ]
+    },
+    "Provenance": {
+      "additionalProperties": false,
+      "description": "Traceable origin without credentials or large raw payloads.",
+      "properties": {
+        "metadata": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Metadata",
+          "type": "object"
+        },
+        "producer": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+          "title": "Producer",
+          "type": "string"
+        },
+        "source_hashes": {
+          "additionalProperties": {
+            "pattern": "^sha256:[0-9a-f]{64}$",
+            "type": "string"
+          },
+          "title": "Source Hashes",
+          "type": "object"
+        },
+        "source_ids": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Source Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "producer"
+      ],
+      "title": "Provenance",
+      "type": "object"
+    },
+    "ResolvedFilter": {
+      "additionalProperties": false,
+      "properties": {
+        "field_id": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+          "title": "Field Id",
+          "type": "string"
+        },
+        "operator": {
+          "title": "Operator",
+          "type": "string"
+        },
+        "physical_path": {
+          "title": "Physical Path",
+          "type": "string"
+        },
+        "value_dictionary_id": {
+          "anyOf": [
+            {
+              "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Value Dictionary Id"
+        },
+        "values": {
+          "items": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean"
+              }
+            ]
+          },
+          "title": "Values",
+          "type": "array"
+        }
+      },
+      "required": [
+        "field_id",
+        "physical_path",
+        "operator",
+        "values"
+      ],
+      "title": "ResolvedFilter",
+      "type": "object"
+    },
+    "ResolvedMetric": {
+      "additionalProperties": false,
+      "properties": {
+        "executable": {
+          "title": "Executable",
+          "type": "boolean"
+        },
+        "metric_id": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+          "title": "Metric Id",
+          "type": "string"
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reason"
+        },
+        "required_field_ids": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+            "type": "string"
+          },
+          "title": "Required Field Ids",
+          "type": "array"
+        },
+        "required_grain": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Required Grain",
+          "type": "array"
+        },
+        "version": {
+          "title": "Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "metric_id",
+        "version",
+        "required_field_ids",
+        "required_grain",
+        "executable"
+      ],
+      "title": "ResolvedMetric",
+      "type": "object"
+    },
+    "TimeRange": {
+      "additionalProperties": false,
+      "description": "Half-open business time range.",
+      "properties": {
+        "from_inclusive": {
+          "format": "date-time",
+          "title": "From Inclusive",
+          "type": "string"
+        },
+        "timezone": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Timezone",
+          "type": "string"
+        },
+        "to_exclusive": {
+          "format": "date-time",
+          "title": "To Exclusive",
+          "type": "string"
+        }
+      },
+      "required": [
+        "from_inclusive",
+        "to_exclusive",
+        "timezone"
+      ],
+      "title": "TimeRange",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "analysis_plan_id": {
+      "title": "Analysis Plan Id",
+      "type": "string"
+    },
+    "answerable": {
+      "title": "Answerable",
+      "type": "boolean"
+    },
+    "caveats": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Caveats",
+      "type": "array"
+    },
+    "content_hash": {
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "title": "Content Hash",
+      "type": "string"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "dataset_ids": {
+      "items": {
+        "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+        "type": "string"
+      },
+      "title": "Dataset Ids",
+      "type": "array"
+    },
+    "filters": {
+      "items": {
+        "$ref": "#/$defs/ResolvedFilter"
+      },
+      "title": "Filters",
+      "type": "array"
+    },
+    "index_patterns": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Index Patterns",
+      "type": "array"
+    },
+    "method_ids": {
+      "default": [],
+      "items": {
+        "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+        "type": "string"
+      },
+      "title": "Method Ids",
+      "type": "array"
+    },
+    "metrics": {
+      "items": {
+        "$ref": "#/$defs/ResolvedMetric"
+      },
+      "title": "Metrics",
+      "type": "array"
+    },
+    "object_id": {
+      "pattern": "^[a-z][a-z0-9_-]{2,127}$",
+      "title": "Object Id",
+      "type": "string"
+    },
+    "policy_scope_id": {
+      "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+      "title": "Policy Scope Id",
+      "type": "string"
+    },
+    "provenance": {
+      "$ref": "#/$defs/Provenance"
+    },
+    "resolved_field_ids": {
+      "items": {
+        "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+        "type": "string"
+      },
+      "title": "Resolved Field Ids",
+      "type": "array"
+    },
+    "schema_version": {
+      "default": "1.0",
+      "pattern": "^[1-9][0-9]*\\.[0-9]+$",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "time_field_id": {
+      "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+      "title": "Time Field Id",
+      "type": "string"
+    },
+    "time_range": {
+      "$ref": "#/$defs/TimeRange"
+    }
+  },
+  "required": [
+    "object_id",
+    "created_at",
+    "content_hash",
+    "provenance",
+    "analysis_plan_id",
+    "dataset_ids",
+    "index_patterns",
+    "resolved_field_ids",
+    "metrics",
+    "filters",
+    "time_field_id",
+    "time_range",
+    "policy_scope_id",
+    "answerable"
+  ],
+  "title": "ResolvedAnalysis",
+  "type": "object"
+}

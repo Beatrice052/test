@@ -1,0 +1,3 @@
+gateway:
+  mode: mock
+  fixtures_dir: fixtures/opensearch/results

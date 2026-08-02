@@ -1,0 +1,77 @@
+[
+  {
+    "business_definition": "Mock 中失败状态记录占 success 与 failure 正式分母记录的比例",
+    "denominator": {
+      "column": null,
+      "operands": [],
+      "operator": "filtered_count",
+      "status_groups": [
+        "success",
+        "failure"
+      ],
+      "value": null
+    },
+    "dimensions": [
+      "channel",
+      "day",
+      "month"
+    ],
+    "display_name": "失败率",
+    "enabled": true,
+    "formula": null,
+    "level": "CERTIFIED",
+    "metric_id": "failure_rate",
+    "minimum_denominator": 30,
+    "null_policy": "exclude_and_report",
+    "numerator": {
+      "column": null,
+      "operands": [],
+      "operator": "filtered_count",
+      "status_groups": [
+        "failure"
+      ],
+      "value": null
+    },
+    "owner": "mock_business_metric_owner",
+    "pending_policy": "exclude",
+    "precision": 4,
+    "time_semantics": {
+      "capability_id": "terminal_event_time",
+      "timezone": "Asia/Hong_Kong"
+    },
+    "unit": "ratio",
+    "unknown_policy": "exclude_and_report",
+    "version": "v1"
+  },
+  {
+    "business_definition": "过滤范围内的 OpenSearch 文档记录数，不自动称为去重发送量",
+    "denominator": null,
+    "dimensions": [
+      "channel",
+      "status_group",
+      "day",
+      "month"
+    ],
+    "display_name": "消息记录数",
+    "enabled": true,
+    "formula": {
+      "column": "record_count",
+      "operands": [],
+      "operator": "column",
+      "status_groups": [],
+      "value": null
+    },
+    "level": "GOVERNED_DERIVED",
+    "metric_id": "message_record_count",
+    "minimum_denominator": 0,
+    "null_policy": "exclude_and_report",
+    "numerator": null,
+    "owner": "framework",
+    "pending_policy": "exclude",
+    "precision": 0,
+    "time_semantics": null,
+    "unit": "count",
+    "unknown_policy": "exclude_and_report",
+    "version": "v1"
+  }
+]

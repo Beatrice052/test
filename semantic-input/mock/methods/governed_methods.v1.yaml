@@ -1,0 +1,88 @@
+methods:
+  - method_id: rank
+    version: v1
+    display_name: Rank / Top N
+    minimum_rows: 2
+    required_semantic_types: [categorical_dimension, numeric_measure]
+    exploratory_label_required: true
+    default_params:
+      n: 5
+  - method_id: contribution
+    version: v1
+    display_name: 变化贡献
+    minimum_rows: 2
+    required_semantic_types: [categorical_dimension, numeric_measure]
+    exploratory_label_required: true
+    default_params: {}
+  - method_id: mad_robust_zscore
+    version: v1
+    display_name: MAD Robust Z-score
+    minimum_rows: 14
+    required_semantic_types: [time_dimension, numeric_measure]
+    exploratory_label_required: true
+    default_params:
+      threshold: 3.5
+  - method_id: mean_median
+    version: v1
+    display_name: Mean / Median
+    minimum_rows: 1
+    required_semantic_types: [numeric_measure]
+    exploratory_label_required: true
+    default_params: {}
+  - method_id: percentiles
+    version: v1
+    display_name: Percentiles
+    minimum_rows: 1
+    required_semantic_types: [numeric_measure]
+    exploratory_label_required: true
+    default_params: {}
+  - method_id: std_cv
+    version: v1
+    display_name: Standard deviation / CV
+    minimum_rows: 7
+    required_semantic_types: [time_dimension, numeric_measure]
+    exploratory_label_required: true
+    default_params: {}
+  - method_id: moving_average
+    version: v1
+    display_name: Moving Average
+    minimum_rows: 7
+    required_semantic_types: [time_dimension, numeric_measure]
+    exploratory_label_required: true
+    default_params:
+      window: 7
+  - method_id: hhi
+    version: v1
+    display_name: HHI Concentration
+    minimum_rows: 2
+    required_semantic_types: [categorical_dimension, numeric_measure]
+    exploratory_label_required: true
+    default_params: {}
+  - method_id: pareto
+    version: v1
+    display_name: Pareto Contribution
+    minimum_rows: 2
+    required_semantic_types: [categorical_dimension, numeric_measure]
+    exploratory_label_required: true
+    default_params: {}
+  - method_id: peak_to_average
+    version: v1
+    display_name: Peak-to-average Ratio
+    minimum_rows: 2
+    required_semantic_types: [numeric_measure]
+    exploratory_label_required: true
+    default_params: {}
+  - method_id: trend_slope
+    version: v1
+    display_name: Trend Slope
+    minimum_rows: 2
+    required_semantic_types: [time_dimension, numeric_measure]
+    exploratory_label_required: true
+    default_params: {}
+  - method_id: period_change
+    version: v1
+    display_name: Period Change
+    minimum_rows: 2
+    required_semantic_types: [time_dimension, numeric_measure]
+    exploratory_label_required: true
+    default_params: {}

@@ -1,0 +1,27 @@
+[
+  {
+    "allowed_dataset_ids": [
+      "sub_message"
+    ],
+    "allowed_index_patterns": [
+      "tbl_os_sub_message_2026_05",
+      "tbl_os_sub_message_2026_06",
+      "tbl_os_sub_message_2026_07"
+    ],
+    "blocked_field_ids": [
+      "sub_message.recipient_id"
+    ],
+    "detail_allowed_field_ids": [
+      "sub_message.message_id"
+    ],
+    "max_detail_hits": 100,
+    "max_total_buckets": 5000,
+    "policy_id": "mock_business_policy",
+    "scripts_allowed": false,
+    "sensitive_field_ids": [
+      "sub_message.recipient_id",
+      "sub_message.message_id"
+    ],
+    "version": "v1"
+  }
+]

@@ -1,0 +1,67 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "dimension_roles": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Dimension Roles",
+      "type": "array"
+    },
+    "method_ids": {
+      "default": [],
+      "items": {
+        "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+        "type": "string"
+      },
+      "title": "Method Ids",
+      "type": "array"
+    },
+    "metric_ids": {
+      "default": [],
+      "items": {
+        "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+        "type": "string"
+      },
+      "title": "Metric Ids",
+      "type": "array"
+    },
+    "minimum_capabilities": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Minimum Capabilities",
+      "type": "array"
+    },
+    "question_archetype": {
+      "title": "Question Archetype",
+      "type": "string"
+    },
+    "recipe_id": {
+      "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+      "title": "Recipe Id",
+      "type": "string"
+    },
+    "version": {
+      "title": "Version",
+      "type": "string"
+    },
+    "visualization_intents": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Visualization Intents",
+      "type": "array"
+    }
+  },
+  "required": [
+    "recipe_id",
+    "version",
+    "question_archetype"
+  ],
+  "title": "AnalysisRecipe",
+  "type": "object"
+}

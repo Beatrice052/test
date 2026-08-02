@@ -1,0 +1,240 @@
+{
+  "$defs": {
+    "FormulaNode": {
+      "additionalProperties": false,
+      "properties": {
+        "column": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Column"
+        },
+        "operands": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/FormulaNode"
+          },
+          "title": "Operands",
+          "type": "array"
+        },
+        "operator": {
+          "enum": [
+            "constant",
+            "column",
+            "filtered_count",
+            "add",
+            "subtract",
+            "multiply",
+            "divide",
+            "sum"
+          ],
+          "title": "Operator",
+          "type": "string"
+        },
+        "status_groups": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Status Groups",
+          "type": "array"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Value"
+        }
+      },
+      "required": [
+        "operator"
+      ],
+      "title": "FormulaNode",
+      "type": "object"
+    },
+    "MetricLevel": {
+      "enum": [
+        "CERTIFIED",
+        "GOVERNED_DERIVED",
+        "EXPLORATORY",
+        "UNSUPPORTED"
+      ],
+      "title": "MetricLevel",
+      "type": "string"
+    },
+    "MetricTimeSemantics": {
+      "additionalProperties": false,
+      "properties": {
+        "capability_id": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+          "title": "Capability Id",
+          "type": "string"
+        },
+        "timezone": {
+          "title": "Timezone",
+          "type": "string"
+        }
+      },
+      "required": [
+        "capability_id",
+        "timezone"
+      ],
+      "title": "MetricTimeSemantics",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "business_definition": {
+      "title": "Business Definition",
+      "type": "string"
+    },
+    "denominator": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/FormulaNode"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "dimensions": {
+      "default": [],
+      "items": {
+        "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+        "type": "string"
+      },
+      "title": "Dimensions",
+      "type": "array"
+    },
+    "display_name": {
+      "title": "Display Name",
+      "type": "string"
+    },
+    "enabled": {
+      "default": true,
+      "title": "Enabled",
+      "type": "boolean"
+    },
+    "formula": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/FormulaNode"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "level": {
+      "$ref": "#/$defs/MetricLevel"
+    },
+    "metric_id": {
+      "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+      "title": "Metric Id",
+      "type": "string"
+    },
+    "minimum_denominator": {
+      "default": 0,
+      "minimum": 0,
+      "title": "Minimum Denominator",
+      "type": "integer"
+    },
+    "null_policy": {
+      "default": "exclude_and_report",
+      "title": "Null Policy",
+      "type": "string"
+    },
+    "numerator": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/FormulaNode"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "owner": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Owner"
+    },
+    "pending_policy": {
+      "default": "exclude",
+      "title": "Pending Policy",
+      "type": "string"
+    },
+    "precision": {
+      "default": 4,
+      "maximum": 12,
+      "minimum": 0,
+      "title": "Precision",
+      "type": "integer"
+    },
+    "time_semantics": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/MetricTimeSemantics"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "unit": {
+      "default": "number",
+      "enum": [
+        "count",
+        "ratio",
+        "milliseconds",
+        "number"
+      ],
+      "title": "Unit",
+      "type": "string"
+    },
+    "unknown_policy": {
+      "default": "exclude_and_report",
+      "title": "Unknown Policy",
+      "type": "string"
+    },
+    "version": {
+      "pattern": "^v[1-9][0-9]*$",
+      "title": "Version",
+      "type": "string"
+    }
+  },
+  "required": [
+    "metric_id",
+    "version",
+    "level",
+    "display_name",
+    "business_definition"
+  ],
+  "title": "MetricDefinition",
+  "type": "object"
+}

@@ -1,0 +1,403 @@
+{
+  "$defs": {
+    "JsonScalar": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "integer"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "JsonValue": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/JsonScalar"
+        },
+        {
+          "items": {},
+          "type": "array"
+        },
+        {
+          "additionalProperties": true,
+          "type": "object"
+        }
+      ]
+    },
+    "ParameterBinding": {
+      "additionalProperties": false,
+      "properties": {
+        "metric_id": {
+          "anyOf": [
+            {
+              "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Metric Id"
+        },
+        "n": {
+          "anyOf": [
+            {
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "N"
+        },
+        "parameter": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+          "title": "Parameter",
+          "type": "string"
+        },
+        "selection": {
+          "enum": [
+            "top_n",
+            "distinct",
+            "scalar"
+          ],
+          "title": "Selection",
+          "type": "string"
+        },
+        "source_dataset_contract": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+          "title": "Source Dataset Contract",
+          "type": "string"
+        }
+      },
+      "required": [
+        "parameter",
+        "source_dataset_contract",
+        "selection"
+      ],
+      "title": "ParameterBinding",
+      "type": "object"
+    },
+    "Provenance": {
+      "additionalProperties": false,
+      "description": "Traceable origin without credentials or large raw payloads.",
+      "properties": {
+        "metadata": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Metadata",
+          "type": "object"
+        },
+        "producer": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+          "title": "Producer",
+          "type": "string"
+        },
+        "source_hashes": {
+          "additionalProperties": {
+            "pattern": "^sha256:[0-9a-f]{64}$",
+            "type": "string"
+          },
+          "title": "Source Hashes",
+          "type": "object"
+        },
+        "source_ids": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Source Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "producer"
+      ],
+      "title": "Provenance",
+      "type": "object"
+    },
+    "QueryFilter": {
+      "additionalProperties": false,
+      "properties": {
+        "field_id": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+          "title": "Field Id",
+          "type": "string"
+        },
+        "operator": {
+          "enum": [
+            "eq",
+            "in",
+            "range",
+            "exists",
+            "not"
+          ],
+          "title": "Operator",
+          "type": "string"
+        },
+        "values": {
+          "default": [],
+          "items": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean"
+              }
+            ]
+          },
+          "title": "Values",
+          "type": "array"
+        }
+      },
+      "required": [
+        "field_id",
+        "operator"
+      ],
+      "title": "QueryFilter",
+      "type": "object"
+    },
+    "QueryStep": {
+      "additionalProperties": false,
+      "properties": {
+        "dataset_id": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+          "title": "Dataset Id",
+          "type": "string"
+        },
+        "depends_on": {
+          "default": [],
+          "items": {
+            "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+            "type": "string"
+          },
+          "title": "Depends On",
+          "type": "array"
+        },
+        "dimensions": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+            "type": "string"
+          },
+          "title": "Dimensions",
+          "type": "array"
+        },
+        "estimated_buckets": {
+          "minimum": 0,
+          "title": "Estimated Buckets",
+          "type": "integer"
+        },
+        "filters": {
+          "items": {
+            "$ref": "#/$defs/QueryFilter"
+          },
+          "title": "Filters",
+          "type": "array"
+        },
+        "grain": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Grain",
+          "type": "array"
+        },
+        "index_patterns": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Index Patterns",
+          "type": "array"
+        },
+        "measures": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+            "type": "string"
+          },
+          "title": "Measures",
+          "type": "array"
+        },
+        "parameter_bindings": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ParameterBinding"
+          },
+          "title": "Parameter Bindings",
+          "type": "array"
+        },
+        "purpose_task_ids": {
+          "items": {
+            "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+            "type": "string"
+          },
+          "title": "Purpose Task Ids",
+          "type": "array"
+        },
+        "required": {
+          "default": true,
+          "title": "Required",
+          "type": "boolean"
+        },
+        "result_contract_id": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+          "title": "Result Contract Id",
+          "type": "string"
+        },
+        "step_id": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+          "title": "Step Id",
+          "type": "string"
+        },
+        "time_field_id": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+          "title": "Time Field Id",
+          "type": "string"
+        },
+        "time_range": {
+          "$ref": "#/$defs/TimeRange"
+        },
+        "timeout_ms": {
+          "default": 30000,
+          "maximum": 120000,
+          "minimum": 100,
+          "title": "Timeout Ms",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "step_id",
+        "purpose_task_ids",
+        "dataset_id",
+        "index_patterns",
+        "time_range",
+        "time_field_id",
+        "filters",
+        "dimensions",
+        "measures",
+        "grain",
+        "result_contract_id",
+        "estimated_buckets"
+      ],
+      "title": "QueryStep",
+      "type": "object"
+    },
+    "TimeRange": {
+      "additionalProperties": false,
+      "description": "Half-open business time range.",
+      "properties": {
+        "from_inclusive": {
+          "format": "date-time",
+          "title": "From Inclusive",
+          "type": "string"
+        },
+        "timezone": {
+          "maxLength": 64,
+          "minLength": 1,
+          "title": "Timezone",
+          "type": "string"
+        },
+        "to_exclusive": {
+          "format": "date-time",
+          "title": "To Exclusive",
+          "type": "string"
+        }
+      },
+      "required": [
+        "from_inclusive",
+        "to_exclusive",
+        "timezone"
+      ],
+      "title": "TimeRange",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "analysis_plan_id": {
+      "title": "Analysis Plan Id",
+      "type": "string"
+    },
+    "consolidation_notes": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Consolidation Notes",
+      "type": "array"
+    },
+    "content_hash": {
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "title": "Content Hash",
+      "type": "string"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "object_id": {
+      "pattern": "^[a-z][a-z0-9_-]{2,127}$",
+      "title": "Object Id",
+      "type": "string"
+    },
+    "provenance": {
+      "$ref": "#/$defs/Provenance"
+    },
+    "reuse_strategy": {
+      "const": "dataset_fingerprint",
+      "default": "dataset_fingerprint",
+      "title": "Reuse Strategy",
+      "type": "string"
+    },
+    "schema_version": {
+      "default": "1.0",
+      "pattern": "^[1-9][0-9]*\\.[0-9]+$",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "steps": {
+      "items": {
+        "$ref": "#/$defs/QueryStep"
+      },
+      "title": "Steps",
+      "type": "array"
+    },
+    "total_estimated_buckets": {
+      "minimum": 0,
+      "title": "Total Estimated Buckets",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "object_id",
+    "created_at",
+    "content_hash",
+    "provenance",
+    "analysis_plan_id",
+    "steps",
+    "total_estimated_buckets"
+  ],
+  "title": "QueryPlan",
+  "type": "object"
+}
