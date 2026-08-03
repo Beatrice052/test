@@ -1406,10 +1406,27 @@ class AnalysisResultBundle(BaseModel):
 第三次 LLM 调用基于真实查询结果决定最终分析重点和展示，不直接输出任意 ECharts option：
 
 ```python
+class ChartAnalysisCandidate(BaseModel):
+    visual_candidate_id: str
+    analytical_question: str
+    analysis_purpose: str
+    reading_guide: str
+    takeaway_claim_ids: list[str]
+    interpretation_status: Literal[
+        "supported_findings",
+        "descriptive_only",
+        "no_material_pattern",
+        "insufficient_data"
+    ]
+    no_conclusion_reason: str | None
+    limitation_ids: list[str]
+
+
 class PostQueryAnalysisCandidate(BaseModel):
     selected_metric_result_ids: list[str]
     selected_fact_ids: list[str]
     selected_visual_candidate_ids: list[str]
+    chart_analyses: list[ChartAnalysisCandidate]
     answered_task_ids: list[str]
     dropped_task_decisions: list[dict]
     narrative_order: list[str]
@@ -1419,7 +1436,7 @@ class PostQueryAnalysisCandidate(BaseModel):
     limitations: list[str]
 ```
 
-`dashboard_blocks` 只能引用后端提供的 Dataset、Metric Result、Fact 和 Visualization Candidate ID。后端据此编译：
+`dashboard_blocks` 和 `chart_analyses` 只能引用后端提供的 Dataset、Metric Result、Fact、Claim 和 Visualization Candidate ID。每个被选中的图表必须且只能对应一个 `ChartAnalysisCandidate`。后端据此编译：
 
 ```python
 class DashboardSpec(BaseModel):
@@ -1432,6 +1449,34 @@ class DashboardSpec(BaseModel):
     default_evidence_dataset_id: str | None
     warnings: list[str]
 ```
+
+最终 `ChartBlock` 必须内嵌经过校验的 `ChartAnalysisSpec`：
+
+```python
+class ChartAnalysisSpec(BaseModel):
+    analytical_question: str
+    analysis_purpose: str
+    reading_guide: str
+    takeaway_claim_ids: list[str]
+    interpretation_status: Literal[
+        "supported_findings",
+        "descriptive_only",
+        "no_material_pattern",
+        "insufficient_data"
+    ]
+    no_conclusion_reason: str | None
+    limitation_ids: list[str]
+    evidence_refs: list["EvidenceRef"]
+```
+
+约束：
+
+- 每张图必须有 `analytical_question`、`analysis_purpose` 和 `reading_guide`；
+- 有数据结论时，必须通过 `takeaway_claim_ids` 引用 Grounded Claim；
+- 没有可靠结论时，不得凑结论，必须使用 `descriptive_only`、`no_material_pattern` 或 `insufficient_data` 并说明原因；
+- 图表标题保持中性，真正结论放在相邻的图表分析区；
+- 总体 Summary 不能替代每张图自己的分析说明；
+- ChartAnalysis 随 AnswerSnapshot 保存，历史恢复时不得重新解释旧数据。
 
 Block 白名单：
 
@@ -2224,7 +2269,7 @@ Visualization Candidate 根据：
 - 图表 Adapter 白名单；
 - Dashboard 预算。
 
-候选生成不调用 LLM。
+候选生成不调用 LLM。每个候选同时生成 Chart-specific Fact Scope，限定该图允许引用的 Metric Result、Fact、Warning 和 Limitation；第三次 LLM 不得跨 Scope 拼接结论。
 
 ### 10.2 支持的核心展示
 
@@ -2303,6 +2348,7 @@ LLM 只负责：
 - 删除无价值或重复候选；
 - 选择 2～5 个重要 Fact；
 - 选择 Visualization Candidate ID；
+- 为每个选中图表生成一份引用现有 Claim/Fact 的 `ChartAnalysisCandidate`；
 - 组织叙事顺序；
 - 生成引用 Fact ID 的 Claim 草稿；
 - 给出能力范围内的后续建议。
@@ -2318,7 +2364,94 @@ LLM 不得：
 - 把相关写成因果；
 - 引用不存在的数据。
 
-### 10.5 最小充分 Dashboard
+### 10.5 每张图必须是一个完整分析单元
+
+每张图都必须让用户无需猜测即可回答：
+
+1. **分析什么**：这张图对应哪个业务问题；
+2. **为什么画**：它在整个回答中承担规模、趋势、构成、质量、异常还是诊断职责；
+3. **怎么看**：横轴、纵轴、系列、颜色、单位和比较基准代表什么；
+4. **数据说明什么**：当前真实结果支持的 0～3 条关键发现；
+5. **不能说明什么**：小样本、截断、缺失、近似、相关非因果等限制；
+6. **依据在哪里**：可跳转到对应 Dataset、Row、Metric 和 Calculation。
+
+#### 10.5.1 图表目的与图表结论必须分开
+
+`analysis_purpose` 是稳定解释，例如：
+
+```text
+比较 2026 年 7 月各 Channel 的消息记录规模，识别主要 Channel 和流量集中程度。
+```
+
+`takeaway_claim_ids` 是数据驱动结论，例如：
+
+```text
+SMS 的消息记录数最高，占全部记录的 48.2%。
+```
+
+前者可以由 Analytical Task 和 Encoding 确定；后者只能来自查询后已经 Grounded 的 Fact/Claim。不能把固定模板结论写入目的，也不能用“本图展示了 Channel 情况”这样的空泛说明应付验收。
+
+#### 10.5.2 不强迫每张图产生显著结论
+
+图表必须有解释，但不一定有“赢家、异常或显著变化”。
+
+允许：
+
+```text
+descriptive_only:
+  当前图用于核对各 Channel 的精确差异，系统未应用统计显著性判断。
+
+no_material_pattern:
+  在配置的业务差异阈值下，各 Channel 之间未发现值得突出的差异。
+
+insufficient_data:
+  当前只有 2 个时间点，不足以判断趋势；保留为离散期间比较。
+```
+
+其中 `no_material_pattern` 必须有确定性阈值或统计 Fact 支持；否则只能使用 `descriptive_only`。不得为了满足“每图一个结论”而编造趋势、异常、根因或因果。
+
+#### 10.5.3 Chart-specific Fact Scope
+
+程序必须为每个 Visualization Candidate 预先生成允许使用的 Fact Scope：
+
+```text
+visual_candidate_id
+dataset_id
+encoded fields
+filters/time/grain
+allowed metric_result_ids
+allowed fact_ids
+data_quality_warning_ids
+limitation_ids
+```
+
+LLM 3 只能为该图引用 Scope 内的 Fact/Claim。总体回答中正确的 Fact，如果不在该图 Dataset、过滤范围或 Encoding 所支持的证据域中，也不能作为该图结论。
+
+#### 10.5.4 前端展示顺序
+
+每个 Chart Block 推荐呈现：
+
+```text
+中性标题
+指标/时间/单位/分母等副标题
+“本图分析什么”一行说明
+图表
+“从图中可以看出”1～3 条 Grounded Findings
+限制或数据质量提醒
+“如何阅读”与“查看依据”入口
+```
+
+`reading_guide` 应简短，复杂图可默认折叠；关键结论和 Warning 必须直接可见。不要把所有解释放在 Dashboard 顶部，使用户无法判断结论属于哪张图。
+
+#### 10.5.5 避免重复文案
+
+- Overall Summary 负责跨图综合结论；
+- Chart Analysis 只解释该图能够证明的内容；
+- 同一 Claim 可以被总体 Summary 和一张主图引用，但多张图重复同一 Claim 时应通过 Non-Redundancy Validator 裁剪；
+- 图表分析不复述所有轴标签和表格行；
+- Query 耗时、QA Passed 和内部执行状态不作为图表业务结论。
+
+### 10.6 最小充分 Dashboard
 
 预算：
 
@@ -2347,7 +2480,7 @@ hard maximum             4 charts
 
 删除图表时保留数据表和说明。
 
-### 10.6 DashboardSpec 编译
+### 10.7 DashboardSpec 编译
 
 最终 Chart Block 只引用 Dataset：
 
@@ -2362,13 +2495,22 @@ hard maximum             4 charts
     "x": "message_record_count",
     "y": "channel"
   },
+  "analysis": {
+    "analytical_question": "2026 年 7 月各 Channel 的消息记录规模有何差异？",
+    "analysis_purpose": "比较各 Channel 的消息记录规模并识别主要 Channel。",
+    "reading_guide": "条形长度表示消息记录数，按数量从高到低排序。",
+    "takeaway_claim_ids": ["claim-channel-volume-001"],
+    "interpretation_status": "supported_findings",
+    "no_conclusion_reason": null,
+    "limitation_ids": []
+  },
   "evidence_refs": ["dataset:channel_overview"]
 }
 ```
 
 标题必须中性说明“画了什么”，不把洞察写成夸张标题。
 
-### 10.7 Dashboard Validator
+### 10.8 Dashboard Validator
 
 逐 Block 检查：
 
@@ -2384,6 +2526,11 @@ hard maximum             4 charts
 - 不误用双轴；
 - 不重复；
 - Evidence Ref 有效；
+- 每个 Chart 恰好有一个 ChartAnalysisSpec；
+- Analytical Question、Purpose 和 Reading Guide 非空且与 Task/Encoding 一致；
+- Takeaway Claim 属于该图的 Chart-specific Fact Scope；
+- 有结论时 Claim 已 Grounded；无结论时 Interpretation Status 和原因有效；
+- 图表结论不与 Overall Summary 或其他图无价值重复；
 - 不含任意代码；
 - blocked/review_required 为零。
 
@@ -2395,7 +2542,7 @@ hard maximum             4 charts
 4. 添加 Warning；
 5. 不输出空白或误导图。
 
-### 10.8 Claim Grounding
+### 10.9 Claim Grounding
 
 所有数字、排名、最高/最低、变化率和异常 Claim 必须：
 
@@ -2424,6 +2571,7 @@ hard maximum             4 charts
 - 聚合 Grain；
 - **OpenSearch 查询返回表**：尚未进行指标和统计分析的 `QueryResultBundle`；
 - **分析结果表**：从查询返回表确定性派生的 Metric/Derived/Exploratory Dataset；
+- 每张图的 Analytical Question、Purpose、Takeaway Claim 和限制；
 - Rate 的分子、分母和 Other/Excluded；
 - 派生指标和探索统计标记；
 - 对账；
@@ -2546,6 +2694,7 @@ hard maximum             4 charts
 - 使用 `session_id + answer_id + evidence_id`；
 - 自动打开对应 Dataset；
 - 高亮 row ID；
+- 从图表的某条 Finding 打开时，只定位该 Finding 的 Claim/EvidenceRef；
 - 显示字段和 Calculation；
 - 不让用户在完整 DSL 中手工寻找数字；
 - 历史 Answer 不得误显示最新 Answer 的 Evidence。
@@ -2846,6 +2995,7 @@ Sample Prompts 移到新 Session 空状态，不再长期占据一级导航。
 - Active Context Delta；
 - KPI；
 - Dashboard Blocks；
+- 每个 Chart Block 的 Purpose、Reading Guide、Findings 和 Limitations；
 - Dataset；
 - Insights；
 - Warnings；
@@ -2874,6 +3024,28 @@ Validated ChartBlock
 ```
 
 每个 Chart Block 一个 ECharts 实例；离开 DOM 后 dispose；使用 ResizeObserver + debounce。
+
+Chart Block Renderer 必须同时渲染图和 `ChartAnalysisSpec`，建议 DOM 结构：
+
+```text
+article.chart-block
+├─ header：title + subtitle
+├─ p.chart-purpose：本图分析什么
+├─ div.chart-canvas：ECharts
+├─ section.chart-findings：从图中可以看出
+├─ section.chart-limitations：限制/Warning（存在时）
+└─ footer：如何阅读 + 查看依据
+```
+
+要求：
+
+- Purpose、Findings 和 Warning 与图表处于同一 Card，不放到页面其他位置；
+- `takeaway_claim_ids` 通过 Answer Claim Registry 渲染，不直接展示未经校验的 LLM 文本；
+- `descriptive_only/insufficient_data` 必须显示相应说明，不能留下空白“分析”区域；
+- “如何阅读”可折叠，但必须支持键盘和屏幕阅读器；
+- 不只用颜色描述结论，例如应写“SMS 条形最长”，而不是“蓝色最高”；
+- 切换 Session 或恢复历史 Answer 时使用 Snapshot 中原有 ChartAnalysisSpec；
+- 纯换图追问必须为新图重新生成/校验 ChartAnalysisSpec，不能复用与 Encoding 不匹配的旧说明。
 
 禁止：
 
@@ -2996,6 +3168,10 @@ dataset count / grain / row count
 data_qa / reconciliation
 visual candidate / selected chart count
 dropped chart reason
+chart_analysis_coverage_rate
+chart_takeaway_grounding_rate
+chart_descriptive_only_count
+chart_insufficient_data_count
 claim count / grounding pass rate
 LLM call count / repair count
 latency and token by stage
@@ -3209,6 +3385,10 @@ Follow-up Suggestions
 - 程序生成 Visualization Candidates；
 - Post-query LLM 选择；
 - 最小充分 Dashboard；
+- 每个 Chart 一份 ChartAnalysisSpec；
+- Chart-specific Fact Scope；
+- Purpose、Reading Guide、Takeaway 和 Limitation 编译；
+- 无可靠结论时的 descriptive/insufficient 状态；
 - Block/Chart/Grounding Validator；
 - KPI、Table、Pivot、Bar、Stacked Bar、Line、Multi-line、Heatmap；
 - 有真实能力时启用扩展图表；
@@ -3242,6 +3422,8 @@ Follow-up Suggestions
 - Evidence Drawer；
 - URL 恢复；
 - 多 Chart Resize/Dispose；
+- 每个 Chart 的 Purpose、Findings、Limitations 和 Evidence 入口均在同一 Card；
+- Chart Analysis 的折叠、键盘和屏幕阅读器可访问性；
 - 错误和晚到响应隔离。
 
 ### 15.8 收口
@@ -3585,6 +3767,16 @@ QueryResult 专项：
 | 无 Adapter 类型 | 拒绝 |
 | Claim 数字错误 | Grounding reject |
 | 因果文案 | reject/degrade |
+| 任一 Chart 无 ChartAnalysisSpec | Dashboard Contract reject |
+| Purpose 与 Encoding/Task 不一致 | reject/repair |
+| Takeaway 不属于该图 Fact Scope | Grounding reject |
+| 有可靠 Fact | 显示 1～3 条 Grounded Findings |
+| 无显著 Fact | descriptive_only，不强造结论 |
+| no_material_pattern 无阈值依据 | reject，降级 descriptive_only |
+| 数据不足 | insufficient_data + 原因 |
+| 多图重复同一 Finding | 裁剪低价值重复文案 |
+| 纯换图 | 重新生成与新 Encoding 匹配的分析说明 |
+| 历史恢复 | 恢复当时 ChartAnalysis，不重新生成 |
 
 ### 18.8 Evidence 测试
 
@@ -3700,13 +3892,15 @@ LLM 3：
 - 不固定三张图；
 - 不突出无差异或小样本结果；
 - 不新增每日趋势查询；
-- 所有结论引用 Fact。
+- 所有结论引用 Fact；
+- 为每个选中图表输出独立 Purpose、Reading Guide、Takeaway 或无结论原因。
 
 最低产品结果：
 
 - 直接回答；
 - KPI 或核心数字；
 - 至少一个适合 Channel 比较的视图；
+- 每张图均显示“本图分析什么”和 Grounded Findings/无可靠结论原因；
 - OpenSearch 查询返回表；
 - 分析结果表；
 - 指标口径；
@@ -3733,6 +3927,7 @@ LLM 3：
 - 多 Index 合并不丢 Channel；
 - Dataset 完整性明确；
 - 至少一个真正编码 Month 和 Channel 的图；
+- 每张图的分析问题、目的和结论与该图 Encoding 一致；
 - Pivot/Table 可精确核对；
 - 第二张图仅在分析目的不同且有价值时增加；
 - 环比只在相邻月完整时计算；
@@ -3877,6 +4072,11 @@ LLM 3：
 51. 旧 API 字段和 reset 语义未被静默破坏；
 52. Unit、Integration、Golden、API、前端、安全和性能测试全部完成；
 53. README、配置、migration、架构图和 `project_memory.md` 与实现一致。
+54. 每个 Chart Block 恰好包含一份经过校验的 `ChartAnalysisSpec`；
+55. 每张图明确说明分析问题、分析目的和阅读方法；
+56. 每张图的数据结论只引用该图 Fact Scope 内的 Grounded Claim；
+57. 无可靠结论的图明确标记 descriptive/insufficient，不强造结论；
+58. 图表分析与图相邻展示，并随 AnswerSnapshot 正确恢复。
 
 ---
 
@@ -4038,8 +4238,8 @@ Session / Turn
 → QueryResultBundle（未分析的 OpenSearch 查询返回表）
 → 程序：正式指标 + 派生指标 + 探索统计 + Data QA + Facts
 → LLM 3：根据真实结果选择最终指标、分析和图表
-→ 程序：Dashboard / Grounding / Evidence Validator
-→ Analysis Result Table + Dashboard + Claims + Evidence
+→ 程序：Dashboard / Per-chart Analysis / Grounding / Evidence Validator
+→ Analysis Result Table + Dashboard + 每图解释 + Claims + Evidence
 → Immutable AnswerSnapshot + Persistent Session
 → FastAPI / Vanilla JS / ECharts 工作区
 ```
