@@ -14,7 +14,7 @@ BACKEND = ROOT / "backend"
 OUTPUT = ROOT / "frontend" / "src" / "api"
 sys.path.insert(0, str(BACKEND))
 
-from app.main import create_app
+from app.main import create_app  # noqa: E402
 
 
 def join_unique(items: list[str], operator: str) -> str:
@@ -27,9 +27,7 @@ def ts_type(schema: dict[str, Any]) -> str:
     if "const" in schema:
         return json.dumps(schema["const"], ensure_ascii=False)
     if "enum" in schema:
-        return " | ".join(
-            json.dumps(item, ensure_ascii=False) for item in schema["enum"]
-        )
+        return " | ".join(json.dumps(item, ensure_ascii=False) for item in schema["enum"])
     if "anyOf" in schema:
         return join_unique([ts_type(item) for item in schema["anyOf"]], " | ")
     if "oneOf" in schema:
@@ -55,9 +53,7 @@ def ts_type(schema: dict[str, Any]) -> str:
         lines = []
         for name, value in properties.items():
             safe_name = (
-                name
-                if re.fullmatch(r"[A-Za-z_$][A-Za-z0-9_$]*", name)
-                else json.dumps(name)
+                name if re.fullmatch(r"[A-Za-z_$][A-Za-z0-9_$]*", name) else json.dumps(name)
             )
             optional = "" if name in required else "?"
             lines.append(f"  {safe_name}{optional}: {ts_type(value)};")
@@ -75,9 +71,7 @@ def ts_type(schema: dict[str, Any]) -> str:
 def render_outputs() -> tuple[str, str, int]:
     openapi = create_app().openapi()
     schemas = openapi.get("components", {}).get("schemas", {})
-    openapi_text = (
-        json.dumps(openapi, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
-    )
+    openapi_text = json.dumps(openapi, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
     lines = [
         "/* Generated from backend OpenAPI by scripts/generate_frontend_types.py. */",
         "/* Do not edit manually. */",

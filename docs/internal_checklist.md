@@ -42,13 +42,20 @@
 - [ ] `APP_ENV=mcp` 且 readiness 显示 `openai_compatible · mcp`
 - [ ] `check-real-llm-cutover` 12/12 PASS
 - [ ] `probe-llm` strict JSON Schema 探测 PASS
-- [ ] Agent A/B/C 三个 operation 均有真实端点审计记录
+- [ ] Agent A、Agent B、Agent C 两个 Pass 的四个主 operation 均有真实端点审计记录
 - [ ] AnalysisPlanDraft、QueryPlanDraft、InsightDashboardDraft 三类 repair schema name 可区分
 - [ ] 正式 Agent/编排未 import 或复制 `rule_based`/fixture/recorded 逻辑
 - [ ] 真实 LLM 失败不会静默回退到 Mock
 - [ ] Agent B 只输出 QueryPlan；最终 DSL 仍由确定性 Compiler 生成
+- [ ] 通过 `ListIndexTool` 固化 exact index list，Mapping Snapshot 与目标月份一致
+- [ ] staging 编译先应用 Excel description、敏感等级与 Policy；FieldProfile 只覆盖 model-visible/aggregatable 字段
+- [ ] FieldProfile 查询固定 `size:0`，不含 `_source`/raw documents；dataset/index/mapping hash 校验通过
+- [ ] Agent A 候选和 Agent B `ResolvedFieldDescriptor` 均包含真实 description、能力、兼容性和 cardinality 摘要，且不含 physical path
+- [ ] Agent B 的 QueryPlan 对每个 required task 取得最小充分粒度；高基数和跨月不兼容走预算/路由失败路径
 - [ ] 真实多轮、非固定维度和 0/1/多图 Shadow 已通过
 - [ ] required task 均有 Grounded Claim 或明确 limitation
+- [ ] `post_query_visual_exploration` 只输出 Candidate，`post_query_insight_dashboard` 只选择验证 Preview
+- [ ] 每张图与 Claim 的 task、Dataset、measure、EvidenceRef 完全一致
 - [ ] 数据签名变化必定 requery，纯展示/解释才允许零查询复用
 
 ## Result / Presentation
@@ -57,6 +64,8 @@
 - [ ] Dataset 与旧/权威结果对账
 - [ ] Claim Grounding 100%
 - [ ] 图表不重复、不误导
+- [ ] 图表数量是 0/1/N 动态结果；没有固定四图、固定二维形态或固定业务字段
+- [ ] 每张图均展示本图目的、Grounded findings、读图说明和必要 caveat
 - [ ] Evidence 可核查
 - [ ] Business Evidence 无 DSL；Advanced Evidence 有角色
 - [ ] Debug 默认关闭

@@ -116,6 +116,7 @@ async def test_phase3_composition_root_returns_validated_compiled_query() -> Non
         assert presentation.answer.analytical_base_answer_id == result.answer.object_id
         assert presentation.answer.dataset_bundle == result.answer.dataset_bundle
         assert presentation.answer.evidence_package == result.answer.evidence_package
+        assert presentation.answer.visualization_previews == result.answer.visualization_previews
         assert presentation.answer.dashboard_spec is not None
         assert any(
             block.type == "data_table" for block in presentation.answer.dashboard_spec.blocks
@@ -126,6 +127,11 @@ async def test_phase3_composition_root_returns_validated_compiled_query() -> Non
         assert not any(
             block.type == "chart" and block.chart_type == "heatmap"
             for block in presentation.answer.dashboard_spec.blocks
+        )
+        assert all(
+            block.chart_analysis is None
+            for block in presentation.answer.dashboard_spec.blocks
+            if block.type in {"data_table", "pivot_table"}
         )
         assert presentation.state is not None
         assert (

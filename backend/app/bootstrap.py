@@ -42,6 +42,7 @@ from app.persistence.locks import SessionLockRepository
 from app.persistence.session_repository import SessionRepository
 from app.presentation.dashboard import ChartFeasibilityValidator, DashboardBuilder
 from app.presentation.evidence import EvidenceBuilder
+from app.presentation.exploration import GovernedVisualizationExplorer
 from app.presentation.grounding import ClaimGrounder
 from app.query.compiler import DslCompiler
 from app.query.cost import QueryBudget
@@ -185,6 +186,7 @@ async def build_container(settings: AppSettings) -> ApplicationContainer:
         max_composite_pages=settings.chatbi_max_composite_pages,
         max_raw_response_bytes=settings.chatbi_max_raw_response_bytes,
     )
+    chart_validator = ChartFeasibilityValidator(package.visualizations())
     phase5 = Phase5Nodes(
         sessions=sessions,
         answers=answers,
@@ -196,10 +198,8 @@ async def build_container(settings: AppSettings) -> ApplicationContainer:
             )
         ),
         grounder=ClaimGrounder(),
-        dashboard_builder=DashboardBuilder(
-            ChartFeasibilityValidator(package.visualizations()),
-            package.metrics(),
-        ),
+        dashboard_builder=DashboardBuilder(package.metrics()),
+        visualization_explorer=GovernedVisualizationExplorer(chart_validator),
         evidence_builder=EvidenceBuilder(),
         metric_definitions=package.metrics(),
         visualization_definitions=package.visualizations(),

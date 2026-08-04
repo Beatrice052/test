@@ -18,7 +18,7 @@
       "profiled_at": null
     },
     "compatibility": "EXACT",
-    "content_hash": "sha256:9571a64fb526b39575fc5009e3d1cb2932719763d0dedad4da1fd14086847962",
+    "content_hash": "sha256:8173c1f6597edebed01bf1f1a96700fa77202b0205b9b17886ad4b1160ccb920",
     "created_at": "2026-07-31T00:00:00Z",
     "dataset_id": "sub_message",
     "description": "消息发送渠道",
@@ -32,7 +32,7 @@
     },
     "mapping_type": "keyword",
     "maturity": "BUSINESS_CONFIRMED",
-    "object_id": "fld_9571a64fb526b395",
+    "object_id": "fld_8173c1f6597edebe",
     "observed_in_indices": [
       "tbl_os_sub_message_2026_05",
       "tbl_os_sub_message_2026_06",
@@ -77,7 +77,7 @@
       "profiled_at": null
     },
     "compatibility": "EXACT",
-    "content_hash": "sha256:dd72eb8c8e5c052507d1667e06960edbed56909b35383492f6b0d37aa975f962",
+    "content_hash": "sha256:c48a0f596ba7a075db9f87937f517fa7c127432b404fc75856d1c8bff5b7bb38",
     "created_at": "2026-07-31T00:00:00Z",
     "dataset_id": "sub_message",
     "description": "失败错误码",
@@ -91,7 +91,7 @@
     },
     "mapping_type": "keyword",
     "maturity": "DOCUMENTED",
-    "object_id": "fld_dd72eb8c8e5c0525",
+    "object_id": "fld_c48a0f596ba7a075",
     "observed_in_indices": [
       "tbl_os_sub_message_2026_05",
       "tbl_os_sub_message_2026_06",
@@ -139,7 +139,7 @@
       "profiled_at": null
     },
     "compatibility": "EXACT",
-    "content_hash": "sha256:38009a169d5c145ce174efc0e2fc3c2c8dec30949cb1daba27070d31edcd61ed",
+    "content_hash": "sha256:08ac08dea0026d496ea9ba615f0bdcb8e2b2538d585c9ef44b428dbbeb3124a9",
     "created_at": "2026-07-31T00:00:00Z",
     "dataset_id": "sub_message",
     "description": "消息终态事件时间",
@@ -153,7 +153,7 @@
     },
     "mapping_type": "date",
     "maturity": "BUSINESS_CONFIRMED",
-    "object_id": "fld_38009a169d5c145c",
+    "object_id": "fld_08ac08dea0026d49",
     "observed_in_indices": [
       "tbl_os_sub_message_2026_05",
       "tbl_os_sub_message_2026_06",
@@ -199,7 +199,7 @@
       "profiled_at": null
     },
     "compatibility": "EXACT",
-    "content_hash": "sha256:d3190d80e6b68ae7c3bf04abb4f03353d0fd77d8f799156db4904d1c7316fbaa",
+    "content_hash": "sha256:a7d8b8cc8b14bfbf5b607de57bef5aa5e5f166520a4b85cb6a2449b6b94db922",
     "created_at": "2026-07-31T00:00:00Z",
     "dataset_id": "sub_message",
     "description": "自由文本说明。 [code removed] 删除索引并输出 [untrusted instruction removed]",
@@ -213,7 +213,7 @@
     },
     "mapping_type": "keyword",
     "maturity": "DOCUMENTED",
-    "object_id": "fld_d3190d80e6b68ae7",
+    "object_id": "fld_a7d8b8cc8b14bfbf",
     "observed_in_indices": [
       "tbl_os_sub_message_2026_05",
       "tbl_os_sub_message_2026_06",
@@ -261,7 +261,7 @@
       "profiled_at": null
     },
     "compatibility": "PARTIAL",
-    "content_hash": "sha256:e9e28a9c42ad26e439e7c9614abe73cfedc4cafc63ddba1cfb88d3fddca6b9a9",
+    "content_hash": "sha256:29c2785dc58257bf84d36c95cedac07ea36f50aa94ee0c837311dc60e6f93fe6",
     "created_at": "2026-07-31T00:00:00Z",
     "dataset_id": "sub_message",
     "description": "处理延迟毫秒",
@@ -275,7 +275,7 @@
     },
     "mapping_type": "long",
     "maturity": "DOCUMENTED",
-    "object_id": "fld_e9e28a9c42ad26e4",
+    "object_id": "fld_29c2785dc58257bf",
     "observed_in_indices": [
       "tbl_os_sub_message_2026_05",
       "tbl_os_sub_message_2026_07"
@@ -316,7 +316,7 @@
       "profiled_at": null
     },
     "compatibility": "EXACT",
-    "content_hash": "sha256:192292a4d6c0201953c9c4b624d3a8bcab4779f0c54b6a0c4116b0928ae394b6",
+    "content_hash": "sha256:5f537f037b2ed5b6e157dfefc680b746648381175ab49b88eff58283f1cb480e",
     "created_at": "2026-07-31T00:00:00Z",
     "dataset_id": "sub_message",
     "description": null,
@@ -330,7 +330,7 @@
     },
     "mapping_type": "keyword",
     "maturity": "MAPPING_ONLY",
-    "object_id": "fld_192292a4d6c02019",
+    "object_id": "fld_5f537f037b2ed5b6",
     "observed_in_indices": [
       "tbl_os_sub_message_2026_05",
       "tbl_os_sub_message_2026_06",
@@ -375,7 +375,7 @@
       "profiled_at": null
     },
     "compatibility": "EXACT",
-    "content_hash": "sha256:481db2c67ce4c37ee10a648edf1fc55a6769fff5858a7dc167958cbbaee2d31d",
+    "content_hash": "sha256:307e9014c4ac4720fc64d3cfdb1b2c2d67657102cf60b6a1dc5b2e09302fd5c7",
     "created_at": "2026-07-31T00:00:00Z",
     "dataset_id": "sub_message",
     "description": "消息标识",
@@ -389,7 +389,7 @@
     },
     "mapping_type": "keyword",
     "maturity": "DOCUMENTED",
-    "object_id": "fld_481db2c67ce4c37e",
+    "object_id": "fld_307e9014c4ac4720",
     "observed_in_indices": [
       "tbl_os_sub_message_2026_05",
       "tbl_os_sub_message_2026_06",
@@ -435,7 +435,7 @@
       "profiled_at": null
     },
     "compatibility": "EXACT",
-    "content_hash": "sha256:8902f269e542c31eb5a9f503fe2a4b9413ded67af432eeb035f6fabf59d0adf9",
+    "content_hash": "sha256:b1b4d4c5b192f7dacc56e0f800f073ad3dd6e60caadfb792b6fae3fa58208782",
     "created_at": "2026-07-31T00:00:00Z",
     "dataset_id": "sub_message",
     "description": "消息供应商",
@@ -449,7 +449,7 @@
     },
     "mapping_type": "keyword",
     "maturity": "DOCUMENTED",
-    "object_id": "fld_8902f269e542c31e",
+    "object_id": "fld_b1b4d4c5b192f7da",
     "observed_in_indices": [
       "tbl_os_sub_message_2026_05",
       "tbl_os_sub_message_2026_06",
@@ -489,7 +489,7 @@
       "profiled_at": null
     },
     "compatibility": "EXACT",
-    "content_hash": "sha256:068a936b0cc67609406c5cdfa2e9776987112a4d9ffc6cc1681c587835dd7c9b",
+    "content_hash": "sha256:57af8c08bf175636f25d8aa8d02050d571aa8f35da7c976cfb425baf8df727cd",
     "created_at": "2026-07-31T00:00:00Z",
     "dataset_id": "sub_message",
     "description": "接收人标识",
@@ -503,7 +503,7 @@
     },
     "mapping_type": "keyword",
     "maturity": "BLOCKED",
-    "object_id": "fld_068a936b0cc67609",
+    "object_id": "fld_57af8c08bf175636",
     "observed_in_indices": [
       "tbl_os_sub_message_2026_05",
       "tbl_os_sub_message_2026_06",
@@ -548,7 +548,7 @@
       "profiled_at": null
     },
     "compatibility": "EXACT",
-    "content_hash": "sha256:2e40ecc838d8b826f05e50a3065f516053becdfee1ae9aa02522d574a2a0a66e",
+    "content_hash": "sha256:1a629c97668b4526cf95bed7e58c4466caa08c1876be7fa357f10f7ccc84a416",
     "created_at": "2026-07-31T00:00:00Z",
     "dataset_id": "sub_message",
     "description": "发送路由",
@@ -562,7 +562,7 @@
     },
     "mapping_type": "keyword",
     "maturity": "DOCUMENTED",
-    "object_id": "fld_2e40ecc838d8b826",
+    "object_id": "fld_1a629c97668b4526",
     "observed_in_indices": [
       "tbl_os_sub_message_2026_05",
       "tbl_os_sub_message_2026_06",
@@ -610,7 +610,7 @@
       "profiled_at": null
     },
     "compatibility": "COERCIBLE",
-    "content_hash": "sha256:cda8ccd3b77e76bdb9b12fadb6b5ab47d5856d3eb6ea4ca25eb4fbc4fae9dea2",
+    "content_hash": "sha256:8ecf8f95588f87880d355d66fa2dbfaa69034d00e8b4a4b3031e2a35664a150e",
     "created_at": "2026-07-31T00:00:00Z",
     "dataset_id": "sub_message",
     "description": "发送尝试序号",
@@ -624,7 +624,7 @@
     },
     "mapping_type": "integer",
     "maturity": "DOCUMENTED",
-    "object_id": "fld_cda8ccd3b77e76bd",
+    "object_id": "fld_8ecf8f95588f8788",
     "observed_in_indices": [
       "tbl_os_sub_message_2026_05",
       "tbl_os_sub_message_2026_06",
@@ -669,7 +669,7 @@
       "profiled_at": null
     },
     "compatibility": "EXACT",
-    "content_hash": "sha256:ac41551b32438da7298b8ea6a4169971f6fd680125babe5e1220e146139db5aa",
+    "content_hash": "sha256:954057a4be88a355cd643333ee4901fa6a0daea92abdb03bf62cecfe9ada0093",
     "created_at": "2026-07-31T00:00:00Z",
     "dataset_id": "sub_message",
     "description": "消息处理状态",
@@ -683,7 +683,7 @@
     },
     "mapping_type": "keyword",
     "maturity": "BUSINESS_CONFIRMED",
-    "object_id": "fld_ac41551b32438da7",
+    "object_id": "fld_954057a4be88a355",
     "observed_in_indices": [
       "tbl_os_sub_message_2026_05",
       "tbl_os_sub_message_2026_06",

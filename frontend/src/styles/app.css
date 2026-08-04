@@ -88,6 +88,15 @@ button:focus-visible, a:focus-visible, textarea:focus-visible { outline: 3px sol
 .chart-explanation { display: flex; gap: 9px; min-height: 54px; margin: 0 0 7px; padding: 9px 11px; border-radius: 9px; color: #60736e; background: #f6f8f5; font-size: .7rem; line-height: 1.55; }
 .chart-explanation strong { flex: 0 0 auto; color: #2d6259; }
 .chart-explanation p { margin: 0; }
+.chart-purpose { display: flex; gap: 10px; margin: 0 0 8px; padding: 10px 12px; border-left: 3px solid #2e7d73; border-radius: 7px; color: #536b65; background: #f3f8f6; font-size: .72rem; line-height: 1.55; }
+.chart-purpose strong, .chart-analysis strong { flex: 0 0 auto; color: #245f57; }
+.chart-purpose p, .chart-analysis p { margin: 0; }
+.chart-analysis { display: grid; gap: 8px; margin-top: 10px; color: #586c67; font-size: .7rem; line-height: 1.6; }
+.chart-findings, .chart-reading, .chart-caveats { padding: 9px 11px; border-radius: 8px; background: #f7f8f6; }
+.chart-findings ul { margin: 5px 0 0; padding-left: 18px; color: #203f3b; }
+.chart-findings li + li { margin-top: 4px; }
+.chart-reading, .chart-caveats { display: flex; gap: 10px; }
+.chart-caveats { background: #fbf7ed; color: #75684e; }
 .chart-note { margin: 4px 2px 0; color: #82918c; font-size: .64rem; line-height: 1.5; }
 .chart-canvas { width: 100%; height: 310px; }
 .chart-validation-error { display: grid; min-height: 220px; place-items: center; padding: 24px; border-radius: 10px; color: #8e5447; background: #fff8f4; font-size: .76rem; line-height: 1.6; text-align: center; }

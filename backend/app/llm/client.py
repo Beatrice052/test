@@ -10,6 +10,7 @@ ALLOWED_OPERATIONS = frozenset(
     {
         "turn_and_analysis_plan",
         "logical_query_plan",
+        "post_query_visual_exploration",
         "post_query_insight_dashboard",
         "semantic_query_rewrite",
         "json_repair",

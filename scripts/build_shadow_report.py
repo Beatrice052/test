@@ -64,14 +64,10 @@ def build_report(
     if classification not in CLASSIFICATIONS:
         raise ValueError("Shadow classification is invalid")
     metric_payload = json.loads(artifacts["metric_result"].read_text(encoding="utf-8"))
-    ratio_evidence_complete = _contains_keys(
-        metric_payload, {"numerator", "denominator"}
-    )
+    ratio_evidence_complete = _contains_keys(metric_payload, {"numerator", "denominator"})
     if require_ratio_evidence and not ratio_evidence_complete:
         raise ValueError("ratio metric evidence must contain numerator and denominator")
-    artifact_records = {
-        name: _file_record(path) for name, path in sorted(artifacts.items())
-    }
+    artifact_records = {name: _file_record(path) for name, path in sorted(artifacts.items())}
     report: dict[str, object] = {
         "schema_version": "1.0",
         "case_id": case_id,
@@ -105,9 +101,7 @@ def _markdown(report: dict[str, object]) -> str:
     ]
     for name, raw_record in sorted(artifacts.items()):
         assert isinstance(raw_record, dict)
-        lines.append(
-            f"| {name} | `{raw_record['sha256']}` | {raw_record['size_bytes']} |"
-        )
+        lines.append(f"| {name} | `{raw_record['sha256']}` | {raw_record['size_bytes']} |")
     lines.extend(
         [
             "",
@@ -129,9 +123,7 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--case-id", required=True)
     for name in ARTIFACT_ARGUMENTS:
-        parser.add_argument(
-            f"--{name.replace('_', '-')}", dest=name, type=Path, required=True
-        )
+        parser.add_argument(f"--{name.replace('_', '-')}", dest=name, type=Path, required=True)
     parser.add_argument("--old-result", type=Path)
     parser.add_argument("--classification", choices=CLASSIFICATIONS, required=True)
     parser.add_argument(

@@ -5,6 +5,7 @@ from datetime import UTC, datetime
 from app.contracts.analysis import (
     AnalysisPlan,
     ResolvedAnalysis,
+    ResolvedFieldDescriptor,
     ResolvedFilter,
     ResolvedMetric,
 )
@@ -146,10 +147,17 @@ class AnalysisPlanResolver:
         )
         if not index_patterns:
             answerable = False
+        field_descriptors = tuple(
+            self._field_descriptor(self.fields.require(field_id))
+            for field_id in sorted(resolved_field_ids)
+        )
         payload = {
             "analysis_plan_id": plan.object_id,
             "datasets": plan.scope.dataset_ids,
             "fields": sorted(resolved_field_ids),
+            "field_descriptors": [
+                descriptor.model_dump(mode="json") for descriptor in field_descriptors
+            ],
             "metrics": [metric.model_dump(mode="json") for metric in resolved_metrics],
             "filters": [item.model_dump(mode="json") for item in resolved_filters],
             "package_version": self.package.manifest.package_version,
@@ -168,6 +176,7 @@ class AnalysisPlanResolver:
             dataset_ids=plan.scope.dataset_ids,
             index_patterns=index_patterns,
             resolved_field_ids=tuple(sorted(resolved_field_ids)),
+            field_descriptors=field_descriptors,
             metrics=tuple(resolved_metrics),
             filters=tuple(resolved_filters),
             time_field_id=time_field_id,
@@ -180,6 +189,24 @@ class AnalysisPlanResolver:
             ),
             answerable=answerable,
             caveats=() if answerable else ("当前语义能力不足以执行全部必需指标",),
+        )
+
+    @staticmethod
+    def _field_descriptor(field: CanonicalField) -> ResolvedFieldDescriptor:
+        return ResolvedFieldDescriptor(
+            field_id=field.field_id,
+            dataset_id=field.dataset_id,
+            display_name=field.display_name,
+            description=field.description,
+            aliases=field.aliases,
+            business_domain=field.business_domain,
+            mapping_type=field.mapping_type,
+            semantic_type=field.semantic_type,
+            maturity=field.maturity,
+            capabilities=field.capabilities,
+            compatibility=field.compatibility,
+            cardinality_estimate=field.cardinality.estimate,
+            cardinality_approximate=field.cardinality.approximate,
         )
 
     def _metric_required_fields(self, metric: MetricDefinition) -> tuple[str, ...]:

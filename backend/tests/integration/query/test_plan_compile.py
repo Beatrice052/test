@@ -108,6 +108,16 @@ async def test_agent_b_plan_is_logical_and_compiler_emits_valid_read_only_dsl() 
     assert compiled.semantics.metric_ids == ("failure_rate.v1",)
     assert "script" not in compiled.model_dump_json()
     assert llm.calls == ["turn_and_analysis_plan", "logical_query_plan"]
+    logical_payload = llm.input_payloads[1]
+    logical_resolved = logical_payload["resolved"]
+    assert isinstance(logical_resolved, dict)
+    descriptors = logical_resolved["field_descriptors"]
+    assert isinstance(descriptors, list)
+    channel = next(item for item in descriptors if item["field_id"] == "sub_message.channel")
+    assert channel["description"]
+    assert channel["semantic_type"] == "categorical_dimension"
+    assert "group_by" in channel["capabilities"]
+    assert "physical_path" not in channel
 
 
 @pytest.mark.asyncio
@@ -133,6 +143,50 @@ async def test_finalizer_rejects_dropped_metric_dimension_and_required_task() ->
     missing_task = step.model_copy(update={"purpose_task_ids": ()})
     with pytest.raises(QueryPlanFinalizationError, match="required analytical tasks"):
         finalizer.finalize(draft.model_copy(update={"steps": (missing_task,)}), analysis, resolved)
+
+    required_dimension = analysis.tasks[0].dimension_ids[0]
+    insufficient_grain = step.model_copy(
+        update={"dimensions": tuple(item for item in step.dimensions if item != required_dimension)}
+    )
+    with pytest.raises(QueryPlanFinalizationError, match="sufficient grain"):
+        finalizer.finalize(
+            draft.model_copy(update={"steps": (insufficient_grain,)}), analysis, resolved
+        )
+
+
+@pytest.mark.asyncio
+async def test_finalizer_rejects_profiled_cardinality_above_bucket_budget() -> None:
+    package, analysis, resolved, draft, _, _ = await _plans("查询2026年7月各Channel失败率")
+    descriptors = tuple(
+        item.model_copy(update={"cardinality_estimate": 6000, "cardinality_approximate": True})
+        if item.field_id == "sub_message.channel"
+        else item
+        for item in resolved.field_descriptors
+    )
+    profiled = resolved.model_copy(update={"field_descriptors": descriptors})
+    finalizer = QueryPlanFinalizer(
+        index_router=IndexRouter(
+            datasets=package.datasets(), policies=package.policies(), fields=package.fields()
+        ),
+        budget=QueryBudget(),
+    )
+
+    with pytest.raises(QueryPlanFinalizationError, match="cardinality exceeds"):
+        finalizer.finalize(draft, analysis, profiled)
+
+
+@pytest.mark.asyncio
+async def test_finalizer_promotes_agent_bucket_underestimate_within_budget() -> None:
+    package, analysis, resolved, draft, _, _ = await _plans("7月每天的消息趋势")
+    plan = QueryPlanFinalizer(
+        index_router=IndexRouter(
+            datasets=package.datasets(), policies=package.policies(), fields=package.fields()
+        ),
+        budget=QueryBudget(),
+    ).finalize(draft, analysis, resolved)
+
+    assert draft.steps[0].estimated_buckets == 20
+    assert plan.steps[0].estimated_buckets == 31
 
 
 @pytest.mark.asyncio

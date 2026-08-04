@@ -6,6 +6,7 @@ from typing import Literal
 from pydantic import Field
 
 from app.contracts.common import Identifier, StrictModel, TimeRange, VersionedModel
+from app.contracts.semantic import FieldMaturity, MappingCompatibility, SemanticType
 
 type GovernedChartType = Literal[
     "bar",
@@ -150,11 +151,30 @@ class ResolvedMetric(StrictModel):
     reason: str | None = None
 
 
+class ResolvedFieldDescriptor(StrictModel):
+    """Bounded semantic facts supplied to Agent B; never a physical field binding."""
+
+    field_id: Identifier
+    dataset_id: Identifier
+    display_name: str
+    description: str | None = None
+    aliases: tuple[str, ...] = ()
+    business_domain: str | None = None
+    mapping_type: str
+    semantic_type: SemanticType
+    maturity: FieldMaturity
+    capabilities: tuple[str, ...]
+    compatibility: MappingCompatibility
+    cardinality_estimate: int | None = Field(default=None, ge=0)
+    cardinality_approximate: bool = False
+
+
 class ResolvedAnalysis(VersionedModel):
     analysis_plan_id: str
     dataset_ids: tuple[Identifier, ...]
     index_patterns: tuple[str, ...]
     resolved_field_ids: tuple[Identifier, ...]
+    field_descriptors: tuple[ResolvedFieldDescriptor, ...]
     metrics: tuple[ResolvedMetric, ...]
     filters: tuple[ResolvedFilter, ...]
     time_field_id: Identifier

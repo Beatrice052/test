@@ -2,7 +2,9 @@
 
 ## 0. 交付状态与唯一基线
 
-本仓库已经完成外网可完成的核心工程：契约、语义编译、三 Agent 编排、确定性 Query/DSL、MCP Adapter、结果归一化、指标与统计、QA、Grounding、动态 Dashboard、Evidence、会话/权限/幂等/恢复/取消、SSE、前端和自动化测试。
+当前交付版本：2026-08-04 / MI-NEW。本文和当前代码已替代历史文档中“Agent C 一次生成候选图和结论”的旧实现描述。
+
+本仓库已经完成外网可完成的核心工程：契约、语义编译、三 Agent 编排、确定性 Query/DSL、MCP Adapter、结果归一化、指标与统计、QA、Grounding、双阶段可视化探索、动态 Dashboard、Evidence、会话/权限/幂等/恢复/取消、SSE、前端和自动化测试。
 
 内网不是接手一个半成品，也不需要重新设计 ChatBI。内网只提供无法在外网获得的真实输入、凭证和业务确认，然后用已有脚本完成编译、探测、Shadow 与验收。
 
@@ -19,11 +21,14 @@
 2. 本文：全流程、真实接入和故障处理。
 3. docs/requirements_traceability.md：需求到代码、测试和证据的映射。
 4. docs/integration/real_llm_cutover_runbook.md：真实 LLM、Mock 隔离和 Shadow 质量要求。
-5. docs/integration/mcp_adapter_guide.md：官方只读 OpenSearch MCP。
-6. docs/integration/semantic_schema_guide.md：真实 Excel/Mapping 到 Semantic Package。
-7. docs/integration/streaming_progress_design.md：SSE/Ingress。
-8. docs/internal_checklist.md：上线签字清单。
-9. docs/audits/final_end_to_end_audit.md 与 docs/test_report.md：外网最终审计事实和边界。
+5. docs/integration/multi_agent_orchestration.md：主编排器、Agent A/B/C、字段元数据和充分性门禁。
+6. docs/integration/visualization_agent_architecture.md：Agent C 双阶段图表/结论架构。
+7. docs/integration/mcp_adapter_guide.md：官方只读 OpenSearch MCP、索引发现和字段画像。
+8. docs/integration/semantic_schema_guide.md：真实 Excel/Mapping/Profile 到 Semantic Package。
+9. docs/integration/streaming_progress_design.md：SSE/Ingress。
+10. docs/internal_checklist.md：上线签字清单。
+
+`docs/gates/`、早期 phase 审计和旧测试报告是历史证据，不是当前开发指令。若其中的 operation、Contract、图表流程或测试数字与本文不同，以本文和当前代码为准。
 
 不要先改代码。先运行第 3 节离线门禁，并把失败归类为环境问题、真实输入问题或实现缺陷。
 
@@ -41,8 +46,11 @@ flowchart TD
     F --> CDSL["确定性 DSL Compiler / Validator / Index Router"]
     CDSL --> MCP["只读 OpenSearch MCP Gateway"]
     MCP --> AN["Parser / Normalizer / Composite / Metric / Statistic / QA"]
-    AN --> C["Agent C：post_query_insight_dashboard"]
-    C --> G["确定性 Grounding / Chart Feasibility"]
+    AN --> C1["Agent C Pass 1：post_query_visual_exploration"]
+    C1 --> VX["受控 Visualization Explorer / Feasibility"]
+    VX --> VP["VisualizationPreview / profile / encoding"]
+    VP --> C2["Agent C Pass 2：post_query_insight_dashboard"]
+    C2 --> G["确定性 Grounding / task、dataset、measure、evidence 一致性"]
     G --> D["Answer-first Dashboard"]
     G --> E["Business / Advanced Evidence"]
     D --> SNAP["不可变 AnswerSnapshot"]
@@ -134,7 +142,7 @@ dataset_ids + time_range + filters + metric_ids + dimension_ids + grain
 
 ### 4.3 Semantic Retrieval 与 Agent A
 
-Compiler 从真实 Excel/CSV、Mapping、Registry、Policy 生成 hash 版本化 Semantic Package 和 FTS。运行时 Retrieval 只向 Agent A 提供有界候选，不把整个 Mapping 或字段库塞入 Prompt。
+Compiler 从真实 Excel/CSV、Mapping、可选 FieldProfileSnapshot、Registry、Policy 生成 hash 版本化 Semantic Package 和 FTS。运行时 Retrieval 只向 Agent A 提供有界候选，不把整个 Mapping 或字段库塞入 Prompt。字段候选包含经过治理的 description、aliases、business domain、semantic/mapping type、capabilities、maturity、compatibility 和 cardinality 摘要，但不包含 physical path、observed index 或 raw sample。
 
 Agent A 的正式 operation 是 turn_and_analysis_plan，输出 AnalysisPlanDraft。它负责：
 
@@ -151,9 +159,11 @@ AnalysisPlan Validator 只接受候选 ID，校验时间半开区间、预算、
 
 ### 4.4 Agent B、QueryPlan 与 DSL
 
-Agent B 的 operation 是 logical_query_plan，输出 QueryPlanDraft。它根据已解析 ID 负责 QueryStep 数量、依赖关系、每步目标、维度、粒度、指标、ResultContract、可合并查询和必要的 dependent query。
+Agent B 的 operation 是 logical_query_plan，输出 QueryPlanDraft。它根据已解析 ID 和 `ResolvedFieldDescriptor` 负责 QueryStep 数量、依赖关系、每步目标、维度、粒度、指标、ResultContract、可合并查询和必要的 dependent query。Descriptor 包含真实 Excel description、semantic/mapping type、capabilities、maturity、compatibility 和 cardinality，帮助 Agent B 规划最小充分 Dataset；不包含 physical path。
 
 Agent B 不知道 MCP Tool、endpoint、物理字段路径，也不能输出 JSON DSL。
+
+索引发现、Mapping 和字段画像属于 Bootstrap/Refresh 确定性流程：`ListIndexTool → IndexMappingTool → staging semantic compile → policy-safe size:0 profile → final semantic compile`。普通用户轮次不得让 Agent A/B 临时调用 MCP。完整设计和命令分别见 `multi_agent_orchestration.md` 与 `mcp_adapter_guide.md`。
 
 之后全是确定性组件：
 
@@ -185,30 +195,32 @@ DataQA 与 Reconciliation 覆盖 shard failure、timeout、空/部分结果、�
 
 ### 4.7 Agent C、总分析与动态 Dashboard
 
-Agent C 的 operation 是 post_query_insight_dashboard，输入只包含 AnalysisPlan、Dataset schema、受控 FeatureSummary、MetricDefinition 视图、DataQA、VisualizationDefinition 和预算，不读取原始明细，不执行查询。
+Agent C 是同一个受限 Node 内的两个结构化 Pass。Pass 1 的 operation 是 `post_query_visual_exploration`，只提出 0/1/N 个 `VisualizationCandidate`；受控 `GovernedVisualizationExplorer` 校验真实 Dataset grain、列、基数、完整性、变异度和用户偏好，返回 `VisualizationPreview`。Pass 2 的 operation 是 `post_query_insight_dashboard`，综合 AnalysisPlan、Dataset schema、FeatureSummary、MetricDefinition、DataQA 和验证 Preview，同时输出 ClaimDraft 与 VisualInsightDraft。两个 Pass 都不读取原始大表、不执行查询、不调用 Tool。
 
 它负责：
 
 - 为每个 required task 提出 ClaimDraft，或在 limitations 中写明证据缺口；
 - 组织 primary/secondary/supporting 的 answer-first 阅读顺序；
 - 使用 selector grammar 引用 Dataset 行列，不能自己写数字；
-- 根据真实任务、粒度、基数、完整性和用户偏好提出 0/1/N 个 VisualizationCandidate；
-- 每张图回答不同问题；
+- Pass 1 根据真实任务、粒度、基数、完整性和用户偏好提出 0/1/N 个 VisualizationCandidate；
+- Pass 2 只选择 Adapter 返回的非拒绝 Preview，并把每张图与本次 Claim ID 显式绑定；
+- 每张图回答不同问题，且 Claim 与图必须同 task、同 Dataset、同最终 measure；
 - 给出必要且可追溯的后续建议。
 
-ClaimGrounder 将 selector 解析为真实 Dataset 行列，绑定 EvidenceRef，拒绝未绑定数字、未知 task、未知列、错误 selector 和重复结论。总分析只由已 Grounding Claim 组成，不相信模型自由文案中的数字。required task 缺失会触发 Agent C 有界修复；仍失败则 PARTIAL 并带限制。
+ClaimGrounder 将 selector 解析为真实 Dataset 行列，绑定 EvidenceRef，拒绝未绑定数字、未知 task、未知列、错误 selector 和重复结论。Completeness Validator 再拒绝未知/重复 Preview、task 不相交、Dataset 不一致或 measure 未绑定的图结论。总分析只由已 Grounding Claim 组成，不相信模型自由文案中的数字。required task 缺失会触发 Agent C 有界修复；仍失败则 PARTIAL 并带限制。
 
 Dashboard Builder 的规则：
 
 - 第一块是直接回答/总分析；已在总分析中的发现不再重复为“关键发现”；
 - KPI 只来自本轮 AnalysisPlan 中 required/recommended 且已计算有效的 MetricDefinition；
 - KPI、图表和区块数量均允许 0/1/N，不固定四个；
-- 图表类型由 Agent C 候选 + Visualization Registry + Dataset 形态共同决定；
+- 图表类型由 Agent C Pass 1 + Visualization Registry + Dataset 形态共同决定，图结论由 Agent C Pass 2 在验证 Preview 上生成；
 - 用户明确指定类型时兼容则采用，不兼容则解释并降级表格；
 - 完整高基数数据也不会伪造前端 Top-N/Other 变换；超出可读上限直接安全降级表格；
 - 页面不显示整块技术 QA 或“聚合明细与指标口径”。
+- 每个 Chart Block 必须展示本图目的、Grounded findings、按最终 encoding 生成的读图方法和必要 caveat。
 
-当前安全渲染目录包括 bar、line、heatmap、stacked_bar、donut、dot、pareto、table、pivot；这不是 Agent 固定选图模板，而是防止任意 ECharts/JavaScript 注入的可扩展白名单。新增图种必须同时新增 Contract、Registry、后端可行性、前端安全适配和测试，不能只让 LLM 输出新字符串。
+当前安全渲染目录包括 bar、line、heatmap、stacked_bar、donut、dot、pareto、table、pivot；这不是 Agent 固定选图模板，而是防止任意 ECharts/JavaScript 注入的可扩展白名单。当前 renderer 是 ECharts Safe Adapter，Plotly 未实现/未启用。新增图种或 renderer 必须同时新增 Contract、Registry、后端可行性、前端安全适配、ADR 和测试，不能只让 LLM 输出新字符串或绘图库代码。完整设计见 `visualization_agent_architecture.md`。
 
 ### 4.8 Evidence 分层
 
@@ -223,7 +235,7 @@ Advanced Evidence 仅授权角色可见，包含最终只读 DSL、执行摘要�
 
 ### 4.9 SSE 用户体验
 
-/chat/stream 从实际 LangGraph 节点完成事件产生请求/权限、上下文、Agent A、Agent B、DSL 编译、OpenSearch、Analytics/QA、Agent C/Dashboard 和完成/失败阶段。
+/chat/stream 从实际 LangGraph 节点完成事件产生请求/权限、上下文、Agent A、Agent B、DSL 编译、OpenSearch、Analytics/QA、Agent C 双阶段可视化/Dashboard 和完成/失败阶段。
 
 这些是可审计阶段，不是模型隐藏思维链。禁止流式输出 Prompt、完整用户问题、原始 DSL（业务层）、凭证或私有推理。最终 AnswerSnapshot 到达后，前端自动清除/收起临时进度；刷新只恢复最终不可变答案。
 
@@ -253,7 +265,7 @@ CHATBI_TURN_TIMEOUT_SECONDS=180
 
 Adapter 发送 chat-completions 兼容请求，使用 strict JSON Schema response_format。Schema name 按 operation + 输出 Contract 区分；三种 json_repair 也不会共用一个冲突名称。请求中没有 tools/tool_choice。
 
-真实运行包含六类调用：
+真实运行包含四个主业务 operation、三个按输出 Contract 区分的 repair schema，以及一个无业务数据配置探针。Agent C 仍是一个 Node，只是采用两个固定 Pass，不是自由 Tool Loop：
 
 | operation / schema name | 输出 | 责任 |
 |---|---|---|
@@ -261,7 +273,8 @@ Adapter 发送 chat-completions 兼容请求，使用 strict JSON Schema respons
 | json_repair_AnalysisPlanDraft | AnalysisPlanDraft | 只修复 Agent A Contract 错误 |
 | logical_query_plan | QueryPlanDraft | Agent B：逻辑查询步骤、依赖、粒度、ResultContract |
 | json_repair_QueryPlanDraft | QueryPlanDraft | 只修复 Agent B Contract 错误 |
-| post_query_insight_dashboard | InsightDashboardDraft | Agent C：已验证证据上的洞察绑定与图表候选 |
+| post_query_visual_exploration | VisualizationExplorationDraft | Agent C Pass 1：0/1/N 个受控可视化探索请求 |
+| post_query_insight_dashboard | InsightDashboardDraft | Agent C Pass 2：完整洞察及 Preview/Claim 显式绑定 |
 | json_repair_InsightDashboardDraft | InsightDashboardDraft | 只修复 Grounding/required-task/Schema 错误 |
 
 切换前运行：
@@ -279,7 +292,8 @@ probe-llm 只发无业务数据的最小 strict-schema 探针；它证明端点�
 
 - Agent A 必须根据真实问题和候选语义决定，而不是复刻 Mock 关键词；
 - Agent B 必须覆盖 required tasks，保持 grain/result contract，并让 Compiler 独占 DSL；
-- Agent C 必须完整回答 required tasks，不能只写“分析完成”；
+- Agent C Pass 1 不得输出绘图代码，Pass 2 必须完整回答 required tasks，不能只写“分析完成”；
+- 每个 VisualInsight 必须只引用验证 Preview，并通过 task/Dataset/measure/Evidence 一致性；
 - 所有数字、类别、排名、时间和数据依赖判断必须通过 Claim binding；
 - 模型失败只能 fail/受控 PARTIAL，不得调用 RuleBasedMockLLMClient；
 - repair 只能根据结构化错误码修复原 Contract，不能扩大 ID、预算或权限。
@@ -297,10 +311,10 @@ probe-llm 只发无业务数据的最小 strict-schema 探针；它证明端点�
 ### 7.2 固化 Mapping
 
 ~~~powershell
-./scripts/snapshot-mapping.ps1 -Config ./config/gateway.mcp.yaml -Dataset <dataset_id> -Index <index-2026.05>,<index-2026.06>,<index-2026.07> -Output ./input-real/mapping_snapshot.json
+./scripts/snapshot-mapping.ps1 -Config ./config/gateway.mcp.yaml -Dataset <dataset_id> -IndexPattern '<approved-index-prefix>-*' -Output ./input-real/mapping_snapshot.json
 ~~~
 
-索引必须逐个显式列出；不要用未审核的宽泛通配符替代审计快照。
+Pattern 必须是已审核的 Dataset 前缀。确定性 Adapter 调用 ListIndexTool 后会过滤并固化 exact index list；也可用 `-Index` 逐个显式指定。不要使用 `*` 等无 Dataset 边界的宽泛 pattern。
 
 ### 7.3 生成候选输入
 
@@ -320,14 +334,16 @@ probe-llm 只发无业务数据的最小 strict-schema 探针；它证明端点�
 
 示例值不能直接用于生产。必须与真实枚举和业务定义一致。
 
-### 7.5 编译两次并比较
+### 7.5 staging 编译、受控画像、正式编译
 
 ~~~powershell
-./scripts/compile-internal-semantic.ps1 -InputDir ./semantic-input/internal -OutputDir ./compiled-semantic/internal-a
-./scripts/compile-internal-semantic.ps1 -InputDir ./semantic-input/internal -OutputDir ./compiled-semantic/internal-b
+./scripts/compile-internal-semantic.ps1 -InputDir ./semantic-input/internal -OutputDir ./.cache/semantic-staging
+./scripts/snapshot-field-profile.ps1 -Config ./config/gateway.mcp.yaml -Dataset <dataset_id> -Mapping ./input-real/mapping_snapshot.json -SemanticPackage ./.cache/semantic-staging -Output ./input-real/field_profile_snapshot.json
+./scripts/compile-internal-semantic.ps1 -InputDir ./semantic-input/internal -Profile ./input-real/field_profile_snapshot.json -OutputDir ./compiled-semantic/internal-a
+./scripts/compile-internal-semantic.ps1 -InputDir ./semantic-input/internal -Profile ./input-real/field_profile_snapshot.json -OutputDir ./compiled-semantic/internal-b
 ~~~
 
-两次 package_version、文件清单和内容 hash 必须一致；Import Report 必须 PASSED；任何冲突、模糊字段、跨月不兼容 Mapping、未确认指标或敏感字段错误都要先修真实输入，不能绕过 Compiler。
+画像只覆盖 staging Policy 已允许模型查看和聚合的字段，固定 `size:0`，不包含 raw documents。最终两次 package_version、文件清单和内容 hash 必须一致；Import Report 必须 PASSED；Profile 的 dataset/index/mapping hash 不一致、任何冲突、模糊字段、跨月不兼容 Mapping、未确认指标或敏感字段错误都要先修真实输入，不能绕过 Compiler。
 
 审核通过后，把批准产物固定到正式 compiled-semantic/internal，保留原输入版本、owner、日期和审批记录。
 

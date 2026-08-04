@@ -32,8 +32,9 @@ if __name__ == "__main__" and os.environ.get("CHATBI_BACKEND_REEXEC") != "1":
 sys.path.insert(0, str(BACKEND))
 sys.path.insert(0, str(ROOT / "scripts"))
 
-from app.contracts import SCHEMA_MODELS
-from generate_schema_snapshots import render_schema
+from generate_schema_snapshots import render_schema  # noqa: E402
+
+from app.contracts import SCHEMA_MODELS  # noqa: E402
 
 
 def main() -> int:

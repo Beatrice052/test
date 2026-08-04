@@ -9,6 +9,7 @@ import pytest
 
 from app.gateway.bindings import GatewayBindings, ToolDescriptor
 from app.gateway.mcp import McpOpenSearchGateway
+from app.semantic.mapping import flatten_mapping_snapshot
 from tests.unit.gateway.test_mock import compiled_query
 
 CONFIG = Path(__file__).parents[4] / "config" / "gateway.mcp.yaml"
@@ -88,3 +89,78 @@ async def test_mcp_csv_is_normalized_inside_adapter() -> None:
         {"channel": "EMAIL", "count": "7"},
     )
     assert result.gateway_metadata["format"] == "csv"
+
+
+class MetadataMcpTransport(FakeMcpTransport):
+    async def call_tool(self, name: str, arguments: dict[str, object]) -> object:
+        self.calls.append((name, arguments))
+        if name == "ListIndexTool":
+            return {
+                "indices": [
+                    {"index": "tbl_os_sub_message_2026_06"},
+                    {"index": "unrelated_index"},
+                    {"index": "tbl_os_sub_message_2026_07"},
+                ]
+            }
+        if name == "SearchIndexTool":
+            return {
+                "hits": {"total": {"value": 100}, "hits": []},
+                "aggregations": {
+                    "profile_000": {
+                        "doc_count": 100,
+                        "cardinality": {"value": 3},
+                        "non_null": {"value": 95},
+                        "missing": {"doc_count": 5},
+                        "sample_values": {
+                            "buckets": [
+                                {"key": "SMS", "doc_count": 60},
+                                {"key": "EMAIL", "doc_count": 35},
+                            ]
+                        },
+                    }
+                },
+            }
+        return self.response
+
+
+@pytest.mark.asyncio
+async def test_mcp_discovers_indices_and_builds_bounded_aggregate_profile() -> None:
+    raw_mapping = {
+        "captured_at": "2026-08-04T00:00:00Z",
+        "indices": {
+            "tbl_os_sub_message_2026_06": {
+                "mappings": {"properties": {"channel": {"type": "keyword"}}}
+            },
+            "tbl_os_sub_message_2026_07": {
+                "mappings": {"properties": {"channel": {"type": "keyword"}}}
+            },
+        },
+    }
+    mapping = flatten_mapping_snapshot(raw_mapping, dataset_id="sub_message")
+    transport = MetadataMcpTransport({})
+    gateway = McpOpenSearchGateway(
+        transport=transport,
+        bindings=GatewayBindings.from_file(CONFIG),
+    )
+    await gateway.probe()
+
+    indices = await gateway.list_indices("tbl_os_sub_message_2026_*")
+    profile = await gateway.profile_fields(
+        mapping,
+        allowed_source_paths=("channel",),
+        sample_value_limit=2,
+    )
+
+    assert indices == (
+        "tbl_os_sub_message_2026_06",
+        "tbl_os_sub_message_2026_07",
+    )
+    assert len(profile.fields) == 1
+    assert profile.fields[0].cardinality_estimate == 3
+    assert profile.fields[0].missing_count == 5
+    assert profile.fields[0].sample_values == ("SMS", "EMAIL")
+    _, search_arguments = transport.calls[-1]
+    query = json.loads(str(search_arguments["query_dsl"]))
+    assert query["size"] == 0
+    assert "_source" not in query
+    assert profile.provenance.metadata["raw_size_bytes"] > 0

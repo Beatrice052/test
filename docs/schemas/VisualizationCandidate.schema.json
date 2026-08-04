@@ -52,6 +52,15 @@
     "reason": {
       "title": "Reason",
       "type": "string"
+    },
+    "task_ids": {
+      "items": {
+        "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Task Ids",
+      "type": "array"
     }
   },
   "required": [
@@ -60,6 +69,7 @@
     "intent",
     "preferred_chart_types",
     "dataset_id",
+    "task_ids",
     "priority",
     "reason"
   ],

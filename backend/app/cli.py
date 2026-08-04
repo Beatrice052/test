@@ -14,6 +14,7 @@ from typing import Literal
 from uuid import uuid4
 
 from app.contracts.common import Provenance, StrictModel, semantic_hash
+from app.contracts.semantic import FieldMaturity, MappingSnapshot
 from app.gateway.bindings import MappingRequest
 from app.gateway.capability_probe import McpCapabilityProbe
 from app.gateway.config import load_mcp_runtime_config
@@ -22,6 +23,8 @@ from app.gateway.mcp_transport import OfficialMcpTransport
 from app.llm.cutover import evaluate_real_llm_cutover
 from app.llm.openai_compatible import OpenAICompatibleLLMClient
 from app.semantic.compiler import SemanticCompileError, compile_semantic_package
+from app.semantic.mapping import flatten_mapping_snapshot
+from app.semantic.package import CompiledSemanticPackage
 from app.settings import get_settings
 
 
@@ -37,6 +40,7 @@ def _semantic_compile(args: argparse.Namespace) -> int:
             args.output_dir,
             field_catalog_path=args.field_catalog,
             mapping_path=args.mapping,
+            profile_path=args.profile,
             metric_registry_path=args.metric_registry,
         )
     except SemanticCompileError as error:
@@ -410,8 +414,11 @@ async def _snapshot_mapping_async(args: argparse.Namespace) -> int:
         report = await gateway.probe()
         if not report.ready:
             raise RuntimeError("required MCP bindings are not ready")
+        indices = tuple(args.index or ())
+        if args.index_pattern is not None:
+            indices = await gateway.list_indices(args.index_pattern)
         snapshot = await gateway.get_mapping(
-            MappingRequest(dataset_id=args.dataset, indices=tuple(args.index))
+            MappingRequest(dataset_id=args.dataset, indices=indices)
         )
         mapping_tool = report.resolved_bindings["get_mapping"]
         snapshot = snapshot.model_copy(
@@ -466,6 +473,98 @@ def _snapshot_mapping(args: argparse.Namespace) -> int:
         return 2
 
 
+def _load_mapping_snapshot(path: Path, dataset_id: str) -> MappingSnapshot:
+    raw = json.loads(path.read_text(encoding="utf-8"))
+    if isinstance(raw, dict) and {"object_id", "fields", "raw_mapping_hash"}.issubset(raw):
+        snapshot = MappingSnapshot.model_validate(raw, strict=False)
+        if snapshot.dataset_id != dataset_id:
+            raise ValueError("mapping snapshot dataset_id does not match --dataset")
+        return snapshot
+    if not isinstance(raw, dict):
+        raise ValueError("mapping snapshot must be a JSON object")
+    return flatten_mapping_snapshot(raw, dataset_id=dataset_id)
+
+
+async def _snapshot_profile_async(args: argparse.Namespace) -> int:
+    mapping = _load_mapping_snapshot(args.mapping, args.dataset)
+    package = CompiledSemanticPackage(args.semantic_package)
+    allowed_source_paths = tuple(
+        sorted(
+            field.source_path
+            for field in package.fields()
+            if field.dataset_id == args.dataset
+            and field.maturity != FieldMaturity.BLOCKED
+            and field.security.model_visible
+            and field.security.aggregatable
+        )
+    )
+    transport_config, bindings = load_mcp_runtime_config(args.config)
+    transport = OfficialMcpTransport(transport_config)
+    try:
+        await transport.connect()
+        gateway = McpOpenSearchGateway(transport=transport, bindings=bindings)
+        report = await gateway.probe()
+        if not report.ready:
+            raise RuntimeError("required MCP bindings are not ready")
+        profile = await gateway.profile_fields(
+            mapping,
+            allowed_source_paths=allowed_source_paths,
+            max_fields=args.max_fields,
+            sample_value_limit=args.sample_value_limit,
+        )
+        profile = profile.model_copy(
+            update={
+                "provenance": Provenance(
+                    producer="semantic.profiler",
+                    source_ids=profile.provenance.source_ids,
+                    source_hashes=profile.provenance.source_hashes,
+                    metadata={
+                        **profile.provenance.metadata,
+                        "transport": transport_config.transport,
+                        "tool": report.resolved_bindings["execute_search"],
+                        "server_name": transport.server_name,
+                        "server_version": transport.server_version,
+                        "raw_documents_included": False,
+                    },
+                )
+            }
+        )
+        args.output.parent.mkdir(parents=True, exist_ok=True)
+        temporary = args.output.with_suffix(f"{args.output.suffix}.tmp")
+        temporary.write_text(profile.model_dump_json(indent=2), encoding="utf-8")
+        temporary.replace(args.output)
+        print(
+            json.dumps(
+                {
+                    "status": "PASSED",
+                    "dataset_id": profile.dataset_id,
+                    "indices": list(profile.indices),
+                    "profiled_field_count": len(profile.fields),
+                    "raw_documents_included": False,
+                    "output": str(args.output),
+                },
+                ensure_ascii=False,
+            )
+        )
+        return 0
+    finally:
+        await transport.close()
+
+
+def _snapshot_profile(args: argparse.Namespace) -> int:
+    try:
+        return asyncio.run(_snapshot_profile_async(args))
+    except Exception as error:
+        print(
+            json.dumps(
+                {"status": "FAILED", "error_type": type(error).__name__},
+                ensure_ascii=False,
+            ),
+            file=sys.stderr,
+        )
+        return 2
+
+
 def _emit_json(payload: Mapping[str, object], output: Path | None) -> None:
     serialized = json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True)
     if output is not None:
@@ -485,6 +584,7 @@ def build_parser() -> argparse.ArgumentParser:
     source_group.add_argument("--input-dir", type=Path)
     source_group.add_argument("--field-catalog", type=Path)
     compile_parser.add_argument("--mapping", type=Path)
+    compile_parser.add_argument("--profile", type=Path)
     compile_parser.add_argument("--metric-registry", type=Path)
     compile_parser.add_argument(
         "--output-dir", "--output", dest="output_dir", type=Path, required=True
@@ -494,9 +594,21 @@ def build_parser() -> argparse.ArgumentParser:
     snapshot_parser = semantic_commands.add_parser("snapshot-mapping")
     snapshot_parser.add_argument("--config", type=Path, required=True)
     snapshot_parser.add_argument("--dataset", required=True)
-    snapshot_parser.add_argument("--index", action="append", required=True)
+    snapshot_index = snapshot_parser.add_mutually_exclusive_group(required=True)
+    snapshot_index.add_argument("--index", action="append")
+    snapshot_index.add_argument("--index-pattern")
     snapshot_parser.add_argument("--output", type=Path, required=True)
     snapshot_parser.set_defaults(handler=_snapshot_mapping)
+
+    profile_parser = semantic_commands.add_parser("snapshot-profile")
+    profile_parser.add_argument("--config", type=Path, required=True)
+    profile_parser.add_argument("--dataset", required=True)
+    profile_parser.add_argument("--mapping", type=Path, required=True)
+    profile_parser.add_argument("--semantic-package", type=Path, required=True)
+    profile_parser.add_argument("--max-fields", type=int, default=100)
+    profile_parser.add_argument("--sample-value-limit", type=int, default=5)
+    profile_parser.add_argument("--output", type=Path, required=True)
+    profile_parser.set_defaults(handler=_snapshot_profile)
 
     mcp = commands.add_parser("mcp")
     mcp_commands = mcp.add_subparsers(dest="mcp_command", required=True)

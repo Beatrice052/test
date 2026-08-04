@@ -7,8 +7,13 @@ from datetime import UTC, datetime
 from app.agents.insight_dashboard import InsightDashboardAgent
 from app.contracts.analysis import AnswerStatus, TurnKind
 from app.contracts.common import Provenance, semantic_hash
-from app.contracts.dashboard import DashboardBlock, DashboardSpec, VisualizationDefinition
-from app.contracts.dataset import TabularDataset
+from app.contracts.dashboard import (
+    DashboardBlock,
+    DashboardSpec,
+    VisualizationDefinition,
+    VisualizationPreview,
+)
+from app.contracts.dataset import DatasetBundle, TabularDataset
 from app.contracts.insight import ClaimBinding, ClaimDraft, ClaimSpec, InsightDashboardDraft
 from app.contracts.metric import MetricDefinition
 from app.contracts.session import ActiveAnalyticalContext, AnswerSnapshot
@@ -21,8 +26,9 @@ from app.presentation.chart_preferences import (
     apply_candidate_preference,
     block_supports_chart_type,
 )
-from app.presentation.dashboard import DashboardBuilder
+from app.presentation.dashboard import DashboardBuilder, chart_reading_guide
 from app.presentation.evidence import EvidenceBuilder
+from app.presentation.exploration import GovernedVisualizationExplorer
 from app.presentation.grounding import ClaimGrounder, GroundingResult
 
 
@@ -35,6 +41,7 @@ class Phase5Nodes:
         agent: InsightDashboardAgent,
         grounder: ClaimGrounder,
         dashboard_builder: DashboardBuilder,
+        visualization_explorer: GovernedVisualizationExplorer,
         evidence_builder: EvidenceBuilder,
         metric_definitions: tuple[MetricDefinition, ...],
         visualization_definitions: tuple[VisualizationDefinition, ...],
@@ -45,6 +52,7 @@ class Phase5Nodes:
         self.agent = agent
         self.grounder = grounder
         self.dashboard_builder = dashboard_builder
+        self.visualization_explorer = visualization_explorer
         self.evidence_builder = evidence_builder
         self.metric_definitions = metric_definitions
         self.visualization_definitions = visualization_definitions
@@ -63,7 +71,7 @@ class Phase5Nodes:
         reuse_warnings: tuple[str, ...] = ()
         if decision.turn_kind == TurnKind.PRESENTATION_CHANGE and dashboard is not None:
             dashboard, reuse_warnings = self._presentation_dashboard(
-                dashboard, self._chart_preference(state)
+                dashboard, self._chart_preference(state), base.dataset_bundle
             )
         answer_id = new_id("ans")
         warnings = tuple(dict.fromkeys([*base.warnings, *reuse_warnings]))
@@ -93,6 +101,7 @@ class Phase5Nodes:
             query_plan=base.query_plan,
             dataset_bundle=base.dataset_bundle,
             dashboard_spec=dashboard,
+            visualization_previews=base.visualization_previews,
             claims=base.claims,
             evidence_package=base.evidence_package,
             limitations=base.limitations,
@@ -118,7 +127,9 @@ class Phase5Nodes:
 
     @staticmethod
     def _presentation_dashboard(
-        dashboard: DashboardSpec, preference: ChartPreference
+        dashboard: DashboardSpec,
+        preference: ChartPreference,
+        bundle: DatasetBundle | None = None,
     ) -> tuple[DashboardSpec, tuple[str, ...]]:
         requested = preference.chart_type
         warnings: list[str] = []
@@ -137,20 +148,56 @@ class Phase5Nodes:
                         update={
                             "type": "pivot_table" if requested == "pivot" else "data_table",
                             "chart_type": requested,
+                            "chart_analysis": None,
                         }
                     )
                 )
                 continue
             if not block_supports_chart_type(block, requested):
                 blocks.append(
-                    block.model_copy(update={"type": "data_table", "chart_type": "table"})
+                    block.model_copy(
+                        update={
+                            "type": "data_table",
+                            "chart_type": "table",
+                            "chart_analysis": None,
+                        }
+                    )
                 )
                 warnings.append(
                     f"{requested} is incompatible with block {block.block_id}; "
                     "downgraded to data table"
                 )
                 continue
-            blocks.append(block.model_copy(update={"chart_type": requested}))
+            chart_analysis = block.chart_analysis
+            if chart_analysis is not None and block.encoding is not None:
+                dataset = next(
+                    (
+                        item
+                        for item in (() if bundle is None else bundle.datasets)
+                        if item.object_id == block.dataset_id
+                    ),
+                    None,
+                )
+                chart_analysis = chart_analysis.model_copy(
+                    update={
+                        "reading_guide": chart_reading_guide(
+                            requested,
+                            block.encoding,
+                            dimension_label=Phase5Nodes._display_label(
+                                dataset, block.encoding.category or block.encoding.x
+                            ),
+                            measure_label=Phase5Nodes._display_label(
+                                dataset, block.encoding.value or block.encoding.y
+                            ),
+                            series_label=Phase5Nodes._display_label(
+                                dataset, block.encoding.series or block.encoding.color
+                            ),
+                        ),
+                    }
+                )
+            blocks.append(
+                block.model_copy(update={"chart_type": requested, "chart_analysis": chart_analysis})
+            )
         payload = {
             "base_dashboard_id": dashboard.object_id,
             "requested": requested,
@@ -171,7 +218,41 @@ class Phase5Nodes:
         )
         return updated, tuple(warnings)
 
+    @staticmethod
+    def _display_label(dataset: TabularDataset | None, column_name: str | None) -> str | None:
+        if column_name is None:
+            return None
+        if dataset is None:
+            return column_name.rsplit(".", 1)[-1]
+        column = next((item for item in dataset.columns if item.name == column_name), None)
+        if column is None:
+            return column_name.rsplit(".", 1)[-1]
+        return column.display_name or column.name.rsplit(".", 1)[-1]
+
     async def produce_answer(self, state: ChatBIState) -> dict[str, object]:
+        exploration_failed = False
+        preference_notes: tuple[str, ...] = ()
+        try:
+            exploration = await self.agent.explore(
+                analysis_plan=state["analysis_plan"],
+                bundle=state["dataset_bundle"],
+                feature_summaries=state["feature_summaries"],
+                metric_definitions=self.metric_definitions,
+                visualization_definitions=self.visualization_definitions,
+                correlation_id=state["correlation_id"],
+                fixture_id=state.get("fixture_id"),
+            )
+            preferred_candidates, preference_notes = apply_candidate_preference(
+                exploration.candidates,
+                self.visualization_definitions,
+                self._chart_preference(state),
+            )
+            previews = self.visualization_explorer.explore(
+                preferred_candidates, state["dataset_bundle"]
+            )
+        except Exception:
+            exploration_failed = True
+            previews = ()
         agent_failed = False
         try:
             draft = await self.agent.plan(
@@ -180,6 +261,7 @@ class Phase5Nodes:
                 feature_summaries=state["feature_summaries"],
                 metric_definitions=self.metric_definitions,
                 visualization_definitions=self.visualization_definitions,
+                visualization_previews=previews,
                 correlation_id=state["correlation_id"],
                 fixture_id=state.get("fixture_id"),
             )
@@ -190,17 +272,11 @@ class Phase5Nodes:
                 fallback_requested=True,
                 limitations=("Insight planning adapter failed",),
             )
-        preferred_candidates, preference_notes = apply_candidate_preference(
-            draft.visualizations,
-            self.visualization_definitions,
-            self._chart_preference(state),
-        )
-        draft = draft.model_copy(update={"visualizations": preferred_candidates})
         grounding = self.grounder.ground(draft.claims, state["dataset_bundle"])
-        completeness_errors = self._claim_completeness_errors(state, draft, grounding)
+        completeness_errors = self._claim_completeness_errors(state, draft, grounding, previews)
         if (grounding.failures or completeness_errors) and not draft.fallback_requested:
             draft, grounding, completeness_errors = await self._repair_grounding(
-                state, draft, grounding, completeness_errors
+                state, draft, grounding, completeness_errors, previews
             )
         if draft.fallback_requested or not grounding.claims:
             fallback_drafts = self._fallback_claims(state)
@@ -219,6 +295,7 @@ class Phase5Nodes:
                 [
                     *state["analysis_plan"].limitations,
                     *draft.limitations,
+                    *(("visualization exploration adapter failed",) if exploration_failed else ()),
                     *preference_notes,
                     *completeness_errors,
                 ]
@@ -227,7 +304,8 @@ class Phase5Nodes:
         dashboard = self.dashboard_builder.build(
             title=state["analysis_plan"].analysis_goal[:160],
             answer_summary=answer_summary,
-            candidates=draft.visualizations if not agent_failed else (),
+            previews=previews if not agent_failed else (),
+            visual_insights=draft.visual_insights if not agent_failed else (),
             claims=claims,
             bundle=state["dataset_bundle"],
             max_blocks=state["analysis_plan"].budget.max_blocks,
@@ -250,6 +328,7 @@ class Phase5Nodes:
         )
         partial = (
             agent_failed
+            or exploration_failed
             or draft.fallback_requested
             or bool(grounding_failures)
             or bool(completeness_errors)
@@ -262,6 +341,7 @@ class Phase5Nodes:
                 + [item.message for item in grounding_failures]
                 + list(completeness_errors)
                 + (["deterministic insight fallback used"] if agent_failed else [])
+                + (["visualization exploration unavailable"] if exploration_failed else [])
             )
         )
         answer_id = new_id("ans")
@@ -305,6 +385,7 @@ class Phase5Nodes:
             query_plan=state["query_plan"],
             dataset_bundle=state["dataset_bundle"],
             dashboard_spec=dashboard,
+            visualization_previews=previews,
             claims=claims,
             evidence_package=evidence,
             limitations=limitations,
@@ -336,6 +417,7 @@ class Phase5Nodes:
         draft: InsightDashboardDraft,
         grounding: GroundingResult,
         completeness_errors: tuple[str, ...],
+        previews: tuple[VisualizationPreview, ...],
     ) -> tuple[InsightDashboardDraft, GroundingResult, tuple[str, ...]]:
         """Give Agent C at most two directed attempts to repair rejected claim bindings."""
 
@@ -356,21 +438,17 @@ class Phase5Nodes:
                     errors=errors,
                     analysis_plan=state["analysis_plan"],
                     bundle=state["dataset_bundle"],
+                    visualization_previews=previews,
                     attempt=attempt,
                     correlation_id=state["correlation_id"],
                     fixture_id=state.get("fixture_id"),
                 )
             except Exception:
                 break
-            preferred, _ = apply_candidate_preference(
-                candidate.visualizations,
-                self.visualization_definitions,
-                self._chart_preference(state),
-            )
-            current_draft = candidate.model_copy(update={"visualizations": preferred})
+            current_draft = candidate
             current_grounding = self.grounder.ground(current_draft.claims, state["dataset_bundle"])
             current_completeness = self._claim_completeness_errors(
-                state, current_draft, current_grounding
+                state, current_draft, current_grounding, previews
             )
             if not current_grounding.failures and not current_completeness:
                 break
@@ -381,12 +459,77 @@ class Phase5Nodes:
         state: ChatBIState,
         draft: InsightDashboardDraft,
         grounding: GroundingResult,
+        previews: tuple[VisualizationPreview, ...],
     ) -> tuple[str, ...]:
         task_ids = {item.task_id for item in state["analysis_plan"].tasks}
         required = {
             item.task_id for item in state["analysis_plan"].tasks if item.priority == "required"
         }
         errors: list[str] = []
+        preview_by_id = {item.object_id: item for item in previews}
+        draft_claim_ids = [item.claim_id for item in draft.claims]
+        for claim_id in sorted(
+            {item for item in draft_claim_ids if draft_claim_ids.count(item) > 1}
+        ):
+            errors.append(f"claim:DUPLICATE_CLAIM_ID:{claim_id}")
+        declared_claim_ids = set(draft_claim_ids)
+        insight_ids = [item.insight_id for item in draft.visual_insights]
+        for insight_id in sorted({item for item in insight_ids if insight_ids.count(item) > 1}):
+            errors.append(f"visual_insight:DUPLICATE_INSIGHT_ID:{insight_id}")
+        selected_preview_ids = [item.preview_id for item in draft.visual_insights]
+        for preview_id in sorted(
+            {item for item in selected_preview_ids if selected_preview_ids.count(item) > 1}
+        ):
+            errors.append(f"visual_insight:DUPLICATE_PREVIEW:{preview_id}")
+        grounded_by_id = {
+            item.source_claim_id: item
+            for item in grounding.claims
+            if item.source_claim_id is not None
+        }
+        for insight in draft.visual_insights:
+            preview = preview_by_id.get(insight.preview_id)
+            if preview is None:
+                errors.append(f"visual_insight:UNKNOWN_PREVIEW:{insight.insight_id}")
+                continue
+            if preview.decision == "REJECT":
+                errors.append(f"visual_insight:REJECTED_PREVIEW:{insight.insight_id}")
+            unknown_preview_tasks = set(preview.task_ids) - task_ids
+            if unknown_preview_tasks:
+                errors.append(
+                    "visual_insight:UNKNOWN_TASK_ID:"
+                    f"{insight.insight_id}:{','.join(sorted(unknown_preview_tasks))}"
+                )
+            unknown_claims = set(insight.claim_ids) - declared_claim_ids
+            if unknown_claims:
+                errors.append(
+                    "visual_insight:UNKNOWN_CLAIM:"
+                    f"{insight.insight_id}:{','.join(sorted(unknown_claims))}"
+                )
+            for claim_id in insight.claim_ids:
+                claim = grounded_by_id.get(claim_id)
+                if claim is None:
+                    errors.append(
+                        f"visual_insight:UNGROUNDED_CLAIM:{insight.insight_id}:{claim_id}"
+                    )
+                    continue
+                if not set(preview.task_ids).intersection(claim.task_ids):
+                    errors.append(f"visual_insight:TASK_MISMATCH:{insight.insight_id}:{claim_id}")
+                if any(item.dataset_id != preview.dataset_id for item in claim.evidence_refs):
+                    errors.append(
+                        f"visual_insight:DATASET_MISMATCH:{insight.insight_id}:{claim_id}"
+                    )
+                if preview.encoding is not None:
+                    measure_columns = {
+                        item
+                        for item in (preview.encoding.value, preview.encoding.y)
+                        if item is not None
+                    }
+                    if measure_columns and not any(
+                        item.column in measure_columns for item in claim.evidence_refs
+                    ):
+                        errors.append(
+                            f"visual_insight:MEASURE_MISMATCH:{insight.insight_id}:{claim_id}"
+                        )
         for index, claim in enumerate(grounding.claims):
             unknown = set(claim.task_ids) - task_ids
             if unknown:
@@ -462,9 +605,15 @@ class Phase5Nodes:
         )
         return (
             ClaimDraft(
+                claim_id="claim_deterministic_fallback",
                 claim_type="value" if len(dataset.rows) == 1 else "ranking",
                 template=template,
                 importance="primary",
+                task_ids=tuple(
+                    item.task_id
+                    for item in state["analysis_plan"].tasks
+                    if item.priority == "required"
+                ),
                 bindings=tuple(bindings),
             ),
         )

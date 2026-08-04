@@ -168,15 +168,36 @@ function analysisBlocks(blocks: DashboardBlock[]): DashboardBlock[] {
 
 function VisualBlock({ block }: { block: DashboardBlock }) {
   const isTable = block.type !== "chart";
+  const analysis = block.chart_analysis;
+  const caveats = analysis?.caveats ?? [];
   return (
     <section className={`dashboard-block visual-block${isTable ? " table-block" : ""}`} aria-labelledby={`${block.block_id}-title`}>
       <BlockHeader block={block} kicker={isTable ? "结果表格" : "分析图表"} />
-      {block.description ? (
-        <div className="chart-explanation"><strong>如何阅读</strong><p>{block.description}</p></div>
+      {isTable && block.description ? (
+        <div className="chart-explanation"><strong>展示内容</strong><p>{block.description}</p></div>
+      ) : null}
+      {!isTable && analysis ? (
+        <div className="chart-purpose"><strong>本图回答</strong><p>{analysis.purpose}</p></div>
       ) : null}
       <DatasetBlock block={block} />
+      {!isTable && analysis ? (
+        <div className="chart-analysis" aria-label="图表分析与阅读说明">
+          <div className="chart-findings">
+            <strong>从图中可看出</strong>
+            <ul>
+              {analysis.findings.map((finding) => (
+                <li key={finding.claim_id}>{finding.text}</li>
+              ))}
+            </ul>
+          </div>
+          <div className="chart-reading"><strong>如何阅读</strong><p>{analysis.reading_guide}</p></div>
+          {caveats.length > 0 ? (
+            <div className="chart-caveats"><strong>解读边界</strong><p>{caveats.join("；")}</p></div>
+          ) : null}
+        </div>
+      ) : null}
       {block.type === "chart" ? (
-        <p className="chart-note">图中数值来自同一已验证 Dataset；精确值可通过悬停或下载 CSV 核查。</p>
+        <p className="chart-note">图中数值与结论来自同一已验证 Dataset；精确值可通过悬停、下载 CSV 或查看证据核查。</p>
       ) : null}
     </section>
   );

@@ -94,6 +94,7 @@ class ClaimGrounder:
         if "{" in text or "}" in text:
             raise ValueError("claim template has unresolved placeholders")
         payload = {
+            "source_claim_id": draft.claim_id,
             "claim_type": draft.claim_type,
             "text": text,
             "importance": draft.importance,
@@ -108,6 +109,7 @@ class ClaimGrounder:
                 producer="presentation.claim_grounder",
                 source_ids=tuple(dict.fromkeys(item.dataset_id for item in evidence)),
             ),
+            source_claim_id=draft.claim_id,
             claim_type=draft.claim_type,
             text=text,
             importance=draft.importance,

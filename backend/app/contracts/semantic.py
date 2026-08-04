@@ -6,7 +6,14 @@ from typing import Literal
 
 from pydantic import Field
 
-from app.contracts.common import Identifier, JsonValue, Sha256, StrictModel, VersionedModel
+from app.contracts.common import (
+    Identifier,
+    JsonScalar,
+    JsonValue,
+    Sha256,
+    StrictModel,
+    VersionedModel,
+)
 
 
 class FieldMaturity(StrEnum):
@@ -74,6 +81,31 @@ class MappingSnapshot(VersionedModel):
     indices: tuple[str, ...]
     fields: tuple[MappingField, ...]
     raw_mapping_hash: Sha256
+
+
+class FieldProfile(StrictModel):
+    """Bounded aggregate profile; it never contains raw OpenSearch documents."""
+
+    source_path: str = Field(min_length=1, max_length=512)
+    physical_path: str = Field(min_length=1, max_length=512)
+    mapping_type: str = Field(min_length=1, max_length=64)
+    document_count: int = Field(ge=0)
+    non_null_count: int = Field(ge=0)
+    missing_count: int = Field(ge=0)
+    cardinality_estimate: int | None = Field(default=None, ge=0)
+    cardinality_approximate: bool = True
+    sample_values: tuple[JsonScalar, ...] = Field(default=(), max_length=10)
+    minimum: JsonScalar = None
+    maximum: JsonScalar = None
+
+
+class FieldProfileSnapshot(VersionedModel):
+    dataset_id: Identifier
+    captured_at: datetime
+    indices: tuple[str, ...]
+    mapping_content_hash: Sha256
+    fields: tuple[FieldProfile, ...]
+    profile_query_hash: Sha256
 
 
 class FieldDescriptionRow(StrictModel):

@@ -1,6 +1,6 @@
 # 最终端到端审计
 
-审计日期：2026-08-02
+审计日期：2026-08-04
 
 审计结论：READY_FOR_INTERNAL_SHADOW
 
@@ -8,7 +8,7 @@
 
 ## 1. 总体判断
 
-该项目已经从“固定示例输出”校准为受治理、Adapter-based 的通用 ChatBI 框架。用户问题不会被硬编码为 Channel×Status×Month；正式意图、AnalysisPlan、QueryPlan 和查询后分析分别由真实 Agent A/B/C 决定，确定性组件负责 ID/预算/DSL/指标/QA/Grounding/图表安全。
+该项目已经从“固定示例输出”校准为受治理、Adapter-based 的通用 ChatBI 框架。用户问题不会被硬编码为 Channel×Status×Month；正式意图、AnalysisPlan、QueryPlan 和查询后分析分别由真实 Agent A/B/C 决定。Agent C 当前采用“探索请求 → 受控 Preview → Claim/VisualInsight 同时绑定”的双阶段，确定性组件负责 ID/预算/DSL/指标/QA/Grounding/图表安全。
 
 本轮没有只修单个截图。审计从用户输入、语义检索、三个 Agent、Query/DSL、Gateway、Analytics、Dashboard、Evidence、SSE、会话、安全、恢复、部署和内网切换逐层检查，并补充了跨层回归。
 
@@ -40,23 +40,28 @@
 | 中 | 审计装饰器模型标识曾误透传给统一 LLM Protocol | 正式 Adapter 调用签名不一致 | model 只进入 allowlisted 安全审计，不透传 delegate；mypy 捕获与修复 |
 | 中 | mcp profile 未显式携带 semantic input dir | cutover 只看 package，源输入仍可能指向 Mock | Compose/env/cutover 增加非 Mock Semantic Input 门禁 |
 | 中 | Playwright 自带 webServer 在 Windows 测试完成后可能挂住 | 自动化结果通过但进程不退出 | 改为同一 Python 进程托管静态服务并清理；npm test:e2e 可正常退出 |
-| 中 | pytest 固定仓库 basetemp/cache 会在 Windows/并发运行产生锁冲突 | 大量测试在 setup 前环境失败 | 移除固定 basetemp 和 cacheprovider 依赖；正式目录全量 265 通过 |
+| 中 | pytest 固定仓库 basetemp/cache 会在 Windows/并发运行产生锁冲突 | 大量测试在 setup 前环境失败 | 移除固定 basetemp 和 cacheprovider 依赖；正式目录全量 275 通过 |
 | 中 | Agent C required task 缺失只依赖一次输出 | 总分析可能合法但不完整 | required task→claim/limitation 完整性校验 + 两次定向 repair + PARTIAL |
 | 中 | 总分析曾可能截断/重复 | 关键发现不完整或重复展示 | 使用全部去重 Grounded Claim 作为总分析；补充发现只显示未纳入项 |
 | 中 | 技术聚合/QA 留在主 Dashboard | 用户难读，Evidence 边界错误 | 聚合表、计算、QA 统一 Evidence；主页面过滤技术块 |
 | 中 | 图表数量/指标存在固定化风险 | 普通问题看似总是同一 Dashboard | KPI 仅取本轮受治理决策；图表 0/1/N；显式 line/heatmap/table 和不同维度回归 |
+| 高 | 候选图与结论分开生成后可能靠标题/关键词误配 | 图能画但结论不属于该图 | Agent C 双阶段；Preview/Claim 显式 ID；task/Dataset/measure/Evidence 五项一致性校验 |
+| 中 | 同 Dataset/intent 的不同指标会被过度去重 | 合法的多指标比较丢图 | 去重键加入最终 encoding；跨指标回归 |
+| 高 | Agent B 只有 resolved field ID，没有字段 description/类型/能力/兼容性/基数 | 真实模型可能规划出信息不足或超桶预算的数据集 | 新增无 physical path 的 ResolvedFieldDescriptor；Agent A 候选补齐安全语义元数据；跨层测试 |
+| 高 | Mapping 需手工列索引且 QueryPlan 前无受控字段画像 | 漏月、旧 Mapping、高基数或缺失字段可能到取数后才暴露 | MCP index discovery + staging Policy + `size:0` FieldProfile + mapping hash/index 编译门禁 |
+| 高 | Agent B 可只标记 task_id 或低估 buckets，却没有实际取得 task 维度/grain | 后续统计看似执行但数据不充分 | Finalizer 强制 required task 的 metric/dimension/grain 覆盖；预算内提升画像下界，超预算拒绝；日趋势/高基数回归 |
 
 ## 4. 分层验证结果
 
 | 层 | 已验证事实 | 结果 |
 |---|---|---|
-| Contract | 40 个权威 JSON Schema snapshot；51 个 OpenAPI/TS schema | PASS |
-| 静态质量 | Ruff、format、mypy 129 source files | PASS |
-| 后端 | 单元、集成、架构、契约、G01–G25 | 265 PASS |
-| 前端 | ESLint、TypeScript、7 个 Vitest 文件/17 用例 | PASS |
+| Contract | 41 个权威 JSON Schema snapshot；55 个 OpenAPI/TS schema | PASS |
+| 静态质量 | Ruff、format、mypy 130 source files | PASS |
+| 后端 | 单元、集成、架构、契约、G01–G25 | 275 PASS |
+| 前端 | ESLint、TypeScript、7 个 Vitest 文件/19 用例 | PASS |
 | 构建 | Vite production build | PASS，有 bundle size warning |
 | 浏览器 | Chromium 会话隔离/恢复/安全图表/Evidence | 1 PASS |
-| Semantic | 同输入两次编译、12 文件逐 hash 一致 | PASS；sp_b71217c670d896e0 |
+| Semantic | 同输入两次编译、12 文件逐 hash 一致 | PASS；sp_d59d2225dd6b8317 |
 | Cutover | 正式模拟配置、Mock 隔离、Compiler DSL 边界 | 12/12 PASS |
 | API 实测 | 新分析、纯换图复用、实质新问题重查、多指标 | PASS |
 | 安全 | raw DSL/write/prompt/owner/CSV/XSS/Evidence ACL | PASS |
@@ -74,10 +79,13 @@
 - 总分析位于最前，已出现的关键发现不重复。
 - 关键 KPI 数量不固定，允许 0/1/N。
 - 图表数量不固定，允许 0/1/N；每图必须回答不同问题。
+- Agent C 先决定值得探索的关系，Adapter 返回最终 encoding/剖面，Agent C 再同时生成图结论；不是先画图再按文本匹配。
+- 每张图展示“本图回答、从图中可看出、如何阅读、解读边界”，findings 必须 Grounding。
 - 用户显式 line/heatmap/table 可识别；兼容时采用，不兼容时有解释并降级。
 - 图表只消费真实 Dataset grain/columns，不把同一 category 同时作为轴和重复 series，避免重复 SMS/EMAIL。
 - 高基数、部分结果、空结果和不完整 series 不伪装成完整可视化。
 - SafeChart 只接受声明式白名单 option 构造，不执行 LLM raw option、HTML 或 JavaScript。
+- 当前 renderer 为 ECharts；Plotly 未实现/未启用，扩展必须新增受控 Adapter，不能让 LLM 自由执行绘图库。
 - 主 Dashboard 不再承载“验证明细（聚合明细与指标口径）”和整块 DataQA；这些进入 Evidence。
 
 ## 7. 叙事与结论核查

@@ -64,16 +64,12 @@ def prepare(
         else:
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(source, target)
-    shutil.copy2(
-        field_catalog, output_dir / f"field_descriptions{field_catalog.suffix.lower()}"
-    )
+    shutil.copy2(field_catalog, output_dir / f"field_descriptions{field_catalog.suffix.lower()}")
     shutil.copy2(mapping, output_dir / "mapping_snapshot.json")
 
     dataset_path = output_dir / "dataset_registry.yaml"
     dataset = yaml.safe_load(dataset_path.read_text(encoding="utf-8"))
-    dataset["datasets"][0]["index_pattern"] = index_pattern or _inferred_pattern(
-        indices
-    )
+    dataset["datasets"][0]["index_pattern"] = index_pattern or _inferred_pattern(indices)
     dataset_path.write_text(
         yaml.safe_dump(dataset, allow_unicode=True, sort_keys=False), encoding="utf-8"
     )

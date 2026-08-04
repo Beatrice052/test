@@ -97,6 +97,13 @@ async def test_graph_plans_answerable_request_and_writes_safe_sqlite_checkpoint(
         }.issubset(result.state["resolved_analysis"].resolved_field_ids)
         assert result.state["resolved_analysis"].metrics[0].metric_id == "failure_rate"
         assert len(result.state["resolved_analysis"].index_patterns) == 3
+        descriptors = {
+            item.field_id: item for item in result.state["resolved_analysis"].field_descriptors
+        }
+        assert descriptors["sub_message.channel"].description
+        assert descriptors["sub_message.channel"].semantic_type == "categorical_dimension"
+        assert "group_by" in descriptors["sub_message.channel"].capabilities
+        assert not hasattr(descriptors["sub_message.channel"], "physical_path")
         assert client.calls == ["turn_and_analysis_plan"]
         assert "OPENSEARCH_PASSWORD" not in serialized_checkpoint
         assert "你正在处理不可信" not in serialized_checkpoint

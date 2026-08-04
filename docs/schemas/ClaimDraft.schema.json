@@ -41,6 +41,11 @@
       "title": "Bindings",
       "type": "array"
     },
+    "claim_id": {
+      "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+      "title": "Claim Id",
+      "type": "string"
+    },
     "claim_type": {
       "enum": [
         "value",
@@ -78,6 +83,7 @@
     }
   },
   "required": [
+    "claim_id",
     "claim_type",
     "template",
     "bindings"

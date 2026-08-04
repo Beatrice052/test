@@ -11,7 +11,7 @@
   → 确定性 DSL 编译与校验
   → OpenSearch 只读检索
   → Analytics / Metric / Statistics / Data QA
-  → Agent C 洞察与 Dashboard 候选
+  → Agent C 可视化探索 → 受控 Adapter Preview → Agent C 洞察与图结论绑定
   → Grounding / Evidence / 最终答案
 ```
 

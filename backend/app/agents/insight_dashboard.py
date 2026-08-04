@@ -4,7 +4,11 @@ from __future__ import annotations
 
 from app.agents.base import AgentRuntime
 from app.contracts.analysis import AnalysisPlan
-from app.contracts.dashboard import VisualizationDefinition
+from app.contracts.dashboard import (
+    VisualizationDefinition,
+    VisualizationExplorationDraft,
+    VisualizationPreview,
+)
 from app.contracts.dataset import DatasetBundle
 from app.contracts.insight import FeatureSummary, InsightDashboardDraft
 from app.contracts.metric import MetricDefinition
@@ -16,7 +20,7 @@ class InsightDashboardAgent:
     def __init__(self, runtime: AgentRuntime) -> None:
         self.runtime = runtime
 
-    async def plan(
+    async def explore(
         self,
         *,
         analysis_plan: AnalysisPlan,
@@ -26,7 +30,69 @@ class InsightDashboardAgent:
         visualization_definitions: tuple[VisualizationDefinition, ...],
         correlation_id: str,
         fixture_id: str | None = None,
+    ) -> VisualizationExplorationDraft:
+        payload = self._input_payload(
+            analysis_plan=analysis_plan,
+            bundle=bundle,
+            feature_summaries=feature_summaries,
+            metric_definitions=metric_definitions,
+            visualization_definitions=visualization_definitions,
+        )
+        payload["stage"] = "propose_bounded_visual_exploration"
+        if fixture_id is not None:
+            payload["fixture_id"] = fixture_id
+        return await self.runtime.llm.generate(
+            operation="post_query_visual_exploration",
+            system_prompt=self.runtime.system_prompt,
+            input_payload=redact_secrets(payload),
+            output_schema=VisualizationExplorationDraft,
+            timeout_seconds=self.runtime.timeout_seconds,
+            correlation_id=correlation_id,
+        )
+
+    async def plan(
+        self,
+        *,
+        analysis_plan: AnalysisPlan,
+        bundle: DatasetBundle,
+        feature_summaries: tuple[FeatureSummary, ...],
+        metric_definitions: tuple[MetricDefinition, ...],
+        visualization_definitions: tuple[VisualizationDefinition, ...],
+        visualization_previews: tuple[VisualizationPreview, ...],
+        correlation_id: str,
+        fixture_id: str | None = None,
     ) -> InsightDashboardDraft:
+        payload = self._input_payload(
+            analysis_plan=analysis_plan,
+            bundle=bundle,
+            feature_summaries=feature_summaries,
+            metric_definitions=metric_definitions,
+            visualization_definitions=visualization_definitions,
+        )
+        payload["stage"] = "synthesize_insights_from_validated_visual_previews"
+        payload["visualization_previews"] = [
+            item.model_dump(mode="json") for item in visualization_previews
+        ]
+        if fixture_id is not None:
+            payload["fixture_id"] = fixture_id
+        return await self.runtime.llm.generate(
+            operation="post_query_insight_dashboard",
+            system_prompt=self.runtime.system_prompt,
+            input_payload=redact_secrets(payload),
+            output_schema=InsightDashboardDraft,
+            timeout_seconds=self.runtime.timeout_seconds,
+            correlation_id=correlation_id,
+        )
+
+    @staticmethod
+    def _input_payload(
+        *,
+        analysis_plan: AnalysisPlan,
+        bundle: DatasetBundle,
+        feature_summaries: tuple[FeatureSummary, ...],
+        metric_definitions: tuple[MetricDefinition, ...],
+        visualization_definitions: tuple[VisualizationDefinition, ...],
+    ) -> dict[str, object]:
         dataset_schemas = [
             {
                 "dataset_id": item.dataset_id,
@@ -38,7 +104,7 @@ class InsightDashboardAgent:
             }
             for item in bundle.datasets
         ]
-        payload: dict[str, object] = {
+        return {
             "analysis_plan": analysis_plan.model_dump(mode="json"),
             "dataset_schemas": dataset_schemas,
             "feature_summaries": [item.model_dump(mode="json") for item in feature_summaries],
@@ -62,16 +128,6 @@ class InsightDashboardAgent:
                 "first | argmax:<column> | argmin:<column> | where:<column>=<value>"
             ),
         }
-        if fixture_id is not None:
-            payload["fixture_id"] = fixture_id
-        return await self.runtime.llm.generate(
-            operation="post_query_insight_dashboard",
-            system_prompt=self.runtime.system_prompt,
-            input_payload=redact_secrets(payload),
-            output_schema=InsightDashboardDraft,
-            timeout_seconds=self.runtime.timeout_seconds,
-            correlation_id=correlation_id,
-        )
 
     async def repair(
         self,
@@ -80,6 +136,7 @@ class InsightDashboardAgent:
         errors: tuple[str, ...],
         analysis_plan: AnalysisPlan,
         bundle: DatasetBundle,
+        visualization_previews: tuple[VisualizationPreview, ...],
         attempt: int,
         correlation_id: str,
         fixture_id: str | None = None,
@@ -92,6 +149,7 @@ class InsightDashboardAgent:
             required_task_ids=tuple(
                 item.task_id for item in analysis_plan.tasks if item.priority == "required"
             ),
+            preview_ids=tuple(item.object_id for item in visualization_previews),
             attempt=attempt,
             fixture_id=fixture_id,
         )

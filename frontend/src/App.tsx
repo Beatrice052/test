@@ -155,7 +155,7 @@ export function App() {
         </header>
 
         <div className="timeline" aria-live="polite">
-          {sessionsQuery.isPending || detailQuery.isPending ? (
+          {sessionsQuery.isPending || (currentSessionId !== null && detailQuery.isPending) ? (
             <div className="loading-panel"><span className="spinner" />正在恢复分析现场…</div>
           ) : null}
           {sessionsQuery.isError || detailQuery.isError ? (

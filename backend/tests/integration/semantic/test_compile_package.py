@@ -1,11 +1,18 @@
 """End-to-end Mock semantic package compilation and retrieval."""
 
 import json
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
 
-from app.contracts.semantic import FieldMaturity, MappingCompatibility
+from app.contracts.common import Provenance, semantic_hash
+from app.contracts.semantic import (
+    FieldMaturity,
+    FieldProfile,
+    FieldProfileSnapshot,
+    MappingCompatibility,
+)
 from app.semantic.compiler import CompileResult, SemanticCompileExit, compile_semantic_package
 from app.semantic.mapping import flatten_mapping_snapshot
 from app.semantic.package import CompiledSemanticPackage
@@ -55,6 +62,11 @@ def test_fts_retrieval_returns_channel_top_one_and_excludes_blocked(
     assert all(
         candidate.item_id != "sub_message.recipient_id" for candidate in candidates.field_candidates
     )
+    channel = candidates.field_candidates[0]
+    assert channel.summary
+    assert channel.metadata["semantic_type"] == "categorical_dimension"
+    assert channel.metadata["compatibility"] == "EXACT"
+    assert "physical_path" not in channel.metadata
 
 
 def test_fts_query_syntax_is_data_not_sqlite_instruction(
@@ -84,3 +96,52 @@ def test_compile_accepts_cli_normalized_mapping_snapshot(tmp_path: Path) -> None
 
     assert from_snapshot.manifest.mapping_hash == from_raw.manifest.mapping_hash
     assert from_snapshot.manifest.package_version == from_raw.manifest.package_version
+
+
+def test_compiler_merges_policy_safe_profile_into_field_metadata(tmp_path: Path) -> None:
+    raw = json.loads((INPUT / "mapping_snapshot.json").read_text(encoding="utf-8"))
+    mapping = flatten_mapping_snapshot(raw, dataset_id="sub_message")
+    captured_at = datetime(2026, 8, 4, tzinfo=UTC)
+    field_profile = FieldProfile(
+        source_path="channel",
+        physical_path="channel",
+        mapping_type="keyword",
+        document_count=269,
+        non_null_count=267,
+        missing_count=2,
+        cardinality_estimate=3,
+        sample_values=("SMS", "EMAIL", "PUSH"),
+    )
+    profile_hash = semantic_hash(field_profile)
+    profile = FieldProfileSnapshot(
+        object_id="fps_test_profile",
+        created_at=captured_at,
+        content_hash=profile_hash,
+        provenance=Provenance(
+            producer="semantic.profiler",
+            source_ids=(mapping.object_id,),
+            source_hashes={"mapping": mapping.content_hash},
+        ),
+        dataset_id="sub_message",
+        captured_at=captured_at,
+        indices=mapping.indices,
+        mapping_content_hash=mapping.content_hash,
+        fields=(field_profile,),
+        profile_query_hash=semantic_hash({"size": 0}),
+    )
+    profile_path = tmp_path / "field_profile_snapshot.json"
+    profile_path.write_text(profile.model_dump_json(indent=2), encoding="utf-8")
+
+    result = compile_semantic_package(
+        INPUT,
+        tmp_path / "profiled",
+        profile_path=profile_path,
+    )
+
+    fields = {field.field_id: field for field in result.fields}
+    assert fields["sub_message.channel"].cardinality.estimate == 3
+    assert fields["sub_message.channel"].cardinality.approximate
+    assert fields["sub_message.channel"].cardinality.profiled_at == captured_at
+    retrieval = SemanticRetriever(result.output_dir).retrieve("Channel")
+    assert retrieval.field_candidates[0].metadata["cardinality_estimate"] == 3
+    assert (result.output_dir / "field_profiles.json").exists()

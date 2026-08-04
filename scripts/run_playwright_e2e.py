@@ -34,15 +34,10 @@ def main() -> int:
     except OSError as exc:
         print(f"cannot bind E2E server to 127.0.0.1:4173: {exc}", file=sys.stderr)
         return 2
-    thread = threading.Thread(
-        target=server.serve_forever, name="chatbi-e2e-http", daemon=True
-    )
+    thread = threading.Thread(target=server.serve_forever, name="chatbi-e2e-http", daemon=True)
     thread.start()
     executable = (
-        FRONTEND
-        / "node_modules"
-        / ".bin"
-        / ("playwright.cmd" if os.name == "nt" else "playwright")
+        FRONTEND / "node_modules" / ".bin" / ("playwright.cmd" if os.name == "nt" else "playwright")
     )
     try:
         completed = subprocess.run(

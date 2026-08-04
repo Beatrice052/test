@@ -1,6 +1,6 @@
 # OpenSearch ChatBI V6.1 最终测试报告
 
-日期：2026-08-02
+日期：2026-08-04
 
 结论：外网工程与 Mock 运行 READY_FOR_INTERNAL_SHADOW
 
@@ -9,26 +9,26 @@
 | 门禁 | 结果 |
 |---|---|
 | Ruff lint | PASS |
-| Ruff format | PASS，193 files |
-| mypy strict | PASS，129 source files |
-| Backend pytest | PASS，265 tests |
+| Ruff format | PASS |
+| mypy strict | PASS，130 source files |
+| Backend pytest | PASS，275 tests |
 | G01–G25 | PASS，包含在后端全量 |
-| JSON Schema snapshots | PASS，40 models |
-| OpenAPI/TypeScript schemas | PASS，51 schemas |
+| JSON Schema snapshots | PASS，41 models |
+| OpenAPI/TypeScript schemas | PASS，55 schemas |
 | Frontend ESLint | PASS |
 | Frontend TypeScript | PASS |
-| Frontend Vitest | PASS，7 files / 17 tests |
+| Frontend Vitest | PASS，7 files / 19 tests |
 | Vite production build | PASS |
 | Chromium Playwright | PASS，1 end-to-end journey |
 | Semantic compile repeatability | PASS，12 files 内容 hash 完全一致 |
-| Mock package version | sp_b71217c670d896e0 |
+| Mock package version | sp_d59d2225dd6b8317 |
 | Real LLM cutover static gate | PASS，12/12 |
 
-后端全量命令在 backend 目录执行，结果为 265 passed、0 failed、0 skipped。pytest 不再依赖仓库内固定 basetemp/cache，避免 Windows 并发或残留句柄造成 setup 级假失败。
+后端全量命令在 backend 目录执行，结果为 275 passed、0 failed、0 skipped。pytest 不再依赖仓库内固定 basetemp/cache，避免 Windows 并发或残留句柄造成 setup 级假失败。
 
 ## 2. 重点业务流程覆盖
 
-- 新问题：Agent A → Resolver → Agent B → Compiler → Gateway → Analytics/QA → Agent C → Dashboard/Evidence。
+- 新问题：Agent A → Resolver → Agent B → Compiler → Gateway → Analytics/QA → Agent C Pass 1 → Visualization Explorer → Agent C Pass 2 → Grounding → Dashboard/Evidence。
 - 纯换图/解释：数据签名不变时复用、零 Gateway。
 - 混合“实质新问题 + 图表要求”：不会误复用；强制新查询。
 - 时间、过滤、维度、grain、指标变化：数据签名变化即 requery。
@@ -36,13 +36,18 @@
 - 用户显式 line、heatmap、table；兼容采用，不兼容安全降级。
 - KPI 数量和图表数量动态；普通问题不固定四卡/四图。
 - required task 对应 Grounded Claim 或 limitation；Agent C 有界 repair。
+- Preview 与 Claim 的 task/Dataset/measure/Evidence 一致；错指标结论不能挂到图上。
+- 同 Dataset/同 intent 的不同受治理 measure 不会被错误去重。
 - 主页面总分析优先；技术聚合、指标口径、QA 进入 Evidence。
 - OpenSearch 原始聚合表、指标公式/分子/分母/排除项、QA、授权 DSL 可追溯。
 
 ## 3. Query、Analytics 与数据质量覆盖
 
 - AnalysisPlan/ResolvedAnalysis/QueryPlan/CompiledQuery/DatasetBundle 分层。
+- Agent A 候选与 Agent B `ResolvedFieldDescriptor` 含 description/semantic type/capability/compatibility/cardinality，且不含 physical path。
+- MCP Adapter 覆盖受控 index discovery、Mapping 与 `size:0` FieldProfile；Compiler 拒绝 profile/mapping hash 或 index 不一致。
 - Agent B 无 DSL；Compiler 使用白名单 AST 和确定性 index/time/filter/agg。
+- Finalizer 强制 required task 的 metric/dimension/grain 最小充分覆盖；预算内自动提升 bucket 低估，高基数超预算在 DSL 前拒绝。
 - Query consolidation 防止一图一查；同一二维 Dataset 支撑多种展示。
 - Composite 多页限制与完整性；后续页 shard failure 会产生 fatal QA。
 - Gateway timeout/retry/size/cancel；总轮次 TURN_TIMEOUT 是 retryable FAILED。
@@ -67,7 +72,7 @@
 - Session 新建、切换、归档、刷新恢复。
 - 实际 LangGraph 节点 SSE 进度，不显示隐藏推理。
 - 最终 AnswerSnapshot 到达后进度自动收起。
-- Answer-first Dashboard、动态 KPI、图表解释和追问。
+- Answer-first Dashboard、动态 KPI、每图 purpose/findings/reading guide/caveat 和追问。
 - 技术 QA/“聚合明细与指标口径”不在主页面。
 - Evidence Drawer 的业务层和授权高级层。
 - SafeChart 仅从声明式字段构造安全 option。
@@ -78,7 +83,7 @@
 同一个 semantic-input/mock 编译到两个独立目录：
 
 ~~~text
-package_version = sp_b71217c670d896e0
+package_version = sp_d59d2225dd6b8317
 field_count = 12
 artifact_file_count = 12
 file_names = identical

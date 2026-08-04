@@ -15,8 +15,10 @@ from app.contracts.common import Provenance, safe_identifier, semantic_hash
 from app.contracts.metric import FormulaNode
 from app.contracts.semantic import (
     CanonicalField,
+    CardinalityProfile,
     FieldDescriptionRow,
     FieldMaturity,
+    FieldProfileSnapshot,
     FieldProvenance,
     FieldSecurity,
     ImportIssue,
@@ -143,7 +145,6 @@ def _retrieval_documents(
             {
                 "item_id": field.field_id,
                 "item_type": "field",
-                "physical_path": field.physical_path,
                 "display_name": field.display_name,
                 "aliases": field.aliases,
                 "description": field.description or "",
@@ -152,6 +153,11 @@ def _retrieval_documents(
                 "capabilities": field.capabilities,
                 "maturity": field.maturity,
                 "dataset_id": field.dataset_id,
+                "mapping_type": field.mapping_type,
+                "semantic_type": field.semantic_type,
+                "compatibility": field.compatibility,
+                "cardinality_estimate": field.cardinality.estimate,
+                "cardinality_approximate": field.cardinality.approximate,
             }
         )
     for dataset in datasets.definitions:
@@ -161,7 +167,6 @@ def _retrieval_documents(
                 "item_type": "dataset",
                 "display_name": dataset.display_name,
                 "description": dataset.description or "",
-                "physical_path": dataset.index_pattern,
             }
         )
     for metric in metrics.definitions:
@@ -226,12 +231,19 @@ def compile_semantic_package(
     *,
     field_catalog_path: Path | None = None,
     mapping_path: Path | None = None,
+    profile_path: Path | None = None,
     metric_registry_path: Path | None = None,
 ) -> CompileResult:
     try:
         catalog_rows = _load_catalog(input_dir, field_catalog_path)
         raw_mapping = json.loads(
             (mapping_path or input_dir / "mapping_snapshot.json").read_text(encoding="utf-8")
+        )
+        resolved_profile_path = profile_path or input_dir / "field_profile_snapshot.json"
+        raw_profile = (
+            json.loads(resolved_profile_path.read_text(encoding="utf-8"))
+            if resolved_profile_path.exists()
+            else None
         )
         datasets = DatasetRegistry.load(input_dir / "dataset_registry.yaml")
         metrics = MetricRegistry.load(metric_registry_path or input_dir / "metric_registry")
@@ -270,6 +282,23 @@ def compile_semantic_package(
         raise SemanticCompileError(
             str(error), exit_code=SemanticCompileExit.MAPPING_CONFLICT
         ) from error
+
+    profile: FieldProfileSnapshot | None = None
+    if raw_profile is not None:
+        try:
+            profile = FieldProfileSnapshot.model_validate(raw_profile, strict=False)
+            if profile.dataset_id != dataset.dataset_id:
+                raise ValueError("field profile dataset_id does not match registry")
+            if profile.mapping_content_hash != mapping.content_hash:
+                raise ValueError("field profile was captured from a different Mapping snapshot")
+            if profile.indices != mapping.indices:
+                raise ValueError("field profile indices do not match Mapping snapshot indices")
+        except (ValidationError, ValueError) as error:
+            raise SemanticCompileError(
+                f"invalid field profile snapshot: {error}",
+                exit_code=SemanticCompileExit.INVALID_INPUT,
+            ) from error
+    profiles_by_source = {item.source_path: item for item in profile.fields} if profile else {}
 
     groups = _field_groups(mapping.fields)
     issues: list[ImportIssue] = []
@@ -339,6 +368,7 @@ def compile_semantic_package(
         chosen = choose_mapping_variant(variants)
         field_id = safe_identifier(f"{dataset.dataset_id}.{source_path}")
         description = catalog_by_source.get(source_path)
+        field_profile = profiles_by_source.get(source_path)
         compatibility = infer_compatibility(variants, all_indices=mapping.indices)
         if compatibility == MappingCompatibility.CONFLICT:
             type_conflicts.append(field_id)
@@ -354,6 +384,8 @@ def compile_semantic_package(
             if description is not None and description.confirmed
             else FieldMaturity.DOCUMENTED
             if description is not None
+            else FieldMaturity.PROFILED
+            if field_profile is not None
             else FieldMaturity.MAPPING_ONLY
         )
         capabilities = () if blocked else infer_capabilities(variants)
@@ -377,6 +409,9 @@ def compile_semantic_package(
             "compatibility": compatibility,
             "description": description.description if description else None,
             "capabilities": capabilities,
+            "cardinality": (
+                field_profile.cardinality_estimate if field_profile is not None else None
+            ),
         }
         field_hash = semantic_hash(field_payload)
         canonical_fields.append(
@@ -387,7 +422,14 @@ def compile_semantic_package(
                 provenance=Provenance(
                     producer="semantic.compiler",
                     source_ids=(mapping.object_id,),
-                    source_hashes={"mapping": mapping.content_hash},
+                    source_hashes={
+                        "mapping": mapping.content_hash,
+                        **(
+                            {"profile": profile.content_hash}
+                            if field_profile is not None and profile is not None
+                            else {}
+                        ),
+                    },
                 ),
                 field_id=field_id,
                 dataset_id=dataset.dataset_id,
@@ -406,6 +448,19 @@ def compile_semantic_package(
                 maturity=maturity,
                 capabilities=capabilities,
                 compatibility=compatibility,
+                cardinality=CardinalityProfile(
+                    estimate=(
+                        field_profile.cardinality_estimate if field_profile is not None else None
+                    ),
+                    approximate=(
+                        field_profile.cardinality_approximate
+                        if field_profile is not None
+                        else False
+                    ),
+                    profiled_at=profile.captured_at
+                    if field_profile is not None and profile
+                    else None,
+                ),
                 security=FieldSecurity(
                     classification=classification,
                     aggregatable=chosen.aggregatable and not blocked,
@@ -531,6 +586,8 @@ def compile_semantic_package(
         "policies.json": policies.definitions,
         "import_report.json": report,
     }
+    if profile is not None:
+        payloads["field_profiles.json"] = profile.fields
     file_hashes: dict[str, str] = {}
     for name, payload in payloads.items():
         write_json(output_dir / name, payload)
@@ -554,7 +611,7 @@ def compile_semantic_package(
         {
             name: file_hash
             for name, file_hash in file_hashes.items()
-            if name not in {"fields.json", "import_report.json"}
+            if name not in {"fields.json", "field_profiles.json", "import_report.json"}
         }
     )
     package_hash = semantic_hash(
@@ -563,6 +620,7 @@ def compile_semantic_package(
             "catalog": catalog_hash,
             "registry": registry_hash,
             "fields": file_hashes["fields.json"],
+            "profile": profile.content_hash if profile is not None else None,
             "retrieval": semantic_hash(documents),
         }
     )

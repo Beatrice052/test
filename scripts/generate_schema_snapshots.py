@@ -12,7 +12,7 @@ BACKEND = ROOT / "backend"
 SCHEMA_DIR = ROOT / "docs" / "schemas"
 sys.path.insert(0, str(BACKEND))
 
-from app.contracts import SCHEMA_MODELS
+from app.contracts import SCHEMA_MODELS  # noqa: E402
 
 
 def render_schema(model: type) -> str:
@@ -26,9 +26,7 @@ def main() -> int:
     for model in SCHEMA_MODELS:
         name = f"{model.__name__}.schema.json"
         expected_names.add(name)
-        (SCHEMA_DIR / name).write_text(
-            render_schema(model), encoding="utf-8", newline="\n"
-        )
+        (SCHEMA_DIR / name).write_text(render_schema(model), encoding="utf-8", newline="\n")
 
     for path in SCHEMA_DIR.glob("*.schema.json"):
         if path.name not in expected_names:

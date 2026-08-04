@@ -88,6 +88,7 @@ export type AnswerSnapshot = {
   query_plan?: QueryPlan | null;
   dataset_bundle?: DatasetBundle | null;
   dashboard_spec?: DashboardSpec | null;
+  visualization_previews?: Array<VisualizationPreview>;
   claims?: Array<ClaimSpec>;
   evidence_package?: EvidencePackage | null;
   limitations?: Array<string>;
@@ -113,6 +114,13 @@ export type BusinessEvidence = {
   downloads?: Array<string>;
 };
 
+export type ChartAnalysis = {
+  purpose: string;
+  reading_guide: string;
+  findings: Array<ChartFinding>;
+  caveats?: Array<string>;
+};
+
 export type ChartEncoding = {
   x?: string | null;
   y?: string | null;
@@ -121,6 +129,13 @@ export type ChartEncoding = {
   color?: string | null;
   series?: string | null;
   tooltip_fields?: Array<string>;
+};
+
+export type ChartFinding = {
+  claim_id: string;
+  text: string;
+  importance: "primary" | "secondary" | "supporting";
+  evidence_row_ids: Array<string>;
 };
 
 export type ChatApiResponse = {
@@ -143,6 +158,7 @@ export type ClaimSpec = {
   created_at: string;
   content_hash: string;
   provenance: Provenance;
+  source_claim_id?: string | null;
   claim_type: string;
   text: string;
   importance: "primary" | "secondary" | "supporting";
@@ -171,6 +187,7 @@ export type DashboardBlock = {
   [key: string]: string;
 };
   legend?: boolean;
+  chart_analysis?: ChartAnalysis | null;
   evidence_refs?: Array<string>;
   kpis?: Array<KpiItem>;
   insights?: Array<string>;
@@ -487,4 +504,40 @@ export type ValidationError = {
   type: string;
   input?: unknown;
   ctx?: Record<string, unknown>;
+};
+
+export type VisualProfile = {
+  row_count: number;
+  category_count: number;
+  series_count: number;
+  time_point_count: number;
+  visible_columns: Array<string>;
+  value_range?: {
+  [key: string]: JsonScalar;
+};
+  representative_rows?: Array<{
+  [key: string]: JsonValue;
+}>;
+};
+
+export type VisualizationPreview = {
+  schema_version?: string;
+  object_id: string;
+  created_at: string;
+  content_hash: string;
+  provenance: Provenance;
+  candidate_id: string;
+  task_ids: Array<string>;
+  analytical_question: string;
+  purpose: string;
+  dataset_id: string;
+  visualization_intent: string;
+  decision: "ACCEPT" | "ACCEPT_WITH_TRANSFORM" | "DOWNGRADE_TO_TABLE" | "REJECT";
+  renderer: "echarts_contract" | "table";
+  chart_type?: string | null;
+  encoding?: ChartEncoding | null;
+  transforms?: Array<string>;
+  reason: string;
+  profile: VisualProfile;
+  evidence_row_ids?: Array<string>;
 };

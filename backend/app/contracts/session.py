@@ -6,7 +6,7 @@ from pydantic import Field
 
 from app.contracts.analysis import AnalysisPlan, AnswerStatus, TurnKind
 from app.contracts.common import Identifier, StrictModel, VersionedModel
-from app.contracts.dashboard import DashboardSpec
+from app.contracts.dashboard import DashboardSpec, VisualizationPreview
 from app.contracts.dataset import DatasetBundle
 from app.contracts.evidence import EvidencePackage
 from app.contracts.insight import ClaimSpec
@@ -45,6 +45,7 @@ class AnswerSnapshot(VersionedModel):
     query_plan: QueryPlan | None = None
     dataset_bundle: DatasetBundle | None = None
     dashboard_spec: DashboardSpec | None = None
+    visualization_previews: tuple[VisualizationPreview, ...] = ()
     claims: tuple[ClaimSpec, ...] = ()
     evidence_package: EvidencePackage | None = None
     limitations: tuple[str, ...] = ()

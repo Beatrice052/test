@@ -27,6 +27,18 @@ stdio 模式可在 `gateway.mcp` 配置 `command`、`args` 和 `environment_from
 
 ## Mapping Snapshot
 
+推荐用受控 pattern 自动发现当前可用索引。`ListIndexTool` 返回值由 Adapter 归一化并再次按 pattern 过滤；Agent 不参与：
+
+```powershell
+./scripts/snapshot-mapping.ps1 `
+  -Config ./config/internal.yaml `
+  -Dataset sub_message `
+  -IndexPattern 'tbl_os_sub_message_2026_*' `
+  -Output ./input-real/mapping_snapshot.json
+```
+
+也可以显式指定已审核索引：
+
 ```powershell
 ./scripts/snapshot-mapping.ps1 `
   -Config ./config/internal.yaml `
@@ -36,6 +48,41 @@ stdio 模式可在 `gateway.mcp` 配置 `command`、`args` 和 `environment_from
 ```
 
 输出是编译器可直接读取的版本化 `MappingSnapshot`，保存 mapping hash、indices、timestamp、Tool/transport/server metadata，不保存凭证。
+
+## 受控字段画像（避免 QueryPlan 数据不足）
+
+真实字段 description 来自内网 Excel/CSV；MCP 提供技术 Mapping 与聚合画像。必须按以下两次编译流程执行，不能让 Agent A/B 在普通问答时临时读取 Mapping 或 raw sample：
+
+```powershell
+# 1. Excel + Mapping 首次编译，先应用字段敏感性和 Policy
+uv run --project backend python -m app.cli semantic compile `
+  --field-catalog ./input-real/field_descriptions.xlsx `
+  --mapping ./input-real/mapping_snapshot.json `
+  --output-dir ./.cache/semantic-staging
+
+# 2. 只画像 staging 包中 model_visible + aggregatable + 非 BLOCKED 字段
+./scripts/snapshot-field-profile.ps1 `
+  -Config ./config/internal.yaml `
+  -Dataset sub_message `
+  -Mapping ./input-real/mapping_snapshot.json `
+  -SemanticPackage ./.cache/semantic-staging `
+  -MaxFields 100 `
+  -SampleValueLimit 5 `
+  -Output ./input-real/field_profile_snapshot.json
+
+# 3. 带 profile 重编译待发布正式包
+uv run --project backend python -m app.cli semantic compile `
+  --field-catalog ./input-real/field_descriptions.xlsx `
+  --mapping ./input-real/mapping_snapshot.json `
+  --profile ./input-real/field_profile_snapshot.json `
+  --output-dir ./compiled-semantic/internal-candidate
+```
+
+`snapshot-profile` 通过已绑定的 `SearchIndexTool` 发送一条有上限的 `size:0` 聚合查询，不请求 `_source` 或 raw hits。输出的版本化 `FieldProfileSnapshot` 包含非空/缺失量、近似 cardinality、数值/日期范围、最多 10 个聚合样例值、Mapping hash、Query hash 和 provenance。若 Profile 的 dataset、indices 或 Mapping hash 与本次编译不一致，Compiler 会直接拒绝，避免旧画像污染新 Schema。
+
+`SampleValueLimit` 默认为 5，只对已通过 staging Policy 的字段生效；仍应根据内网数据分级决定是否设为 0。聚合样例值只辅助识别值域和估算可视化/桶预算，不能替代 Excel description、Value Dictionary 或业务口径确认，也不会直接提供给 Agent B。
+
+运行时 Agent A 只收到有界候选的 description/semantic metadata；Agent B 收到 `ResolvedFieldDescriptor`（description、semantic/mapping type、capabilities、maturity、compatibility、cardinality），两者都没有 physical path、MCP Tool 或 raw document。完整设计见 `docs/integration/multi_agent_orchestration.md`。
 
 ## 固定只读 Smoke
 

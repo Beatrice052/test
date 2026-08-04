@@ -1,5 +1,16 @@
 {
   "$defs": {
+    "FieldMaturity": {
+      "enum": [
+        "MAPPING_ONLY",
+        "DOCUMENTED",
+        "PROFILED",
+        "BUSINESS_CONFIRMED",
+        "BLOCKED"
+      ],
+      "title": "FieldMaturity",
+      "type": "string"
+    },
     "JsonScalar": {
       "anyOf": [
         {
@@ -33,6 +44,16 @@
           "type": "object"
         }
       ]
+    },
+    "MappingCompatibility": {
+      "enum": [
+        "EXACT",
+        "COERCIBLE",
+        "PARTIAL",
+        "CONFLICT"
+      ],
+      "title": "MappingCompatibility",
+      "type": "string"
     },
     "Provenance": {
       "additionalProperties": false,
@@ -71,6 +92,108 @@
         "producer"
       ],
       "title": "Provenance",
+      "type": "object"
+    },
+    "ResolvedFieldDescriptor": {
+      "additionalProperties": false,
+      "description": "Bounded semantic facts supplied to Agent B; never a physical field binding.",
+      "properties": {
+        "aliases": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Aliases",
+          "type": "array"
+        },
+        "business_domain": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Business Domain"
+        },
+        "capabilities": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Capabilities",
+          "type": "array"
+        },
+        "cardinality_approximate": {
+          "default": false,
+          "title": "Cardinality Approximate",
+          "type": "boolean"
+        },
+        "cardinality_estimate": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cardinality Estimate"
+        },
+        "compatibility": {
+          "$ref": "#/$defs/MappingCompatibility"
+        },
+        "dataset_id": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+          "title": "Dataset Id",
+          "type": "string"
+        },
+        "description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description"
+        },
+        "display_name": {
+          "title": "Display Name",
+          "type": "string"
+        },
+        "field_id": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+          "title": "Field Id",
+          "type": "string"
+        },
+        "mapping_type": {
+          "title": "Mapping Type",
+          "type": "string"
+        },
+        "maturity": {
+          "$ref": "#/$defs/FieldMaturity"
+        },
+        "semantic_type": {
+          "$ref": "#/$defs/SemanticType"
+        }
+      },
+      "required": [
+        "field_id",
+        "dataset_id",
+        "display_name",
+        "mapping_type",
+        "semantic_type",
+        "maturity",
+        "capabilities",
+        "compatibility"
+      ],
+      "title": "ResolvedFieldDescriptor",
       "type": "object"
     },
     "ResolvedFilter": {
@@ -186,6 +309,19 @@
       "title": "ResolvedMetric",
       "type": "object"
     },
+    "SemanticType": {
+      "enum": [
+        "categorical_dimension",
+        "time_dimension",
+        "numeric_measure",
+        "identifier",
+        "boolean_dimension",
+        "free_text",
+        "unknown"
+      ],
+      "title": "SemanticType",
+      "type": "string"
+    },
     "TimeRange": {
       "additionalProperties": false,
       "description": "Half-open business time range.",
@@ -250,6 +386,13 @@
         "type": "string"
       },
       "title": "Dataset Ids",
+      "type": "array"
+    },
+    "field_descriptors": {
+      "items": {
+        "$ref": "#/$defs/ResolvedFieldDescriptor"
+      },
+      "title": "Field Descriptors",
       "type": "array"
     },
     "filters": {
@@ -327,6 +470,7 @@
     "dataset_ids",
     "index_patterns",
     "resolved_field_ids",
+    "field_descriptors",
     "metrics",
     "filters",
     "time_field_id",

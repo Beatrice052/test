@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
+from math import ceil
 
 from app.contracts.analysis import AnalysisPlan, ResolvedAnalysis
 from app.contracts.common import Provenance, semantic_hash
@@ -51,6 +52,8 @@ class QueryPlanFinalizer:
             raise QueryPlanFinalizationError(
                 f"required analytical tasks are not covered: {sorted(missing_required_tasks)}"
             )
+        self._validate_required_task_sufficiency(steps, analysis)
+        steps = self._apply_profiled_bucket_bounds(steps, analysis, resolved)
         finalized: list[QueryStep] = []
         notes = list(draft.consolidation_notes)
         for step in steps:
@@ -173,6 +176,96 @@ class QueryPlanFinalizer:
                 f"mapping-incompatible indices omitted: {','.join(route.incompatible_indices)}"
             )
         return step.model_copy(update={"index_patterns": route.indices}), tuple(notes)
+
+    @staticmethod
+    def _validate_required_task_sufficiency(
+        steps: tuple[QueryStep, ...], analysis: AnalysisPlan
+    ) -> None:
+        """A purpose label cannot pretend that a step fetched the task's required grain."""
+
+        for task in analysis.tasks:
+            if task.priority != "required":
+                continue
+            supporting = tuple(
+                step for step in steps if step.required and task.task_id in step.purpose_task_ids
+            )
+            if not supporting:
+                raise QueryPlanFinalizationError(
+                    f"required analytical task has no required query step: {task.task_id}"
+                )
+            sufficiently_scoped = any(
+                set(task.dimension_ids).issubset(step.dimensions)
+                and set(task.metric_ids).issubset(step.measures)
+                and set(task.grain).issubset(step.grain)
+                for step in supporting
+            )
+            if not sufficiently_scoped:
+                raise QueryPlanFinalizationError(
+                    f"required analytical task is not fetched at a sufficient grain: {task.task_id}"
+                )
+
+    @classmethod
+    def _apply_profiled_bucket_bounds(
+        cls,
+        steps: tuple[QueryStep, ...],
+        analysis: AnalysisPlan,
+        resolved: ResolvedAnalysis,
+    ) -> tuple[QueryStep, ...]:
+        descriptors = {item.field_id: item for item in resolved.field_descriptors}
+        top_n_sources = {
+            binding.source_dataset_contract
+            for step in steps
+            for binding in step.parameter_bindings
+            if binding.selection == "top_n"
+        }
+        adjusted: list[QueryStep] = []
+        for step in steps:
+            if step.result_contract_id in top_n_sources:
+                adjusted.append(step)
+                continue
+            projected = 1
+            has_profile = False
+            for field_id in step.dimensions:
+                descriptor = descriptors.get(field_id)
+                if descriptor is None:
+                    continue
+                cardinality = descriptor.cardinality_estimate
+                if descriptor.semantic_type == "time_dimension":
+                    cardinality = cls._time_bucket_count(step)
+                if cardinality is None:
+                    continue
+                has_profile = True
+                projected *= max(1, cardinality)
+                if projected > analysis.budget.max_buckets:
+                    break
+            if not has_profile:
+                adjusted.append(step)
+                continue
+            if projected > analysis.budget.max_buckets:
+                raise QueryPlanFinalizationError(
+                    "profiled dimension cardinality exceeds the query bucket budget"
+                )
+            adjusted.append(
+                step.model_copy(
+                    update={"estimated_buckets": max(step.estimated_buckets, projected)}
+                )
+            )
+        return tuple(adjusted)
+
+    @staticmethod
+    def _time_bucket_count(step: QueryStep) -> int | None:
+        grain = next((item for item in step.grain if item in {"day", "week", "month"}), None)
+        if grain is None:
+            return None
+        start = step.time_range.from_inclusive
+        end = step.time_range.to_exclusive
+        seconds = (end - start).total_seconds()
+        if grain == "day":
+            return max(1, ceil(seconds / 86_400))
+        if grain == "week":
+            return max(1, ceil(seconds / (7 * 86_400)))
+        last = end - timedelta(microseconds=1)
+        return max(1, (last.year - start.year) * 12 + last.month - start.month + 1)
 
     def _validate_dependencies(self, steps: tuple[QueryStep, ...]) -> None:
         known: dict[str, QueryStep] = {}

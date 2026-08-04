@@ -1,5 +1,7 @@
 # 真实 LLM 切换与 Mock 规则隔离手册
 
+当前版本：2026-08-04 / MI-NEW。Agent C 当前采用 `post_query_visual_exploration → GovernedVisualizationExplorer → post_query_insight_dashboard` 双阶段；任何只描述旧单阶段 Agent C 的历史文档均已失效。
+
 ## 1. 最终结论
 
 内网正式环境不能继续使用 `rule_based`、`fixture` 或 `recorded`。正式配置必须是：
@@ -35,9 +37,9 @@ CHATBI_SEMANTIC_INPUT_DIR=<生成该 Package 的已审核非 Mock Semantic Input
 
 因此，Mock 页面可用于验证“系统能否安全走通”，不能作为真实 LLM 分析质量的验收上限。只要 readiness 仍显示 `llm_mode=rule_based`，总分析较机械或较简单就是已知边界，不得通过把更多自然语言规则写进 `rule_based.py` 来伪装成正式智能。
 
-### 2.2 真实 Agent C 的总分析强制要求
+### 2.2 真实 Agent C 的双阶段与总分析强制要求
 
-正式 `post_query_insight_dashboard` 必须根据 `AnalysisPlan`、实际 Dataset schema、`FeatureSummary`、MetricDefinition、DataQA 和图表目录完成 answer-first 分析。具体要求如下：
+正式 Agent C 必须先用 `post_query_visual_exploration` 提出 0/1/N 个探索请求；程序生成验证 `VisualizationPreview` 后，再由 `post_query_insight_dashboard` 根据 `AnalysisPlan`、实际 Dataset schema、`FeatureSummary`、MetricDefinition、DataQA 和 Preview 完成 answer-first 分析。两个 operation 都是 strict Schema 调用，不带 tools/tool_choice。完整不变量见 [Agent C 双阶段可视化架构](visualization_agent_architecture.md)。具体要求如下：
 
 1. 逐项覆盖 `AnalysisPlan.tasks` 中所有 `required` task；每个 required task 必须有至少一个可 Grounding 的 Claim，或在 `limitations` 中明确说明为什么证据不足。
 2. Claim 数量不固定。只输出与当前问题相关且互不重复的发现；当数据支持用户所问的趋势、比较、集中度、构成、异常或分组差异时，不能只给一句整体值就结束。
@@ -45,8 +47,10 @@ CHATBI_SEMANTIC_INPUT_DIR=<生成该 Package 的已审核非 Mock Semantic Input
 4. 所有数字、排名、时间点、类别名和数据依赖判断都必须写成带显式 binding 的 `ClaimDraft`。最终“总分析”只使用通过 `ClaimGrounder` 的 Claim；模型自由文本 `answer_summary` 不能携带未经绑定的数字绕过验证。
 5. 禁止输出“分析已完成”“Validated results are ready”一类空泛结论来代替可用发现。若有数据，应陈述实际结果；若无数据或证据不足，应明确说明空结果或限制。
 6. Claim 的输出顺序就是总分析的阅读顺序。编排器会纳入全部去重且已 Grounding 的 Claim，不再只截取前三条 primary Claim；已经进入总分析的发现不会在“补充发现”中重复。
-7. 需要图表时，每张图必须回答一个不同分析问题；图表数量可以是 0/1/N，不得为了“看起来像 Dashboard”固定生成四张图。
-8. 不得将描述性相关或统计异常写成因果结论。行动建议必须与已验证发现相符，并明确其建议性质，不能编造业务原因、Benchmark 或目标值。
+7. Pass 1 的图表数量可以是 0/1/N，不得为了“看起来像 Dashboard”固定生成四张图；Pass 2 只能选择 Adapter 返回的 Preview。
+8. 每张图必须回答一个不同分析问题，并显式绑定同 task、同 Dataset、同最终 measure 的 Grounded Claim；不能按文字相似度后配结论。
+9. 每张图必须有 purpose、grounded findings、最终 encoding 对应的 reading guide 和必要 caveat。
+10. 不得将描述性相关或统计异常写成因果结论。行动建议必须与已验证发现相符，并明确其建议性质，不能编造业务原因、Benchmark 或目标值。
 
 真实模型 Shadow 验收必须增加“问题—任务—结论”覆盖矩阵：
 
@@ -58,7 +62,7 @@ CHATBI_SEMANTIC_INPUT_DIR=<生成该 Package 的已审核非 Mock Semantic Input
 | 指标 | 使用受治理 MetricDefinition；率指标可核查分子、分母、排除项与质量状态 |
 | 趋势/比较/异常 | 只在 FeatureSummary 和 Dataset 支持时出现；措辞与统计适用性一致 |
 | 行动建议 | 能追溯到已验证发现，不引入输入中不存在的业务事实 |
-| 图表 | 与 required/recommended task 对应且各自回答不同问题 |
+| 图表 | 0/1/N 动态；与 required/recommended task 对应且各自回答不同问题；Preview/Claim 一致性通过 |
 
 如果真实模型只能稳定输出一两句泛化结论，即使 JSON Schema 校验通过，也应判定 Shadow 失败；不得用 Mock 规则补齐分析质量。
 
@@ -102,10 +106,11 @@ CHATBI_SEMANTIC_INPUT_DIR=<生成该 Package 的已审核非 Mock Semantic Input
 
 | 调用 | 正式输出 Contract | LLM 决策 | LLM 明确不做 |
 |---|---|---|---|
-| Agent A：`turn_and_analysis_plan` | `AnalysisPlanDraft` | 多轮关系、用户意图、指标/维度/时间/任务、显式图表偏好 | 不查 OpenSearch、不写 DSL、不计算指标 |
-| Agent A/B/C 修复：`json_repair` | 原 Draft Contract | 根据结构化错误码修复 Draft 或 Claim Grounding/required-task 覆盖 | 不放宽 Schema、不绕过 Validator |
-| Agent B：`logical_query_plan` | `QueryPlanDraft` | 查询步骤、依赖、grain、result contract、预算内合并策略 | 不输出 physical path、不输出最终 DSL |
-| Agent C：`post_query_insight_dashboard` | `InsightDashboardDraft` | 基于真实 FeatureSummary 的洞察、Claim selector、图表候选和追问建议 | 不编造数值、不算指标、不输出 ECharts option |
+| Agent A：`turn_and_analysis_plan` | `AnalysisPlanDraft` | 多轮关系、用户意图、指标/维度/时间/任务、显式图表偏好；使用有界字段 description/语义能力/兼容性/画像 | 不查 OpenSearch、不写 DSL、不计算指标、不看 physical path |
+| Agent A/B/C 修复：`json_repair` | 原 Draft Contract | 根据结构化错误码修复 Draft 或 Claim/Preview/required-task 覆盖 | 不放宽 Schema、不绕过 Validator |
+| Agent B：`logical_query_plan` | `QueryPlanDraft` | 根据 `ResolvedFieldDescriptor` 和任务设计最小充分查询步骤、依赖、grain、result contract、预算内合并策略 | 不输出 physical path、不输出最终 DSL、不调用 MCP |
+| Agent C Pass 1：`post_query_visual_exploration` | `VisualizationExplorationDraft` | 基于任务和真实数据形态提出 0/1/N 个探索请求 | 不输出 Claim、数值、代码或任意绘图库 option |
+| Agent C Pass 2：`post_query_insight_dashboard` | `InsightDashboardDraft` | 基于真实 FeatureSummary/Preview 的洞察、Claim selector、Preview/Claim 绑定和追问建议 | 不编造数值、不算指标、不输出 ECharts/Plotly option |
 
 下列环节在真实模式中仍必须是确定性程序，不能因为“已经接了大模型”而改成 LLM：
 
@@ -117,6 +122,12 @@ CHATBI_SEMANTIC_INPUT_DIR=<生成该 Package 的已审核非 Mock Semantic Input
 - 前端安全图表 option Adapter。
 
 这意味着正式链路是“LLM 做语义与规划，确定性组件做执行与验证”，不是“LLM 直接生成一切”，也不是“把 Mock 的 if/else 搬进编排器”。
+
+### 2.5 Agent A/B 的字段语义和数据充分性
+
+真实 LLM 质量依赖真实字段语义。内网 Excel 的每个字段 description、aliases、business domain、usage guidance 和确认状态必须经过 Semantic Compiler；MCP Mapping 提供 mapping type、aggregatable/searchable/range 能力和跨月兼容性；可选 FieldProfileSnapshot 提供 cardinality、缺失量和范围。Agent A 从有界 CandidateSet 使用这些摘要选择业务字段，Agent B 从 `ResolvedFieldDescriptor` 使用同类事实规划最小充分 grain 和 bucket 预算。
+
+禁止把完整 Excel、完整 Mapping、raw documents、physical path 或 Profile sample_values 直接塞给模型。Profile 只能由 `snapshot-field-profile` 在 staging Policy 生效后生成，固定 `size:0`，再由 Compiler 提取允许进入模型的摘要。正式 cutover 的 Shadow 必须验证：同名/相似字段能靠 description 区分；高基数字段不会生成误导图或超预算 QueryPlan；跨月 PARTIAL/CONFLICT 不会被静默忽略；缺失或未确认 description 会触发澄清/限制而不是猜测。
 
 ## 3. 严禁迁移的 Mock 规则
 
@@ -145,6 +156,8 @@ _is_time_field / _is_category_field / _is_status_field
 - 因端点不支持 JSON Schema，改成自由文本后用正则解析；
 - 让 Agent B 直接返回 `query_dsl`，或让 Agent/LLM 调 MCP；
 - 为通过某一个样例，将普通问题固定成 4 张图、二维图或固定 Dashboard 模板。
+- 把 Pass 1 Candidate 和 Pass 2 Claim 分别生成后，用标题/关键词相似度在程序里自动配对。
+- 让 Agent C 自由调用 Plotly/ECharts/Python；当前正式 renderer 仍是受控 ECharts Adapter。
 
 允许的 Mock 引用只有 composition root 在 `APP_ENV=mock/local-os` 下选择测试 Adapter。正式 Agent 只依赖 `StructuredLLMClient` Protocol，不得 import 任何具体 Mock class。
 
@@ -261,11 +274,11 @@ Invoke-RestMethod http://127.0.0.1:8000/api/v1/health/ready
 
 只要 UI 或 readiness 仍显示 `rule_based`、`fixture`、`recorded` 或 `mock`，就没有完成真实切换，禁止开始业务验收。
 
-## 5. 证明三个 Agent 都真的走了真实 LLM
+## 5. 证明三个 Agent（四个主 operation）都真的走了真实 LLM
 
 仅看到 readiness 为 `openai_compatible` 还不够。内网 Shadow 至少执行三类问题：
 
-1. 新问题：验证 `turn_and_analysis_plan` + `logical_query_plan` + `post_query_insight_dashboard`；
+1. 新问题：验证 `turn_and_analysis_plan` + `logical_query_plan` + `post_query_visual_exploration` + `post_query_insight_dashboard`；
 2. 多轮修改：验证 Agent A 判断 FILTER/TIME/DIMENSION/PRESENTATION/EXPLANATION，而不是规则路由；
 3. 非固定形态问题：验证 0/1/多图、单维/二维/时间趋势/异常/Pareto/表格可根据真实数据变化。
 
@@ -288,7 +301,7 @@ schema_validation=passed|failed
 
 - 每个新分析至少出现 Agent A operation；
 - 需要新查询时出现 Agent B operation；
-- 有验证数据且进入回答阶段时出现 Agent C operation；
+- 有验证数据且进入回答阶段时依次出现 Agent C 两个 operation；即使最终是 0 张图，探索 operation 也必须返回合法空 Candidate 集；
 - 展示复用场景可不执行 Agent B/OpenSearch，但必须有 Agent A 的结构化 turn decision；
 - DSL 的 provenance/producer 指向 deterministic compiler，不指向 LLM；
 - 指标结果可从 Evidence 中按公式、分子/分母和 Dataset 行重算；
@@ -307,7 +320,7 @@ schema_validation=passed|failed
 | Compiled DSL | index/time/filter/agg/size/timeout | 只能由 Compiler 差异产生；不得来自 LLM raw DSL |
 | Dataset | 行、列、grain、完整性 | 与相同 DSL 结果一致 |
 | Metric/QA | 公式、分子分母、质量状态 | 必须与业务口径精确一致 |
-| Insight/Dashboard | 关键发现、图表候选、数量、解释 | 可 0/1/多图；不得重复、误导或脱离证据 |
+| Insight/Dashboard | 关键发现、Preview/Claim 绑定、数量、每图解释 | 可 0/1/多图；不得重复、误导、错绑或脱离证据 |
 | Evidence | 原始检索表、计算、DSL、hash | 必须可追踪、可重算、权限正确 |
 
 先用 `build-shadow-report` 保存各层 hash，再由业务 Owner 对真实口径给出 PASS/FAIL/NEEDS_REVIEW。不要为了让真实结果“看起来像 Mock”而把 Mock 关键词规则移入正式代码。

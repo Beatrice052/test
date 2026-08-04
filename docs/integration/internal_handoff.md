@@ -1,6 +1,6 @@
 # 内网轻量接入与 Phase 8 Shadow 手册
 
-内网 AI 在执行本文前必须先完整阅读 [INTERNAL_AI_START_HERE.md](INTERNAL_AI_START_HERE.md)、仓库根目录 `AGENTS.md` 和 [需求追踪矩阵](../requirements_traceability.md)。本文是操作步骤摘要，完整责任边界和故障处理以前述文档为准。
+内网 AI 在执行本文前必须先完整阅读 [INTERNAL_AI_START_HERE.md](INTERNAL_AI_START_HERE.md)、[受控多 Agent 架构](multi_agent_orchestration.md)、仓库根目录 `AGENTS.md` 和 [需求追踪矩阵](../requirements_traceability.md)。本文是操作步骤摘要，完整责任边界和故障处理以前述文档为准。
 
 ## 0. 允许边界
 
@@ -23,7 +23,7 @@ docs/gates/internal-*.md
 ./scripts/verify-package.ps1
 ```
 
-必须通过 lockfile 安装、Mock Semantic compile、265+ backend tests、G01–G25、frontend type/lint/unit/build、Playwright G02/G15/G25、Mock readiness。失败即外网交付问题，不进入真实接入。
+必须通过 lockfile 安装、Mock Semantic compile、当前分支 275 个 backend tests、G01–G25、frontend type/lint/19 unit/build、Playwright G02/G15/G25、Mock readiness。失败即外网交付问题，不进入真实接入。
 
 ## 2. Adapter 探测
 
@@ -36,11 +36,11 @@ docs/gates/internal-*.md
 
 MCP probe 只探测 Tool/schema/health，不执行业务 DSL。LLM probe 不发送业务数据。
 
-真实 LLM 的三种主 operation、A/B/C 各自 repair schema、严禁迁移的 Mock 函数、日志字段、12 项切换门禁、Shadow 断言和失败回滚详见 [真实 LLM 切换手册](real_llm_cutover_runbook.md)。正式 LLM 失败不得静默回退到 `rule_based`。
+真实 LLM 的四个主 operation（Agent C 含两个固定 Pass）、A/B/C 各自 repair schema、严禁迁移的 Mock 函数、日志字段、12 项切换门禁、Shadow 断言和失败回滚详见 [真实 LLM 切换手册](real_llm_cutover_runbook.md) 与 [双阶段可视化架构](visualization_agent_architecture.md)。正式 LLM 失败不得静默回退到 `rule_based`。
 
 ## 3. Mapping 与 Semantic
 
-按目标月及相邻月执行 `snapshot-mapping`；使用 `prepare-internal-input` 组装候选；执行 `compile-internal-semantic`。人工审核 Import Report 的阻塞冲突、time/channel/status、text/keyword、nested、Mapping-only 和 sanitizer events。
+用已审核 Dataset pattern 执行 `snapshot-mapping`，由 Adapter 调 ListIndex 固化 exact indices 并获取 Mapping；使用 `prepare-internal-input` 组装 Excel description 和 Registry；先 `compile-internal-semantic` 到 staging，让敏感性和 Policy 生效；再执行 `snapshot-field-profile`，只对 model-visible/aggregatable 字段做 `size:0` 聚合画像；最后带 Profile 重编译正式候选。人工审核 Import Report、profile/mapping hash、阻塞冲突、time/channel/status、text/keyword、nested、Mapping-only 和 sanitizer events。
 
 ## 4. 业务语义确认
 

@@ -280,7 +280,8 @@ class AnalysisProgressReporter:
                 "dashboard",
                 "running",
                 "正在生成分析结论与 Dashboard",
-                "Agent C 正在提出数据驱动的洞察和图表候选，随后由确定性组件绑定证据。",
+                "Agent C 正在提出可视化探索请求; 受控 Adapter 验证数据关系后, "
+                "Agent C 将基于验证预览生成结论, 最后由确定性组件绑定证据。",
             )
 
     async def _after_produce_answer(self, state: ChatBIState) -> None:
@@ -295,7 +296,12 @@ class AnalysisProgressReporter:
             "completed",
             "分析结论与 Dashboard 已验证",
             "关键发现、指标、图表和证据已完成一致性绑定。",
-            safe_summary={"dashboard_block_count": block_count},
+            safe_summary={
+                "dashboard_block_count": block_count,
+                "visualization_preview_count": (
+                    0 if answer is None else len(answer.visualization_previews)
+                ),
+            },
         )
         await self.finish(state)
 

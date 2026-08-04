@@ -90,19 +90,13 @@ def load(
                 deleted.raise_for_status()
             elif existing.status_code != 404:
                 existing.raise_for_status()
-            created = client.put(
-                f"{base_url}/{index}", json={"mappings": body["mappings"]}
-            )
+            created = client.put(f"{base_url}/{index}", json={"mappings": body["mappings"]})
             created.raise_for_status()
 
             lines: list[str] = []
             for document_id, document in documents.get(index, []):
-                lines.append(
-                    json.dumps({"index": {"_index": index, "_id": document_id}})
-                )
-                lines.append(
-                    json.dumps(document, ensure_ascii=False, separators=(",", ":"))
-                )
+                lines.append(json.dumps({"index": {"_index": index, "_id": document_id}}))
+                lines.append(json.dumps(document, ensure_ascii=False, separators=(",", ":")))
             if lines:
                 bulk = client.post(
                     f"{base_url}/_bulk?refresh=true",
@@ -117,18 +111,14 @@ def load(
             actual = int(count_response.json()["count"])
             expected = len(documents.get(index, []))
             if actual != expected:
-                raise RuntimeError(
-                    f"fixture count mismatch for {index}: {actual} != {expected}"
-                )
+                raise RuntimeError(f"fixture count mismatch for {index}: {actual} != {expected}")
             counts[index] = actual
     return counts
 
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--url", default=os.getenv("OPENSEARCH_URL", "http://opensearch:9200")
-    )
+    parser.add_argument("--url", default=os.getenv("OPENSEARCH_URL", "http://opensearch:9200"))
     parser.add_argument("--mapping", type=Path, required=True)
     parser.add_argument("--fixture", type=Path, required=True)
     parser.add_argument("--timeout-seconds", type=float, default=120)

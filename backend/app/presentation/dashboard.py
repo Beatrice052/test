@@ -9,15 +9,18 @@ from typing import Literal
 
 from app.contracts.common import Provenance, semantic_hash
 from app.contracts.dashboard import (
+    ChartAnalysis,
     ChartEncoding,
+    ChartFinding,
     DashboardBlock,
     DashboardSpec,
     KpiItem,
     VisualizationCandidate,
     VisualizationDefinition,
+    VisualizationPreview,
 )
 from app.contracts.dataset import DatasetBundle, DatasetColumn, TabularDataset
-from app.contracts.insight import ClaimSpec
+from app.contracts.insight import ClaimSpec, VisualInsightDraft
 from app.contracts.metric import MetricDefinition, MetricLevel
 from app.persistence.ids import new_id
 
@@ -27,6 +30,38 @@ class FeasibilityDecision(StrEnum):
     ACCEPT_WITH_TRANSFORM = "ACCEPT_WITH_TRANSFORM"
     DOWNGRADE_TO_TABLE = "DOWNGRADE_TO_TABLE"
     REJECT = "REJECT"
+
+
+def chart_reading_guide(
+    chart_type: str,
+    encoding: ChartEncoding,
+    *,
+    dimension_label: str | None = None,
+    measure_label: str | None = None,
+    series_label: str | None = None,
+) -> str:
+    """Explain the final visual grammar without inventing a conclusion."""
+
+    dimension = dimension_label or encoding.category or encoding.x or "横轴分组"
+    measure = measure_label or encoding.value or encoding.y or "指标值"
+    series = series_label or encoding.series or encoding.color
+    guides = {
+        "bar": f"比较各{dimension}的{measure}; 柱越长或越高表示数值越大。",
+        "line": (
+            f"沿{dimension}观察{measure}的变化方向、峰值和拐点"
+            + (f", 并比较不同{series}序列。" if series else "。")
+        ),
+        "heatmap": f"查看两个分组维度交叉位置的{measure}强弱; 颜色深浅表示相对数值大小。",
+        "stacked_bar": (
+            f"先比较各{dimension}的总{measure}, 再查看"
+            + (series or "堆叠分组")
+            + "在各总量中的构成。"
+        ),
+        "donut": f"比较各{dimension}占整体{measure}的比例; 扇区越大表示贡献越高。",
+        "dot": f"按点的位置比较各{dimension}的{measure}; 越靠数值轴高端表示数值越大。",
+        "pareto": f"柱形按{measure}从高到低排列, 累计线显示前若干{dimension}的合计贡献比例。",
+    }
+    return guides.get(chart_type, f"按{dimension}比较{measure}; 结合坐标、图例和数据标签判断差异。")
 
 
 @dataclass(frozen=True, slots=True)
@@ -79,6 +114,13 @@ class ChartFeasibilityValidator:
                 candidate,
                 FeasibilityDecision.DOWNGRADE_TO_TABLE,
                 reason="preferred chart type is not allowlisted",
+            )
+        if chart_type in {"table", "pivot"}:
+            return FeasibilityResult(
+                candidate,
+                FeasibilityDecision.DOWNGRADE_TO_TABLE,
+                chart_type=chart_type,
+                reason="user requested a governed tabular presentation",
             )
         if len(dataset.rows) < definition.minimum_rows:
             return FeasibilityResult(
@@ -262,10 +304,8 @@ class ChartFeasibilityValidator:
 class DashboardBuilder:
     def __init__(
         self,
-        validator: ChartFeasibilityValidator,
         metric_definitions: tuple[MetricDefinition, ...] = (),
     ) -> None:
-        self.validator = validator
         self.metric_definitions = {item.versioned_id: item for item in metric_definitions}
 
     def build(
@@ -273,7 +313,8 @@ class DashboardBuilder:
         *,
         title: str,
         answer_summary: str,
-        candidates: tuple[VisualizationCandidate, ...],
+        previews: tuple[VisualizationPreview, ...],
+        visual_insights: tuple[VisualInsightDraft, ...],
         claims: tuple[ClaimSpec, ...],
         bundle: DatasetBundle,
         max_blocks: int,
@@ -305,74 +346,108 @@ class DashboardBuilder:
                     ),
                 )
             )
-        seen: set[tuple[str, str, str]] = set()
+        seen: set[tuple[str, ...]] = set()
         # A business table must come from a real visualization candidate. Technical
         # aggregation detail is always exposed through the Evidence package instead.
-        table_candidates: dict[str, tuple[VisualizationCandidate, str]] = {}
-        for candidate in candidates:
-            result = self.validator.validate(candidate, bundle)
-            if result.decision == FeasibilityDecision.REJECT:
+        preview_by_id = {item.object_id: item for item in previews}
+        table_candidates: dict[
+            tuple[str, str], tuple[VisualizationPreview, VisualInsightDraft]
+        ] = {}
+        for insight in visual_insights:
+            preview = preview_by_id.get(insight.preview_id)
+            if preview is None or preview.decision == FeasibilityDecision.REJECT:
                 continue
-            if result.decision == FeasibilityDecision.DOWNGRADE_TO_TABLE:
-                table_candidates.setdefault(candidate.dataset_id, (candidate, result.reason))
+            if preview.decision == FeasibilityDecision.DOWNGRADE_TO_TABLE:
+                table_candidates.setdefault(
+                    (preview.dataset_id, preview.visualization_intent), (preview, insight)
+                )
                 continue
-            if result.chart_type is None or result.encoding is None:
+            if preview.chart_type is None or preview.encoding is None:
                 continue
             dataset = next(
-                item for item in bundle.datasets if item.dataset_id == candidate.dataset_id
+                item for item in bundle.datasets if item.dataset_id == preview.dataset_id
             )
-            key = (candidate.dataset_id, candidate.intent, result.chart_type)
+            findings = self._chart_findings(insight, preview, claims)
+            if not findings:
+                continue
+            key = (
+                preview.dataset_id,
+                preview.visualization_intent,
+                preview.chart_type,
+                preview.encoding.x or "",
+                preview.encoding.y or "",
+                preview.encoding.series or "",
+                preview.encoding.value or "",
+            )
             if key in seen:
                 continue
             seen.add(key)
             blocks.append(
                 DashboardBlock.model_validate(
                     {
-                        "block_id": f"block_chart_{candidate.candidate_id}",
+                        "block_id": f"block_chart_{insight.insight_id}",
                         "type": "chart",
-                        "title": candidate.analytical_question,
-                        "description": candidate.reason,
+                        "title": preview.analytical_question,
+                        "description": insight.purpose,
                         # Public Dashboard references are immutable Dataset object IDs.  The
                         # logical dataset_id is intentionally reusable inside one analysis
                         # plan and therefore cannot safely address historical answers.
                         "dataset_id": dataset.object_id,
-                        "visualization_intent": candidate.intent,
-                        "chart_type": result.chart_type,
-                        "encoding": result.encoding.model_dump(mode="json"),
-                        "sort": (f"-{result.encoding.value}",) if result.encoding.value else (),
+                        "visualization_intent": preview.visualization_intent,
+                        "chart_type": preview.chart_type,
+                        "encoding": preview.encoding.model_dump(mode="json"),
+                        "sort": (f"-{preview.encoding.value}",) if preview.encoding.value else (),
                         "axis_format": {
-                            "value": self._axis_format(
-                                bundle, candidate.dataset_id, result.encoding
-                            )
+                            "value": self._axis_format(bundle, preview.dataset_id, preview.encoding)
                         },
-                        "stack": result.chart_type == "stacked_bar",
-                        "legend": result.encoding.series is not None,
-                        "evidence_refs": tuple(row.row_id for row in dataset.rows[:100]),
+                        "stack": preview.chart_type == "stacked_bar",
+                        "legend": preview.encoding.series is not None,
+                        "chart_analysis": ChartAnalysis(
+                            purpose=insight.purpose,
+                            reading_guide=chart_reading_guide(
+                                preview.chart_type,
+                                preview.encoding,
+                                dimension_label=self._column_label(
+                                    dataset, preview.encoding.category or preview.encoding.x
+                                ),
+                                measure_label=self._column_label(
+                                    dataset, preview.encoding.value or preview.encoding.y
+                                ),
+                                series_label=self._column_label(
+                                    dataset, preview.encoding.series or preview.encoding.color
+                                ),
+                            ),
+                            findings=findings,
+                            caveats=insight.caveats,
+                        ).model_dump(mode="json"),
+                        "evidence_refs": preview.evidence_row_ids,
                         "content": {
-                            "transform": ",".join(result.transforms),
+                            "preview_id": preview.object_id,
+                            "candidate_id": preview.candidate_id,
+                            "transform": ",".join(preview.transforms),
                             "top_n": 20,
                             "pareto_points": self._pareto_points(
                                 dataset,
-                                result.encoding,
+                                preview.encoding,
                             )
-                            if result.chart_type == "pareto"
+                            if preview.chart_type == "pareto"
                             else [],
                         },
                     },
                     strict=False,
                 )
             )
-        for dataset_id, (candidate, downgrade_reason) in table_candidates.items():
+        for (dataset_id, _intent), (preview, insight) in table_candidates.items():
             dataset = next(item for item in bundle.datasets if item.dataset_id == dataset_id)
-            requested_type = next(iter(candidate.preferred_chart_types), "table")
+            requested_type = preview.chart_type or "table"
             table_type: Literal["pivot_table", "data_table"] = (
                 "pivot_table" if requested_type == "pivot" else "data_table"
             )
             blocks.append(
                 DashboardBlock(
-                    block_id=f"block_table_{candidate.candidate_id}",
+                    block_id=f"block_table_{insight.insight_id}",
                     type=table_type,
-                    title=candidate.analytical_question,
+                    title=preview.analytical_question,
                     description=(
                         "按本次问题选择的维度与指标展示业务结果。"
                         "完整检索结果、指标计算与 DSL 请在查看证据中核查。"
@@ -380,7 +455,10 @@ class DashboardBuilder:
                     dataset_id=dataset.object_id,
                     chart_type="pivot" if table_type == "pivot_table" else "table",
                     evidence_refs=tuple(item.row_id for item in dataset.rows[:100]),
-                    content={"presentation_reason": downgrade_reason},
+                    content={
+                        "preview_id": preview.object_id,
+                        "presentation_reason": preview.reason,
+                    },
                 )
             )
         if limitations:
@@ -431,6 +509,52 @@ class DashboardBuilder:
             blocks=tuple(blocks),
             warnings=bundle.warnings,
         )
+
+    @staticmethod
+    def _chart_findings(
+        insight: VisualInsightDraft,
+        preview: VisualizationPreview,
+        claims: tuple[ClaimSpec, ...],
+    ) -> tuple[ChartFinding, ...]:
+        by_id = {item.source_claim_id: item for item in claims if item.source_claim_id is not None}
+        encoding = preview.encoding
+        if encoding is None:
+            return ()
+        measure_columns = {item for item in (encoding.value, encoding.y) if item is not None}
+        candidate_tasks = set(preview.task_ids)
+        findings: list[ChartFinding] = []
+        for claim_id in insight.claim_ids:
+            claim = by_id.get(claim_id)
+            if claim is None or not candidate_tasks.intersection(claim.task_ids):
+                continue
+            if not claim.evidence_refs or any(
+                item.dataset_id != preview.dataset_id for item in claim.evidence_refs
+            ):
+                continue
+            if measure_columns and not any(
+                item.column in measure_columns for item in claim.evidence_refs
+            ):
+                continue
+            findings.append(
+                ChartFinding(
+                    claim_id=claim_id,
+                    text=claim.text,
+                    importance=claim.importance,
+                    evidence_row_ids=tuple(
+                        dict.fromkeys(item.row_id for item in claim.evidence_refs)
+                    ),
+                )
+            )
+        return tuple(findings[:3])
+
+    @staticmethod
+    def _column_label(dataset: TabularDataset, name: str | None) -> str | None:
+        if name is None:
+            return None
+        column = next((item for item in dataset.columns if item.name == name), None)
+        if column is None:
+            return name.rsplit(".", 1)[-1]
+        return column.display_name or column.name.rsplit(".", 1)[-1]
 
     @classmethod
     def _insights_not_in_summary(

@@ -1,9 +1,14 @@
 param(
     [Parameter(Mandatory = $true)][string]$InputDir,
-    [Parameter(Mandatory = $true)][string]$OutputDir
+    [Parameter(Mandatory = $true)][string]$OutputDir,
+    [string]$Profile = ''
 )
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
-& uv run --project (Join-Path $projectRoot 'backend') python -m app.cli semantic compile `
-    --input-dir $InputDir --output-dir $OutputDir
+$arguments = @(
+    'run', '--project', (Join-Path $projectRoot 'backend'), 'python', '-m', 'app.cli',
+    'semantic', 'compile', '--input-dir', $InputDir, '--output-dir', $OutputDir
+)
+if ($Profile) { $arguments += @('--profile', $Profile) }
+& uv @arguments
 exit $LASTEXITCODE

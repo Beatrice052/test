@@ -28,10 +28,11 @@ class AlternateOutput(StrictModel):
     (
         "turn_and_analysis_plan",
         "logical_query_plan",
+        "post_query_visual_exploration",
         "post_query_insight_dashboard",
     ),
 )
-async def test_all_three_agent_operations_send_json_schema_without_tools(
+async def test_all_bounded_agent_operations_send_json_schema_without_tools(
     operation: str,
 ) -> None:
     captured: dict[str, object] = {}

@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 
 from app.bootstrap import ApplicationContainer, build_container
+from app.contracts.progress import AnalysisProgressEvent
 from app.contracts.request import ChatRequest, IdentityContext
 from app.gateway.fixture_mock import FixtureBackedMockOpenSearchGateway
 from app.settings import AppSettings
@@ -34,10 +35,16 @@ async def container(tmp_path: Path) -> AsyncIterator[ApplicationContainer]:
         await built.close()
 
 
-async def _ask(container: ApplicationContainer, message: str, turn_id: str):
+async def _ask(
+    container: ApplicationContainer,
+    message: str,
+    turn_id: str,
+    *,
+    session_id: str | None = None,
+):
     return await container.orchestrator.run(
         IdentityContext(subject_id="dynamic-dashboard-owner", roles=("analyst",)),
-        ChatRequest(message=message, client_turn_id=turn_id),
+        ChatRequest(session_id=session_id, message=message, client_turn_id=turn_id),
         correlation_id=f"cor_{turn_id}",
     )
 
@@ -105,6 +112,86 @@ async def test_recent_operational_question_builds_an_answer_first_dashboard(
     assert answer.evidence_package is not None
     assert base.object_id in answer.evidence_package.business.data_tables
     assert all(item.passed for item in answer.dataset_bundle.reconciliation)
+
+
+@pytest.mark.asyncio
+async def test_compound_question_decomposes_goals_and_binds_each_chart_to_its_task(
+    container: ApplicationContainer,
+) -> None:
+    result = await _ask(
+        container,
+        "分析2026年5月至7月各Channel消息量趋势、排名和状态构成",
+        "compound-goals-0001",
+    )
+
+    assert result.answer is not None and result.answer.analysis_plan is not None
+    answer = result.answer
+    plan = answer.analysis_plan
+    assert plan.scope.time_range.from_inclusive.isoformat().startswith("2026-05-01")
+    assert plan.scope.time_range.to_exclusive.isoformat().startswith("2026-08-01")
+    task_by_intent = {
+        task.visualization_intents[0]: task for task in plan.tasks if task.visualization_intents
+    }
+    assert set(task_by_intent) == {"time_trend", "ranked_comparison", "composition"}
+    assert len({task.task_id for task in plan.tasks}) == 3
+
+    previews = {
+        preview.visualization_intent: preview
+        for preview in answer.visualization_previews
+        if preview.decision != "REJECT"
+    }
+    assert set(previews) == {"time_trend", "ranked_comparison", "composition"}
+    for intent, preview in previews.items():
+        assert preview.task_ids == (task_by_intent[intent].task_id,)
+
+    charts = [item for item in answer.dashboard_spec.blocks if item.type == "chart"]
+    assert {item.visualization_intent for item in charts} == {
+        "time_trend",
+        "ranked_comparison",
+        "composition",
+    }
+    assert all(
+        item.chart_analysis is not None
+        and item.chart_analysis.purpose
+        and item.chart_analysis.reading_guide
+        and item.chart_analysis.findings
+        for item in charts
+    )
+
+    gateway = container.gateway
+    assert isinstance(gateway, FixtureBackedMockOpenSearchGateway)
+    calls_before_presentation_change = gateway.total_calls
+    progress_events: list[AnalysisProgressEvent] = []
+
+    async def collect_progress(event: AnalysisProgressEvent) -> None:
+        progress_events.append(event)
+
+    presentation = await container.orchestrator.run(
+        IdentityContext(subject_id="dynamic-dashboard-owner", roles=("analyst",)),
+        ChatRequest(
+            session_id=result.session_id,
+            message="把上一个结果改用点图展示",
+            client_turn_id="compound-goals-dot-0002",
+        ),
+        correlation_id="cor_compound-goals-dot-0002",
+        progress_callback=collect_progress,
+    )
+    assert presentation.answer is not None
+    changed = presentation.answer
+    assert changed.turn_kind.value == "PRESENTATION_CHANGE"
+    assert changed.analytical_base_answer_id == answer.object_id
+    assert changed.query_plan == answer.query_plan
+    assert changed.dataset_bundle == answer.dataset_bundle
+    assert changed.evidence_package == answer.evidence_package
+    assert changed.visualization_previews == answer.visualization_previews
+    assert gateway.total_calls == calls_before_presentation_change
+    assert any(
+        item.type == "chart" and item.chart_type == "dot" for item in changed.dashboard_spec.blocks
+    )
+    assert sum(item.type == "data_table" for item in changed.dashboard_spec.blocks) == 2
+    emitted_stages = {item.stage for item in progress_events}
+    assert {"query_plan", "dsl", "search", "analytics"}.isdisjoint(emitted_stages)
+    assert any(item.safe_summary.get("execution_mode") == "reuse" for item in progress_events)
 
 
 @pytest.mark.asyncio

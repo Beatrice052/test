@@ -28,6 +28,10 @@ class LogicalQueryPlannerAgent:
                 "dataset_ids": list(resolved_analysis.dataset_ids),
                 "index_route_candidates": list(resolved_analysis.index_patterns),
                 "resolved_field_ids": list(resolved_analysis.resolved_field_ids),
+                "field_descriptors": [
+                    descriptor.model_dump(mode="json")
+                    for descriptor in resolved_analysis.field_descriptors
+                ],
                 "metrics": [
                     {
                         "metric_id": metric.metric_id,

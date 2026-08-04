@@ -75,6 +75,7 @@ def build_insight_dashboard_repair_payload(
     bundle: DatasetBundle,
     immutable_analysis_plan_hash: str,
     required_task_ids: tuple[str, ...],
+    preview_ids: tuple[str, ...],
     attempt: int,
     fixture_id: str | None,
 ) -> dict[str, object]:
@@ -90,6 +91,7 @@ def build_insight_dashboard_repair_payload(
             },
             "visualization_dataset": [item.dataset_id for item in bundle.datasets],
             "required_task": list(required_task_ids),
+            "visualization_preview": list(preview_ids),
         },
         "immutable_analysis_plan_hash": immutable_analysis_plan_hash,
         "immutable_dataset_bundle_hash": bundle.content_hash,

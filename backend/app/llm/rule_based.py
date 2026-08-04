@@ -20,8 +20,13 @@ from app.contracts.analysis import (
     TurnKind,
 )
 from app.contracts.common import TimeRange
-from app.contracts.dashboard import VisualizationCandidate
-from app.contracts.insight import ClaimBinding, ClaimDraft, InsightDashboardDraft
+from app.contracts.dashboard import VisualizationCandidate, VisualizationExplorationDraft
+from app.contracts.insight import (
+    ClaimBinding,
+    ClaimDraft,
+    InsightDashboardDraft,
+    VisualInsightDraft,
+)
 from app.contracts.query import ParameterBinding, QueryFilter, QueryPlanDraft, QueryStep
 from app.llm.client import ALLOWED_OPERATIONS, OutputModel
 from app.presentation.chart_preferences import parse_chart_preference
@@ -32,6 +37,7 @@ class RuleBasedMockLLMClient:
 
     def __init__(self, *, fail_operations: tuple[str, ...] = ()) -> None:
         self.calls: list[str] = []
+        self.input_payloads: list[dict[str, object]] = []
         self.fail_operations = set(fail_operations)
 
     async def generate(
@@ -47,6 +53,7 @@ class RuleBasedMockLLMClient:
         del system_prompt, timeout_seconds, correlation_id
         if operation not in ALLOWED_OPERATIONS:
             raise ValueError(f"operation is not allowed: {operation}")
+        self.input_payloads.append(input_payload)
         if operation in self.fail_operations:
             raise RuntimeError(f"injected Mock LLM failure: {operation}")
         if operation == "logical_query_plan" and output_schema is QueryPlanDraft:
@@ -58,6 +65,12 @@ class RuleBasedMockLLMClient:
         if operation == "json_repair" and output_schema is InsightDashboardDraft:
             self.calls.append(operation)
             return cast(OutputModel, self._repair_insight_dashboard(input_payload))
+        if (
+            operation == "post_query_visual_exploration"
+            and output_schema is VisualizationExplorationDraft
+        ):
+            self.calls.append(operation)
+            return cast(OutputModel, self._insight_dashboard(input_payload))
         if operation == "post_query_insight_dashboard" and output_schema is InsightDashboardDraft:
             self.calls.append(operation)
             return cast(OutputModel, self._insight_dashboard(input_payload))
@@ -74,10 +87,17 @@ class RuleBasedMockLLMClient:
         return cast(OutputModel, draft)
 
     @staticmethod
-    def _insight_dashboard(payload: dict[str, object]) -> InsightDashboardDraft:
+    def _insight_dashboard(
+        payload: dict[str, object],
+    ) -> InsightDashboardDraft | VisualizationExplorationDraft:
+        exploration_stage = payload.get("stage") == "propose_bounded_visual_exploration"
         summaries = payload.get("feature_summaries")
         schemas = payload.get("dataset_schemas")
         if not isinstance(summaries, list) or not summaries or not isinstance(schemas, list):
+            if exploration_stage:
+                return VisualizationExplorationDraft(
+                    limitations=("缺少已验证的数据特征摘要",),
+                )
             return InsightDashboardDraft(
                 answer_summary="没有可用于分析的已验证数据摘要。",
                 fallback_requested=True,
@@ -123,6 +143,19 @@ class RuleBasedMockLLMClient:
         analysis_types = {
             str(item.get("analysis_type", "")) for item in tasks if item.get("analysis_type")
         }
+
+        def task_ids_for_intents(*intents: str) -> tuple[str, ...]:
+            requested = set(intents)
+            matched = tuple(
+                str(task["task_id"])
+                for task in tasks
+                if isinstance(task.get("task_id"), str)
+                and isinstance(task.get("visualization_intents"), list)
+                and requested.intersection(
+                    str(item) for item in task.get("visualization_intents", ())
+                )
+            )
+            return matched or required_task_ids
 
         def wants(intent: str) -> bool:
             return not requested_intents or intent in requested_intents
@@ -270,6 +303,8 @@ class RuleBasedMockLLMClient:
         primary_id = str(primary.get("dataset_id", ""))
         primary_summary = summary_by_dataset.get(primary_id, {})
         if int(primary_summary.get("row_count", 0)) == 0:
+            if exploration_stage:
+                return VisualizationExplorationDraft(limitations=("已验证结果为空",))
             return InsightDashboardDraft(
                 answer_summary="所选分析范围没有匹配的消息记录。",
                 fallback_requested=True,
@@ -281,6 +316,7 @@ class RuleBasedMockLLMClient:
             overall_id = str(overall["dataset_id"])
             claims.append(
                 ClaimDraft(
+                    claim_id="claim_overall_record_count",
                     claim_type="value",
                     template="所选时间范围内共记录 {value} 条消息。",
                     importance="primary",
@@ -301,6 +337,7 @@ class RuleBasedMockLLMClient:
                 label = metric_label(metric_column)
                 claims.append(
                     ClaimDraft(
+                        claim_id=f"claim_overall_{metric_name}",
                         claim_type="value",
                         template=f"按已确认口径计算, 整体{label}为 {{metric_value}}。",
                         importance="primary",
@@ -320,6 +357,7 @@ class RuleBasedMockLLMClient:
             category_label = display_name(category, category_field)
             claims.append(
                 ClaimDraft(
+                    claim_id="claim_category_record_count_rank",
                     claim_type="ranking",
                     template=(
                         f"{category_label} 中 {{category}} 的消息记录数最高, 为 {{value}} 条。"
@@ -348,6 +386,7 @@ class RuleBasedMockLLMClient:
                 label = metric_label(metric_column)
                 claims.append(
                     ClaimDraft(
+                        claim_id=f"claim_category_{metric_name}_rank",
                         claim_type="ranking",
                         template=(
                             f"{category_label} 中 {{category}} 的{label}最高, "
@@ -375,6 +414,7 @@ class RuleBasedMockLLMClient:
             time_field = grain(time_only)[0]
             claims.append(
                 ClaimDraft(
+                    claim_id="claim_time_peak",
                     claim_type="trend",
                     template="{period} 的消息记录数为期间峰值, 共 {value} 条。",
                     importance="secondary",
@@ -388,6 +428,82 @@ class RuleBasedMockLLMClient:
                         ClaimBinding(
                             name="value",
                             dataset_id=time_id,
+                            selector="argmax:record_count",
+                            column="record_count",
+                        ),
+                    ),
+                )
+            )
+        if time_category is not None and "record_count" in column_names(time_category):
+            time_category_id = str(time_category["dataset_id"])
+            time_field = next(item for item in grain(time_category) if is_time(time_category, item))
+            category_field = next(
+                item
+                for item in grain(time_category)
+                if is_category(time_category, item) and not is_status(time_category, item)
+            )
+            claims.append(
+                ClaimDraft(
+                    claim_id="claim_time_category_peak",
+                    claim_type="trend",
+                    template="{period} 的 {category} 消息量为分组趋势峰值, 共 {value} 条。",
+                    importance="secondary",
+                    bindings=(
+                        ClaimBinding(
+                            name="period",
+                            dataset_id=time_category_id,
+                            selector="argmax:record_count",
+                            column=time_field,
+                        ),
+                        ClaimBinding(
+                            name="category",
+                            dataset_id=time_category_id,
+                            selector="argmax:record_count",
+                            column=category_field,
+                        ),
+                        ClaimBinding(
+                            name="value",
+                            dataset_id=time_category_id,
+                            selector="argmax:record_count",
+                            column="record_count",
+                        ),
+                    ),
+                )
+            )
+        if category_composition is not None and "record_count" in column_names(
+            category_composition
+        ):
+            composition_id = str(category_composition["dataset_id"])
+            status_field = next(
+                item
+                for item in grain(category_composition)
+                if is_status(category_composition, item)
+            )
+            category_field = next(
+                item for item in grain(category_composition) if item != status_field
+            )
+            claims.append(
+                ClaimDraft(
+                    claim_id="claim_category_composition_peak",
+                    claim_type="comparison",
+                    template="{category} 的 {status} 组合消息量最高, 共 {value} 条。",
+                    importance="secondary",
+                    bindings=(
+                        ClaimBinding(
+                            name="category",
+                            dataset_id=composition_id,
+                            selector="argmax:record_count",
+                            column=category_field,
+                        ),
+                        ClaimBinding(
+                            name="status",
+                            dataset_id=composition_id,
+                            selector="argmax:record_count",
+                            column=status_field,
+                        ),
+                        ClaimBinding(
+                            name="value",
+                            dataset_id=composition_id,
                             selector="argmax:record_count",
                             column="record_count",
                         ),
@@ -434,6 +550,7 @@ class RuleBasedMockLLMClient:
                     intent=time_intent,
                     preferred_chart_types=("line",),
                     dataset_id=str(time_category["dataset_id"]),
+                    task_ids=task_ids_for_intents("time_trend", "anomaly"),
                     dimension_roles={"time": time_field, "series": category_field},
                     measure_roles={"value": "record_count"},
                     priority="required",
@@ -454,6 +571,7 @@ class RuleBasedMockLLMClient:
                     intent=time_intent,
                     preferred_chart_types=("line",) if time_row_count >= 4 else ("bar", "line"),
                     dataset_id=str(time_only["dataset_id"]),
+                    task_ids=task_ids_for_intents("time_trend", "anomaly"),
                     dimension_roles={"time": grain(time_only)[0]},
                     measure_roles={"value": "record_count"},
                     priority="required",
@@ -481,6 +599,7 @@ class RuleBasedMockLLMClient:
                         ("pareto", "bar") if comparison_intent == "pareto" else ("bar", "dot")
                     ),
                     dataset_id=str(category["dataset_id"]),
+                    task_ids=task_ids_for_intents("ranked_comparison", "pareto"),
                     dimension_roles={"category": category_field},
                     measure_roles={"value": "record_count"},
                     priority="required",
@@ -509,18 +628,80 @@ class RuleBasedMockLLMClient:
                     intent="composition",
                     preferred_chart_types=("stacked_bar",),
                     dataset_id=str(category_composition["dataset_id"]),
+                    task_ids=task_ids_for_intents("composition"),
                     dimension_roles={"category": category_field, "series": status_field},
                     measure_roles={"value": "record_count"},
                     priority="recommended",
                     reason=f"解释每个{category_label}在{status_label}维度上的结构与差异。",
                 )
             )
+        if exploration_stage:
+            return VisualizationExplorationDraft(candidates=tuple(visualizations))
+
+        def claim_task_ids(claim: ClaimDraft) -> tuple[str, ...]:
+            if claim.claim_id.startswith("claim_category_composition"):
+                return task_ids_for_intents("composition")
+            if claim.claim_id.startswith("claim_time"):
+                return task_ids_for_intents("time_trend", "anomaly")
+            if claim.claim_id.startswith("claim_category"):
+                return task_ids_for_intents("ranked_comparison", "pareto")
+            return required_task_ids
+
+        prepared_claims = tuple(
+            item.model_copy(update={"task_ids": claim_task_ids(item)}) for item in claims
+        )
+        raw_previews = payload.get("visualization_previews", ())
+        preview_items = (
+            tuple(item for item in raw_previews if isinstance(item, dict))
+            if isinstance(raw_previews, list)
+            else ()
+        )
+        visual_insights: list[VisualInsightDraft] = []
+        for preview in preview_items:
+            if preview.get("decision") not in {
+                "ACCEPT",
+                "ACCEPT_WITH_TRANSFORM",
+                "DOWNGRADE_TO_TABLE",
+            }:
+                continue
+            preview_id = preview.get("object_id")
+            dataset_id = preview.get("dataset_id")
+            if not isinstance(preview_id, str) or not isinstance(dataset_id, str):
+                continue
+            encoding_raw = preview.get("encoding")
+            encoding = encoding_raw if isinstance(encoding_raw, dict) else {}
+            measure_columns = {
+                str(item)
+                for item in (encoding.get("value"), encoding.get("y"))
+                if isinstance(item, str)
+            }
+            matching_claim_ids = tuple(
+                claim.claim_id
+                for claim in prepared_claims
+                if claim.bindings
+                and all(binding.dataset_id == dataset_id for binding in claim.bindings)
+                and (
+                    not measure_columns
+                    or any(binding.column in measure_columns for binding in claim.bindings)
+                )
+            )
+            if not matching_claim_ids:
+                continue
+            purpose = preview.get("purpose")
+            visual_insights.append(
+                VisualInsightDraft(
+                    insight_id=f"insight_{len(visual_insights) + 1}",
+                    preview_id=preview_id,
+                    claim_ids=matching_claim_ids[:3],
+                    purpose=str(purpose)
+                    if isinstance(purpose, str)
+                    else "解释当前图表中的主要差异。",
+                )
+            )
         return InsightDashboardDraft(
             answer_summary="已根据问题中实际选择的指标、维度与粒度完成受治理分析。",
-            claims=tuple(
-                item.model_copy(update={"task_ids": required_task_ids}) for item in claims
-            ),
-            visualizations=tuple(visualizations),
+            claims=prepared_claims,
+            visual_insights=tuple(visual_insights),
             limitations=("消息量按记录数统计, 不自动等同于去重发送量。",),
             follow_up_suggestions=(
                 "下钻质量指标较高类别的明细原因",
@@ -715,9 +896,22 @@ class RuleBasedMockLLMClient:
             item for index, item in enumerate(draft.claims) if index not in rejected_indices
         )
         claims = tuple(item.model_copy(update={"task_ids": required_task_ids}) for item in claims)
+        allowed_preview_ids = (
+            set(str(item) for item in allowed.get("preview", ()))
+            if isinstance(allowed, dict)
+            else set()
+        )
+        retained_claim_ids = {item.claim_id for item in claims}
+        visual_insights = tuple(
+            item
+            for item in draft.visual_insights
+            if item.preview_id in allowed_preview_ids
+            and set(item.claim_ids).issubset(retained_claim_ids)
+        )
         return draft.model_copy(
             update={
                 "claims": claims,
+                "visual_insights": visual_insights,
                 "fallback_requested": not claims,
                 "limitations": tuple(
                     dict.fromkeys([*draft.limitations, "invalid claims removed during Mock repair"])
@@ -790,7 +984,13 @@ class RuleBasedMockLLMClient:
         operational_overview = any(
             token in message for token in ("发送情况", "消息情况", "运行情况", "运营情况")
         )
-        time_requested = any(
+        time_requested = bool(
+            re.search(
+                r"(?:(?:20\d{2})年)?(?:1[0-2]|[1-9])月\s*(?:至|到|[-~—])\s*"
+                r"(?:(?:20\d{2})年)?(?:1[0-2]|[1-9])月",
+                message,
+            )
+        ) or any(
             word in message
             for word in (
                 "每天",
@@ -962,63 +1162,150 @@ class RuleBasedMockLLMClient:
                 raw_grain = active_context.get("grain", ())
                 if isinstance(raw_grain, list):
                     inherited_grain = tuple(str(item) for item in raw_grain)
-            tasks = (
-                AnalyticalTask(
-                    task_id="task_primary",
-                    analytical_question=message,
-                    analysis_type=(
-                        "operational_overview"
-                        if operational_overview
-                        else "anomaly"
-                        if "异常" in message
-                        else "pareto"
-                        if "失败原因" in message
-                        else "trend"
-                        if any(
-                            word in message
-                            for word in (
-                                "每天",
-                                "趋势",
-                                "5、6、7月",
-                                "最近三个月",
-                                "近三个月",
-                                "过去三个月",
-                            )
-                        )
-                        else "summary"
-                    ),
-                    priority="required",
-                    metric_ids=tuple(selected_metrics),
-                    dimension_ids=selected_dimensions,
-                    grain=(
-                        inherited_grain
-                        if inherited_grain
-                        else ("month",)
-                        if any(
-                            word in message
-                            for word in ("5、6、7月", "最近三个月", "近三个月", "过去三个月")
-                        )
-                        else ("day",)
-                        if selected_time_field is not None
-                        else ()
-                    ),
-                    statistical_method_ids=tuple(dict.fromkeys(requested_methods)),
-                    visualization_intents=(
-                        ("anomaly",)
-                        if "异常" in message
-                        else ("pareto",)
-                        if "失败原因" in message
-                        else ("ranked_comparison", "time_trend", "composition")
-                        if operational_overview
-                        else ("time_trend",)
-                        if selected_time_field is not None
-                        else ("ranked_comparison",)
-                        if selected_dimensions
-                        else ()
-                    ),
-                    business_value="提供可核查的直接回答",
-                ),
+            field_by_id = {str(item["item_id"]): item for item in field_items}
+            status_dimensions = tuple(
+                item
+                for item in selected_dimensions
+                if self._is_status_field(field_by_id.get(item, {}))
             )
+            category_dimensions = tuple(
+                item
+                for item in selected_dimensions
+                if item != selected_time_field and item not in status_dimensions
+            )
+            if operational_overview and not status_dimensions:
+                governed_status = next(
+                    (str(item["item_id"]) for item in field_items if self._is_status_field(item)),
+                    None,
+                )
+                if governed_status is not None:
+                    status_dimensions = (governed_status,)
+
+            requested_intents: list[str] = []
+            if "异常" in message:
+                requested_intents.append("anomaly")
+            elif time_requested:
+                requested_intents.append("time_trend")
+            if "失败原因" in message:
+                requested_intents.append("pareto")
+            elif any(token in message.casefold() for token in ("排名", "排行", "top", "最高")):
+                requested_intents.append("ranked_comparison")
+            if any(token in message for token in ("构成", "组成", "结构", "占比")):
+                requested_intents.append("composition")
+            if operational_overview:
+                requested_intents.extend(("time_trend", "ranked_comparison", "composition"))
+            if not requested_intents:
+                if selected_time_field is not None:
+                    requested_intents.append("time_trend")
+                elif selected_dimensions:
+                    requested_intents.append("ranked_comparison")
+
+            default_time_grain = (
+                inherited_grain
+                if inherited_grain
+                else ("month",)
+                if any(
+                    word in message
+                    for word in (
+                        "5、6、7月",
+                        "最近三个月",
+                        "近三个月",
+                        "过去三个月",
+                        "月至",
+                    )
+                )
+                else ("day",)
+            )
+            task_items: list[AnalyticalTask] = []
+            for intent in dict.fromkeys(requested_intents):
+                if intent in {"time_trend", "anomaly"}:
+                    task_dimensions = tuple(
+                        item
+                        for item in (selected_time_field, *category_dimensions[:1])
+                        if item is not None
+                    )
+                    task_methods = tuple(
+                        item
+                        for item in requested_methods
+                        if item
+                        in {
+                            "period_change",
+                            "trend_slope",
+                            "moving_average",
+                            "mad_robust_zscore",
+                        }
+                    )
+                    analysis_type = "anomaly" if intent == "anomaly" else "trend"
+                    task_grain = default_time_grain
+                elif intent in {"ranked_comparison", "pareto"}:
+                    task_dimensions = category_dimensions[:1] or status_dimensions[:1]
+                    task_methods = tuple(
+                        item
+                        for item in requested_methods
+                        if item in {"rank", "contribution", "pareto"}
+                    )
+                    analysis_type = "pareto" if intent == "pareto" else "comparison"
+                    task_grain = ()
+                else:
+                    task_dimensions = tuple(
+                        dict.fromkeys([*category_dimensions[:1], *status_dimensions[:1]])
+                    )
+                    task_methods = tuple(
+                        item for item in requested_methods if item in {"rank", "contribution"}
+                    )
+                    analysis_type = "composition"
+                    task_grain = ()
+                if not task_dimensions:
+                    continue
+                task_items.append(
+                    AnalyticalTask(
+                        task_id=f"task_{intent}",
+                        analytical_question=message,
+                        analysis_type=analysis_type,
+                        priority="required",
+                        metric_ids=tuple(selected_metrics),
+                        dimension_ids=task_dimensions,
+                        grain=task_grain,
+                        statistical_method_ids=task_methods,
+                        visualization_intents=(intent,),
+                        business_value="提供可核查的直接回答",
+                    )
+                )
+            if not task_items:
+                task_items.append(
+                    AnalyticalTask(
+                        task_id="task_summary",
+                        analytical_question=message,
+                        analysis_type="summary",
+                        priority="required",
+                        metric_ids=tuple(selected_metrics),
+                        dimension_ids=selected_dimensions,
+                        statistical_method_ids=tuple(dict.fromkeys(requested_methods)),
+                        business_value="提供可核查的直接回答",
+                    )
+                )
+            tasks = tuple(task_items)
+            if relation in reuse_relations:
+                # Presentation/explanation turns do not need to reconstruct the base
+                # task decomposition from a short follow-up. Preserve the inherited
+                # data signature so the deterministic router can safely reuse the
+                # immutable DatasetBundle, QueryPlan and evidence package.
+                tasks = (
+                    AnalyticalTask(
+                        task_id="task_reuse_context",
+                        analytical_question=message,
+                        analysis_type=(
+                            "presentation_change"
+                            if relation == TurnKind.PRESENTATION_CHANGE
+                            else "explanation"
+                        ),
+                        priority="required",
+                        metric_ids=tuple(selected_metrics),
+                        dimension_ids=selected_dimensions,
+                        grain=inherited_grain,
+                        business_value="复用既有验证数据回答连续追问",
+                    ),
+                )
 
         return AnalysisPlanDraft(
             analysis_goal=message,
@@ -1329,6 +1616,29 @@ class RuleBasedMockLLMClient:
     def _time_range(message: str, payload: dict[str, object]) -> TimeRange:
         timezone = ZoneInfo("Asia/Hong_Kong")
         current_time = datetime.fromisoformat(str(payload["current_time"]).replace("Z", "+00:00"))
+        range_match = re.search(
+            r"(?:(20\d{2})年)?(1[0-2]|[1-9])月\s*(?:至|到|[-~—])\s*"
+            r"(?:(20\d{2})年)?(1[0-2]|[1-9])月",
+            message,
+        )
+        if range_match:
+            local_year = current_time.astimezone(timezone).year
+            start_year = int(range_match.group(1) or local_year)
+            start_month = int(range_match.group(2))
+            end_month = int(range_match.group(4))
+            end_year = int(
+                range_match.group(3) or (start_year + 1 if end_month < start_month else start_year)
+            )
+            end_exclusive = (
+                datetime(end_year + 1, 1, 1, tzinfo=timezone)
+                if end_month == 12
+                else datetime(end_year, end_month + 1, 1, tzinfo=timezone)
+            )
+            return TimeRange(
+                from_inclusive=datetime(start_year, start_month, 1, tzinfo=timezone),
+                to_exclusive=end_exclusive,
+                timezone="Asia/Hong_Kong",
+            )
         if "5、6、7月" in message:
             return TimeRange(
                 from_inclusive=datetime(2026, 5, 1, tzinfo=timezone),

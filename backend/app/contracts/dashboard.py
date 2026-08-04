@@ -13,10 +13,19 @@ class VisualizationCandidate(StrictModel):
     intent: str
     preferred_chart_types: tuple[str, ...]
     dataset_id: Identifier
+    task_ids: tuple[Identifier, ...] = Field(min_length=1)
     dimension_roles: dict[str, str] = Field(default_factory=dict)
     measure_roles: dict[str, str] = Field(default_factory=dict)
     priority: Literal["required", "recommended", "optional"]
     reason: str
+
+
+class VisualizationExplorationDraft(StrictModel):
+    """Agent C's bounded request for chart previews, never executable code."""
+
+    candidates: tuple[VisualizationCandidate, ...] = ()
+    dropped_candidate_ids: tuple[Identifier, ...] = ()
+    limitations: tuple[str, ...] = ()
 
 
 class VisualizationDefinition(StrictModel):
@@ -40,6 +49,37 @@ class ChartEncoding(StrictModel):
     tooltip_fields: tuple[str, ...] = ()
 
 
+class VisualProfile(StrictModel):
+    """Deterministic facts returned by the visualization tool to Agent C."""
+
+    row_count: int = Field(ge=0)
+    category_count: int = Field(ge=0)
+    series_count: int = Field(ge=0)
+    time_point_count: int = Field(ge=0)
+    visible_columns: tuple[str, ...]
+    value_range: dict[str, JsonScalar] = Field(default_factory=dict)
+    representative_rows: tuple[dict[str, JsonValue], ...] = ()
+
+
+class VisualizationPreview(VersionedModel):
+    """A governed chart preview produced by an Adapter, not by the LLM."""
+
+    candidate_id: Identifier
+    task_ids: tuple[Identifier, ...]
+    analytical_question: str
+    purpose: str
+    dataset_id: Identifier
+    visualization_intent: str
+    decision: Literal["ACCEPT", "ACCEPT_WITH_TRANSFORM", "DOWNGRADE_TO_TABLE", "REJECT"]
+    renderer: Literal["echarts_contract", "table"]
+    chart_type: str | None = None
+    encoding: ChartEncoding | None = None
+    transforms: tuple[str, ...] = ()
+    reason: str
+    profile: VisualProfile
+    evidence_row_ids: tuple[str, ...] = ()
+
+
 class KpiItem(StrictModel):
     kpi_id: Identifier
     label: str
@@ -50,6 +90,20 @@ class KpiItem(StrictModel):
     quality: Literal["valid", "insufficient_sample", "not_applicable"] = "valid"
     definition: str
     evidence_row_ids: tuple[str, ...] = ()
+
+
+class ChartFinding(StrictModel):
+    claim_id: Identifier
+    text: str
+    importance: Literal["primary", "secondary", "supporting"]
+    evidence_row_ids: tuple[str, ...] = Field(min_length=1)
+
+
+class ChartAnalysis(StrictModel):
+    purpose: str
+    reading_guide: str
+    findings: tuple[ChartFinding, ...] = Field(min_length=1)
+    caveats: tuple[str, ...] = ()
 
 
 class DashboardBlock(StrictModel):
@@ -90,6 +144,7 @@ class DashboardBlock(StrictModel):
     stack: bool = False
     axis_format: dict[str, str] = Field(default_factory=dict)
     legend: bool = True
+    chart_analysis: ChartAnalysis | None = None
     evidence_refs: tuple[str, ...] = ()
     kpis: tuple[KpiItem, ...] = ()
     insights: tuple[str, ...] = ()

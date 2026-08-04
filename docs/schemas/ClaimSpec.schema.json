@@ -158,6 +158,19 @@
       "title": "Schema Version",
       "type": "string"
     },
+    "source_claim_id": {
+      "anyOf": [
+        {
+          "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Source Claim Id"
+    },
     "task_ids": {
       "default": [],
       "items": {

@@ -36,9 +36,7 @@ def configure(
     if not owner.strip():
         raise ValueError("metric owner is required")
 
-    values = {
-        value: group for group, members in groups.items() for value in sorted(members)
-    }
+    values = {value: group for group, members in groups.items() for value in sorted(members)}
     dictionary = {
         "dictionary_id": "status_group",
         "version": "v1",
@@ -102,9 +100,7 @@ def main() -> int:
     parser.add_argument("--failure-status", action="append", default=[], required=True)
     parser.add_argument("--pending-status", action="append", default=[])
     parser.add_argument("--unknown-status", action="append", default=[])
-    parser.add_argument(
-        "--null-group", choices=["success", "failure", "pending", "unknown"]
-    )
+    parser.add_argument("--null-group", choices=["success", "failure", "pending", "unknown"])
     parser.add_argument("--minimum-denominator", type=int, required=True)
     parser.add_argument("--owner", required=True)
     args = parser.parse_args()

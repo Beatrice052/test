@@ -1,5 +1,41 @@
 {
   "$defs": {
+    "ChartAnalysis": {
+      "additionalProperties": false,
+      "properties": {
+        "caveats": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Caveats",
+          "type": "array"
+        },
+        "findings": {
+          "items": {
+            "$ref": "#/$defs/ChartFinding"
+          },
+          "minItems": 1,
+          "title": "Findings",
+          "type": "array"
+        },
+        "purpose": {
+          "title": "Purpose",
+          "type": "string"
+        },
+        "reading_guide": {
+          "title": "Reading Guide",
+          "type": "string"
+        }
+      },
+      "required": [
+        "purpose",
+        "reading_guide",
+        "findings"
+      ],
+      "title": "ChartAnalysis",
+      "type": "object"
+    },
     "ChartEncoding": {
       "additionalProperties": false,
       "properties": {
@@ -87,6 +123,45 @@
       "title": "ChartEncoding",
       "type": "object"
     },
+    "ChartFinding": {
+      "additionalProperties": false,
+      "properties": {
+        "claim_id": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+          "title": "Claim Id",
+          "type": "string"
+        },
+        "evidence_row_ids": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Evidence Row Ids",
+          "type": "array"
+        },
+        "importance": {
+          "enum": [
+            "primary",
+            "secondary",
+            "supporting"
+          ],
+          "title": "Importance",
+          "type": "string"
+        },
+        "text": {
+          "title": "Text",
+          "type": "string"
+        }
+      },
+      "required": [
+        "claim_id",
+        "text",
+        "importance",
+        "evidence_row_ids"
+      ],
+      "title": "ChartFinding",
+      "type": "object"
+    },
     "DashboardBlock": {
       "additionalProperties": false,
       "properties": {
@@ -101,6 +176,17 @@
           "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
           "title": "Block Id",
           "type": "string"
+        },
+        "chart_analysis": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ChartAnalysis"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         },
         "chart_type": {
           "anyOf": [

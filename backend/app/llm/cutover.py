@@ -58,6 +58,7 @@ def evaluate_real_llm_cutover(
     required_operations = {
         'operation="turn_and_analysis_plan"',
         'operation="logical_query_plan"',
+        'operation="post_query_visual_exploration"',
         'operation="post_query_insight_dashboard"',
     }
     query_agent = (app_source_root / "agents" / "logical_query_planner.py").read_text(
@@ -119,7 +120,7 @@ def evaluate_real_llm_cutover(
         (
             "three_live_agent_operations",
             all(operation in agent_sources for operation in required_operations),
-            "Agent A, B, and C must all call StructuredLLMClient.generate().",
+            "Agent A/B and both bounded Agent C passes must call StructuredLLMClient.generate().",
         ),
         (
             "compiler_owns_dsl",

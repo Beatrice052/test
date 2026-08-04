@@ -9,9 +9,15 @@ from app.analytics.bundle import DatasetBundleBuilder
 from app.analytics.derivation import StatusMetricDeriver
 from app.contracts.dashboard import VisualizationCandidate
 from app.contracts.dataset import DataQARecord, DatasetColumn
-from app.contracts.insight import ClaimBinding, ClaimDraft, InsightDashboardDraft
+from app.contracts.insight import (
+    ClaimBinding,
+    ClaimDraft,
+    InsightDashboardDraft,
+    VisualInsightDraft,
+)
 from app.orchestration.phase5_nodes import Phase5Nodes
 from app.presentation.dashboard import ChartFeasibilityValidator, DashboardBuilder
+from app.presentation.exploration import GovernedVisualizationExplorer
 from app.presentation.grounding import ClaimGrounder
 from app.semantic.package import CompiledSemanticPackage
 from tests.integration.query.test_plan_compile import _plans
@@ -29,12 +35,30 @@ def _bundle(*qa: DataQARecord):
     )
 
 
+def _preview_bundle(candidates: tuple[VisualizationCandidate, ...], bundle: Any) -> tuple[Any, ...]:
+    validator = ChartFeasibilityValidator(CompiledSemanticPackage(PACKAGE_DIR).visualizations())
+    return GovernedVisualizationExplorer(validator).explore(candidates, bundle)
+
+
+def _visual_insights(previews: tuple[Any, ...], claim_id: str) -> tuple[VisualInsightDraft, ...]:
+    return tuple(
+        VisualInsightDraft(
+            insight_id=f"insight_{index}",
+            preview_id=preview.object_id,
+            claim_ids=(claim_id,),
+            purpose=preview.purpose,
+        )
+        for index, preview in enumerate(previews)
+    )
+
+
 def test_argmax_and_ratio_claims_bind_to_exact_rows_and_metric_evidence() -> None:
     bundle = _bundle()
     dataset_id = bundle.datasets[0].dataset_id
     result = ClaimGrounder().ground(
         (
             ClaimDraft(
+                claim_id="claim_count_rank",
                 claim_type="ranking",
                 template="{channel} has the highest count: {value}.",
                 importance="primary",
@@ -54,6 +78,7 @@ def test_argmax_and_ratio_claims_bind_to_exact_rows_and_metric_evidence() -> Non
                 ),
             ),
             ClaimDraft(
+                claim_id="claim_sms_failure_rate",
                 claim_type="value",
                 template="SMS failure rate is {value}.",
                 bindings=(
@@ -81,6 +106,7 @@ async def test_required_analysis_tasks_need_explicit_grounded_claim_coverage() -
     _, analysis, _, _, _, _ = await _plans("查询2026年7月各Channel失败率")
     bundle = _bundle()
     draft = ClaimDraft(
+        claim_id="claim_required_coverage",
         claim_type="ranking",
         template="Top value is {value}.",
         importance="primary",
@@ -97,7 +123,7 @@ async def test_required_analysis_tasks_need_explicit_grounded_claim_coverage() -
     state = cast(Any, {"analysis_plan": analysis, "dataset_bundle": bundle})
 
     missing = Phase5Nodes._claim_completeness_errors(
-        state, InsightDashboardDraft(answer_summary="draft", claims=(draft,)), grounding
+        state, InsightDashboardDraft(answer_summary="draft", claims=(draft,)), grounding, ()
     )
 
     required = tuple(item.task_id for item in analysis.tasks if item.priority == "required")
@@ -109,6 +135,7 @@ async def test_required_analysis_tasks_need_explicit_grounded_claim_coverage() -
             state,
             InsightDashboardDraft(answer_summary="draft", claims=(covered_draft,)),
             covered_grounding,
+            (),
         )
         == ()
     )
@@ -125,6 +152,7 @@ def test_ambiguous_causal_and_qa_blocked_claims_are_deleted() -> None:
         )
     )
     blocked = ClaimDraft(
+        claim_id="claim_blocked_causal",
         claim_type="value",
         template="SMS caused the increase: {value}.",
         bindings=(
@@ -143,13 +171,13 @@ def test_ambiguous_causal_and_qa_blocked_claims_are_deleted() -> None:
 
 def test_dashboard_accepts_useful_chart_deduplicates_and_has_no_raw_option() -> None:
     bundle = _bundle()
-    definitions = CompiledSemanticPackage(PACKAGE_DIR).visualizations()
     candidate = VisualizationCandidate(
         candidate_id="vc_channel_rank",
         analytical_question="Compare channel record counts",
         intent="ranked_comparison",
         preferred_chart_types=("bar",),
         dataset_id="channel_metrics",
+        task_ids=("task_rank",),
         dimension_roles={"category": "channel"},
         measure_roles={"value": "message_record_count.v1"},
         priority="required",
@@ -160,8 +188,10 @@ def test_dashboard_accepts_useful_chart_deduplicates_and_has_no_raw_option() -> 
         .ground(
             (
                 ClaimDraft(
+                    claim_id="claim_chart_rank",
                     claim_type="ranking",
                     template="Top value is {value}.",
+                    task_ids=("task_rank",),
                     bindings=(
                         ClaimBinding(
                             name="value",
@@ -176,10 +206,14 @@ def test_dashboard_accepts_useful_chart_deduplicates_and_has_no_raw_option() -> 
         )
         .claims
     )
-    dashboard = DashboardBuilder(ChartFeasibilityValidator(definitions)).build(
+    previews = _preview_bundle(
+        (candidate, candidate.model_copy(update={"candidate_id": "vc_duplicate"})), bundle
+    )
+    dashboard = DashboardBuilder().build(
         title="Channel overview",
         answer_summary="Validated channel comparison.",
-        candidates=(candidate, candidate.model_copy(update={"candidate_id": "vc_duplicate"})),
+        previews=previews,
+        visual_insights=_visual_insights(previews, "claim_chart_rank"),
         claims=claims,
         bundle=bundle,
         max_blocks=8,
@@ -188,6 +222,10 @@ def test_dashboard_accepts_useful_chart_deduplicates_and_has_no_raw_option() -> 
     assert len(charts) == 1
     assert charts[0].chart_type == "bar"
     assert charts[0].axis_format == {"value": "number"}
+    assert charts[0].chart_analysis is not None
+    assert charts[0].chart_analysis.purpose == "Useful ranking"
+    assert charts[0].chart_analysis.findings[0].claim_id == "claim_chart_rank"
+    assert "比较" in charts[0].chart_analysis.reading_guide
     assert charts[0].evidence_refs == tuple(item.row_id for item in bundle.datasets[0].rows)
     assert not any(item.type == "insight_list" for item in dashboard.blocks)
     assert not any(item.type == "data_table" for item in dashboard.blocks)
@@ -196,6 +234,143 @@ def test_dashboard_accepts_useful_chart_deduplicates_and_has_no_raw_option() -> 
     serialized = dashboard.model_dump_json()
     assert "raw_option" not in serialized
     assert "javascript" not in serialized
+
+
+def test_chart_cannot_reuse_a_claim_bound_to_a_different_measure() -> None:
+    bundle = _bundle()
+    candidate = VisualizationCandidate(
+        candidate_id="vc_count_chart",
+        analytical_question="Compare record counts",
+        intent="ranked_comparison",
+        preferred_chart_types=("bar",),
+        dataset_id="channel_metrics",
+        task_ids=("task_count",),
+        dimension_roles={"category": "channel"},
+        measure_roles={"value": "message_record_count.v1"},
+        priority="required",
+        reason="Compare count",
+    )
+    claims = (
+        ClaimGrounder()
+        .ground(
+            (
+                ClaimDraft(
+                    claim_id="claim_failure_rate_only",
+                    claim_type="ranking",
+                    template="Top failure rate is {value}.",
+                    task_ids=("task_count",),
+                    bindings=(
+                        ClaimBinding(
+                            name="value",
+                            dataset_id="channel_metrics",
+                            selector="argmax:failure_rate.v1",
+                            column="failure_rate.v1",
+                        ),
+                    ),
+                ),
+            ),
+            bundle,
+        )
+        .claims
+    )
+    previews = _preview_bundle((candidate,), bundle)
+    dashboard = DashboardBuilder().build(
+        title="Wrong measure binding",
+        answer_summary="Validated result.",
+        previews=previews,
+        visual_insights=_visual_insights(previews, "claim_failure_rate_only"),
+        claims=claims,
+        bundle=bundle,
+        max_blocks=4,
+    )
+
+    assert not any(item.type == "chart" for item in dashboard.blocks)
+
+
+def test_same_intent_can_render_distinct_governed_measures_without_false_dedup() -> None:
+    bundle = _bundle()
+    count_candidate = VisualizationCandidate(
+        candidate_id="vc_count_rank",
+        analytical_question="Rank record counts",
+        intent="ranked_comparison",
+        preferred_chart_types=("bar",),
+        dataset_id="channel_metrics",
+        task_ids=("task_count",),
+        dimension_roles={"category": "channel"},
+        measure_roles={"value": "message_record_count.v1"},
+        priority="required",
+        reason="Count ranking",
+    )
+    rate_candidate = count_candidate.model_copy(
+        update={
+            "candidate_id": "vc_rate_rank",
+            "analytical_question": "Rank failure rates",
+            "task_ids": ("task_rate",),
+            "measure_roles": {"value": "failure_rate.v1"},
+            "reason": "Rate ranking",
+        }
+    )
+    claim_drafts = (
+        ClaimDraft(
+            claim_id="claim_count",
+            claim_type="ranking",
+            template="Highest count is {value}.",
+            task_ids=("task_count",),
+            bindings=(
+                ClaimBinding(
+                    name="value",
+                    dataset_id="channel_metrics",
+                    selector="argmax:message_record_count.v1",
+                    column="message_record_count.v1",
+                ),
+            ),
+        ),
+        ClaimDraft(
+            claim_id="claim_rate",
+            claim_type="ranking",
+            template="Highest failure rate is {value}.",
+            task_ids=("task_rate",),
+            bindings=(
+                ClaimBinding(
+                    name="value",
+                    dataset_id="channel_metrics",
+                    selector="argmax:failure_rate.v1",
+                    column="failure_rate.v1",
+                ),
+            ),
+        ),
+    )
+    claims = ClaimGrounder().ground(claim_drafts, bundle).claims
+    previews = _preview_bundle((count_candidate, rate_candidate), bundle)
+    insights = (
+        VisualInsightDraft(
+            insight_id="insight_count",
+            preview_id=previews[0].object_id,
+            claim_ids=("claim_count",),
+            purpose="Compare counts",
+        ),
+        VisualInsightDraft(
+            insight_id="insight_rate",
+            preview_id=previews[1].object_id,
+            claim_ids=("claim_rate",),
+            purpose="Compare rates",
+        ),
+    )
+    dashboard = DashboardBuilder().build(
+        title="Two measures",
+        answer_summary="Validated result.",
+        previews=previews,
+        visual_insights=insights,
+        claims=claims,
+        bundle=bundle,
+        max_blocks=5,
+    )
+
+    charts = [item for item in dashboard.blocks if item.type == "chart"]
+    assert [item.encoding.value for item in charts if item.encoding is not None] == [
+        "message_record_count.v1",
+        "failure_rate.v1",
+    ]
 
 
 def test_chart_is_rejected_when_encoding_omits_a_grain_dimension() -> None:
@@ -243,6 +418,7 @@ def test_chart_is_rejected_when_encoding_omits_a_grain_dimension() -> None:
         intent="ranked_comparison",
         preferred_chart_types=("bar",),
         dataset_id=too_detailed.dataset_id,
+        task_ids=("task_rank",),
         dimension_roles={"category": "channel"},
         measure_roles={"value": "message_record_count.v1"},
         priority="required",
@@ -274,6 +450,7 @@ def test_chart_is_rejected_for_duplicate_rows_at_declared_grain() -> None:
         intent="ranked_comparison",
         preferred_chart_types=("bar",),
         dataset_id=duplicated.dataset_id,
+        task_ids=("task_rank",),
         dimension_roles={"category": "channel"},
         measure_roles={"value": "message_record_count.v1"},
         priority="required",
@@ -310,6 +487,7 @@ def test_high_cardinality_chart_downgrades_without_fake_frontend_top_n() -> None
         intent="ranked_comparison",
         preferred_chart_types=("bar",),
         dataset_id=source.dataset_id,
+        task_ids=("task_rank",),
         dimension_roles={"category": "channel"},
         measure_roles={"value": "message_record_count.v1"},
         priority="required",
@@ -337,12 +515,11 @@ def test_no_visual_candidate_keeps_technical_detail_out_of_dashboard() -> None:
             dataset_id="channel_metrics",
         )
     )
-    dashboard = DashboardBuilder(
-        ChartFeasibilityValidator(CompiledSemanticPackage(PACKAGE_DIR).visualizations())
-    ).build(
+    dashboard = DashboardBuilder().build(
         title="Fallback",
         answer_summary="Validated data is available.",
-        candidates=(),
+        previews=(),
+        visual_insights=(),
         claims=(),
         bundle=bundle,
         max_blocks=3,
@@ -353,13 +530,13 @@ def test_no_visual_candidate_keeps_technical_detail_out_of_dashboard() -> None:
 
 def test_multiple_useful_charts_reuse_one_dataset_and_constant_chart_is_removed() -> None:
     bundle = _bundle()
-    definitions = CompiledSemanticPackage(PACKAGE_DIR).visualizations()
     rank = VisualizationCandidate(
         candidate_id="vc_rank_reuse",
         analytical_question="Rank channels",
         intent="ranked_comparison",
         preferred_chart_types=("bar",),
         dataset_id="channel_metrics",
+        task_ids=("task_rank",),
         dimension_roles={"category": "channel"},
         measure_roles={"value": "message_record_count.v1"},
         priority="required",
@@ -373,11 +550,36 @@ def test_multiple_useful_charts_reuse_one_dataset_and_constant_chart_is_removed(
             "reason": "composition",
         }
     )
-    dashboard = DashboardBuilder(ChartFeasibilityValidator(definitions)).build(
+    chart_claims = (
+        ClaimGrounder()
+        .ground(
+            (
+                ClaimDraft(
+                    claim_id="claim_reused_dataset",
+                    claim_type="ranking",
+                    template="Top value is {value}.",
+                    task_ids=("task_rank",),
+                    bindings=(
+                        ClaimBinding(
+                            name="value",
+                            dataset_id="channel_metrics",
+                            selector="argmax:message_record_count.v1",
+                            column="message_record_count.v1",
+                        ),
+                    ),
+                ),
+            ),
+            bundle,
+        )
+        .claims
+    )
+    previews = _preview_bundle((rank, composition), bundle)
+    dashboard = DashboardBuilder().build(
         title="Reuse",
         answer_summary="Two useful views.",
-        candidates=(rank, composition),
-        claims=(),
+        previews=previews,
+        visual_insights=_visual_insights(previews, "claim_reused_dataset"),
+        claims=chart_claims,
         bundle=bundle,
         max_blocks=5,
     )
@@ -393,11 +595,13 @@ def test_multiple_useful_charts_reuse_one_dataset_and_constant_chart_is_removed(
     constant_bundle = bundle.model_copy(
         update={"datasets": (dataset.model_copy(update={"rows": constant_rows}),)}
     )
-    low_value = DashboardBuilder(ChartFeasibilityValidator(definitions)).build(
+    constant_previews = _preview_bundle((rank,), constant_bundle)
+    low_value = DashboardBuilder().build(
         title="Low value",
         answer_summary="Constant data.",
-        candidates=(rank,),
-        claims=(),
+        previews=constant_previews,
+        visual_insights=_visual_insights(constant_previews, "claim_reused_dataset"),
+        claims=chart_claims,
         bundle=constant_bundle,
         max_blocks=3,
     )
@@ -413,18 +617,42 @@ def test_requested_table_is_a_business_result_not_a_technical_detail() -> None:
         intent="ranked_comparison",
         preferred_chart_types=("table",),
         dataset_id="channel_metrics",
+        task_ids=("task_table",),
         dimension_roles={"category": "sub_message.channel"},
         measure_roles={"value": "message_record_count.v1"},
         priority="required",
         reason="The user requested a table",
     )
-    dashboard = DashboardBuilder(
-        ChartFeasibilityValidator(CompiledSemanticPackage(PACKAGE_DIR).visualizations())
-    ).build(
+    table_claims = (
+        ClaimGrounder()
+        .ground(
+            (
+                ClaimDraft(
+                    claim_id="claim_table_rank",
+                    claim_type="ranking",
+                    template="Top value is {value}.",
+                    task_ids=("task_table",),
+                    bindings=(
+                        ClaimBinding(
+                            name="value",
+                            dataset_id="channel_metrics",
+                            selector="argmax:message_record_count.v1",
+                            column="message_record_count.v1",
+                        ),
+                    ),
+                ),
+            ),
+            bundle,
+        )
+        .claims
+    )
+    previews = _preview_bundle((candidate,), bundle)
+    dashboard = DashboardBuilder().build(
         title="Table result",
         answer_summary="Validated result.",
-        candidates=(candidate,),
-        claims=(),
+        previews=previews,
+        visual_insights=_visual_insights(previews, "claim_table_rank"),
+        claims=table_claims,
         bundle=bundle,
         max_blocks=3,
     )
@@ -442,18 +670,42 @@ def test_pareto_transform_is_computed_by_the_deterministic_backend() -> None:
         intent="pareto",
         preferred_chart_types=("pareto",),
         dataset_id="channel_metrics",
+        task_ids=("task_pareto",),
         dimension_roles={"category": "channel"},
         measure_roles={"value": "message_record_count.v1"},
         priority="recommended",
         reason="concentration analysis",
     )
-    dashboard = DashboardBuilder(
-        ChartFeasibilityValidator(CompiledSemanticPackage(PACKAGE_DIR).visualizations())
-    ).build(
+    pareto_claims = (
+        ClaimGrounder()
+        .ground(
+            (
+                ClaimDraft(
+                    claim_id="claim_pareto_rank",
+                    claim_type="ranking",
+                    template="Top value is {value}.",
+                    task_ids=("task_pareto",),
+                    bindings=(
+                        ClaimBinding(
+                            name="value",
+                            dataset_id="channel_metrics",
+                            selector="argmax:message_record_count.v1",
+                            column="message_record_count.v1",
+                        ),
+                    ),
+                ),
+            ),
+            bundle,
+        )
+        .claims
+    )
+    previews = _preview_bundle((candidate,), bundle)
+    dashboard = DashboardBuilder().build(
         title="Pareto",
         answer_summary="Validated result.",
-        candidates=(candidate,),
-        claims=(),
+        previews=previews,
+        visual_insights=_visual_insights(previews, "claim_pareto_rank"),
+        claims=pareto_claims,
         bundle=bundle,
         max_blocks=3,
     )
@@ -482,15 +734,13 @@ def test_kpis_only_promote_metrics_selected_by_the_analysis_plan() -> None:
         metric_definitions=package.metrics(),
     )
     bundle = DatasetBundleBuilder().build((overall.dataset,))
-    builder = DashboardBuilder(
-        ChartFeasibilityValidator(package.visualizations()),
-        package.metrics(),
-    )
+    builder = DashboardBuilder(package.metrics())
 
     dashboard = builder.build(
         title="Failure quality",
         answer_summary="Validated result.",
-        candidates=(),
+        previews=(),
+        visual_insights=(),
         claims=(),
         bundle=bundle,
         max_blocks=3,

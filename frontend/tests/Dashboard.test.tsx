@@ -116,4 +116,52 @@ describe("dynamic dashboard", () => {
     expect(screen.queryByText("聚合明细与指标口径")).not.toBeInTheDocument();
     expect(screen.queryByText("验证明细")).not.toBeInTheDocument();
   });
+
+  it("explains every chart with its purpose, grounded finding, and reading guide", () => {
+    const chartAnswer = {
+      dashboard_spec: {
+        title: "动态分析",
+        blocks: [
+          {
+            block_id: "summary",
+            type: "answer_summary",
+            title: "总分析",
+            content: { text: "A 类别贡献最高。" },
+          },
+          {
+            block_id: "chart",
+            type: "chart",
+            title: "类别贡献比较",
+            chart_type: "bar",
+            chart_analysis: {
+              purpose: "比较各类别的贡献规模。",
+              reading_guide: "比较各类别的消息量；柱越长表示数值越大。",
+              findings: [
+                {
+                  claim_id: "claim_a",
+                  text: "A 类别贡献最高。",
+                  importance: "primary",
+                  evidence_row_ids: ["row_a"],
+                },
+              ],
+              caveats: ["仅描述当前筛选范围。"],
+            },
+          },
+        ],
+      },
+    } as unknown as AnswerSnapshot;
+    const client = new QueryClient();
+    render(
+      <QueryClientProvider client={client}>
+        <Dashboard answer={chartAnswer} />
+      </QueryClientProvider>,
+    );
+
+    expect(screen.getByText("本图回答")).toBeVisible();
+    expect(screen.getByText("比较各类别的贡献规模。")).toBeVisible();
+    expect(screen.getByText("从图中可看出")).toBeVisible();
+    expect(screen.getAllByText("A 类别贡献最高。")).toHaveLength(2);
+    expect(screen.getByText("如何阅读")).toBeVisible();
+    expect(screen.getByText("仅描述当前筛选范围。")).toBeVisible();
+  });
 });

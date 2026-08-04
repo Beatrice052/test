@@ -10,6 +10,7 @@ from app.agents.base import AgentRuntime
 from app.agents.insight_dashboard import InsightDashboardAgent
 from app.analytics.bundle import DatasetBundleBuilder
 from app.analytics.features import FeatureSummaryBuilder
+from app.contracts.dashboard import VisualizationExplorationDraft
 from app.contracts.insight import ClaimBinding, ClaimDraft, InsightDashboardDraft
 from app.llm.fixture import FixtureLLMClient
 from app.llm.rule_based import RuleBasedMockLLMClient
@@ -26,8 +27,12 @@ class CaptureInsightClient:
     def __init__(self) -> None:
         self.payload: dict[str, object] | None = None
 
-    async def generate(self, **kwargs: Any) -> InsightDashboardDraft:
+    async def generate(
+        self, **kwargs: Any
+    ) -> InsightDashboardDraft | VisualizationExplorationDraft:
         self.payload = kwargs["input_payload"]
+        if kwargs["output_schema"] is VisualizationExplorationDraft:
+            return VisualizationExplorationDraft()
         return InsightDashboardDraft(
             answer_summary="Validated data is ready.",
             fallback_requested=True,
@@ -55,6 +60,7 @@ async def test_agent_c_payload_has_schema_and_feature_summary_but_no_full_rows_o
         feature_summaries=features,
         metric_definitions=package.metrics(),
         visualization_definitions=package.visualizations(),
+        visualization_previews=(),
         correlation_id="cor_agent_c_capture",
     )
     assert client.payload is not None
@@ -78,6 +84,7 @@ async def test_rule_based_agent_c_uses_selectors_and_never_constructs_row_ids() 
         feature_summaries=features,
         metric_definitions=package.metrics(),
         visualization_definitions=package.visualizations(),
+        visualization_previews=(),
         correlation_id="cor_agent_c_rule",
     )
     assert draft.claims
@@ -111,6 +118,7 @@ async def test_agent_c_directed_repair_is_bounded_to_schema_ids_without_rows() -
         answer_summary="draft",
         claims=(
             ClaimDraft(
+                claim_id="claim_missing_column",
                 claim_type="value",
                 template="Value {value}",
                 bindings=(
@@ -129,6 +137,7 @@ async def test_agent_c_directed_repair_is_bounded_to_schema_ids_without_rows() -
         errors=("0:GROUNDING_REJECTED:column is missing",),
         analysis_plan=analysis,
         bundle=bundle,
+        visualization_previews=(),
         attempt=1,
         correlation_id="cor_agent_c_repair",
     )

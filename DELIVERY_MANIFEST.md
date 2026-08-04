@@ -1,6 +1,6 @@
 # MI-NEW 交付清单
 
-生成日期：2026-08-02
+生成日期：2026-08-04
 
 目标仓库：Beatrice052/test
 
@@ -20,13 +20,16 @@
 2. docs/integration/INTERNAL_AI_START_HERE.md
 3. docs/requirements_traceability.md
 4. docs/integration/real_llm_cutover_runbook.md
-5. docs/internal_checklist.md
-6. docs/audits/final_end_to_end_audit.md
-7. docs/test_report.md
+5. docs/integration/multi_agent_orchestration.md
+6. docs/integration/mcp_adapter_guide.md
+7. docs/integration/visualization_agent_architecture.md
+8. docs/internal_checklist.md
+
+`docs/gates/` 和早期 phase 审计只保留为历史证据，不能作为当前实现说明；其中旧的单阶段 Agent C 描述已被上述入口文档取代。
 
 ## 包含内容
 
-- backend：FastAPI、LangGraph、Contracts、Agents、Query、Gateway、Analytics、Presentation、Persistence、Security、CLI、Alembic；
+- backend：FastAPI、确定性 LangGraph 主编排器、三个有界 Agents、字段语义 Descriptor、Query、MCP index/mapping/profile Gateway、Analytics、Agent C 双阶段 Visualization Explorer、Presentation、Persistence、Security、CLI、Alembic；
 - frontend：React/TypeScript/Vite/ECharts 安全工作区、Session、Dashboard、Evidence、SSE；
 - semantic-input/mock：可运行 Mock 输入；
 - semantic-input/internal-template：真实输入模板，不含真实业务数据；
@@ -40,7 +43,7 @@
 ## 不包含内容
 
 - .env 或任何真实 Secret/Key/证书；
-- 真实字段 Excel/CSV、真实 Mapping、真实索引数据；
+- 真实字段 Excel/CSV、真实 Mapping/Profile Snapshot、真实索引数据；
 - semantic-input/internal、evals/golden/internal、reports/internal；
 - 运行数据库、artifact、日志、缓存、虚拟环境、node_modules、dist；
 - 真实 LLM/MCP probe 结果或业务 Shadow 明文。
@@ -49,16 +52,16 @@
 
 | 项目 | 结果 |
 |---|---|
-| Backend pytest | 265 passed |
+| Backend pytest | 275 passed |
 | Ruff / format | passed |
-| mypy | 129 sources passed |
-| Schema snapshots | 40 matched |
-| OpenAPI/TS | 51 matched |
-| Frontend tests | 17 passed |
+| mypy | 130 sources passed |
+| Schema snapshots | 41 matched |
+| OpenAPI/TS | 55 matched |
+| Frontend tests | 19 passed |
 | Production build | passed |
 | Chromium E2E | 1 passed |
 | Semantic repeatability | 12 files, identical hashes |
-| Mock semantic version | sp_b71217c670d896e0 |
+| Mock semantic version | sp_d59d2225dd6b8317 |
 | Real cutover static gate | 12/12 passed |
 
 边界：当前主机 Node 24.14.1、无 Docker、npm audit endpoint 被网络 sandbox 阻断；完整 Node 22/Docker/audit 和所有真实接入项由 CI/内网按手册执行。本交付不虚报真实 LLM/MCP/业务 Shadow。
