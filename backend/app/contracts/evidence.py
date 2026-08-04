@@ -11,6 +11,7 @@ class BusinessEvidence(StrictModel):
     data_tables: tuple[str, ...] = ()
     reconciliations: tuple[dict[str, JsonValue], ...] = ()
     quality: tuple[dict[str, JsonValue], ...] = ()
+    exploratory_analysis: tuple[dict[str, JsonValue], ...] = ()
     downloads: tuple[str, ...] = ()
 
 

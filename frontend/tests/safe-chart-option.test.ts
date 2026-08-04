@@ -41,6 +41,34 @@ describe("safe chart adapter", () => {
     expect(JSON.stringify(option)).not.toContain("raw_option");
   });
 
+  it("renders a validated one-value scope as a governed scalar chart", () => {
+    const overall: DatasetRowsResponse = {
+      ...dataset,
+      dataset_id: "overall_scope",
+      grain: [],
+      columns: [
+        { name: "record_count", data_type: "integer", semantic_role: "measure", unit: "count" },
+      ],
+      rows: [{ row_id: "row_overall", values: { record_count: 269 } }],
+      total: 1,
+    };
+    const block: DashboardBlock = {
+      block_id: "overall_chart",
+      type: "chart",
+      title: "当前范围消息量",
+      chart_type: "bar",
+      visualization_intent: "single_value",
+      encoding: { value: "record_count" },
+    };
+
+    expect(validateChartDataset(block, overall)).toBeNull();
+    const option = buildSafeOption(block, overall);
+    expect(option.xAxis).toMatchObject({ data: ["当前范围消息量"] });
+    expect(option.series).toEqual([
+      expect.objectContaining({ type: "bar", data: [269] }),
+    ]);
+  });
+
   it("pivots a validated series field into a stacked multi-series chart", () => {
     const composition: DatasetRowsResponse = {
       ...dataset,

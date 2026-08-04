@@ -1,6 +1,6 @@
 # 内网轻量接入与 Phase 8 Shadow 手册
 
-内网 AI 在执行本文前必须先完整阅读 [INTERNAL_AI_START_HERE.md](INTERNAL_AI_START_HERE.md)、[受控多 Agent 架构](multi_agent_orchestration.md)、仓库根目录 `AGENTS.md` 和 [需求追踪矩阵](../requirements_traceability.md)。本文是操作步骤摘要，完整责任边界和故障处理以前述文档为准。
+内网 AI 在执行本文前必须先完整阅读 [INTERNAL_AI_START_HERE.md](INTERNAL_AI_START_HERE.md)、[受控多 Agent 架构](multi_agent_orchestration.md)、[旧项目指标注册迁移](legacy_metric_registry_migration.md)、仓库根目录 `AGENTS.md` 和 [需求追踪矩阵](../requirements_traceability.md)。本文是操作步骤摘要，完整责任边界和故障处理以前述文档为准。
 
 ## 0. 允许边界
 
@@ -23,7 +23,7 @@ docs/gates/internal-*.md
 ./scripts/verify-package.ps1
 ```
 
-必须通过 lockfile 安装、Mock Semantic compile、当前分支 291 个 backend tests、G01–G25、frontend type/lint/19 unit/build、Playwright G02/G15/G25、Mock readiness。失败即外网交付问题，不进入真实接入。
+必须通过 lockfile 安装、Mock Semantic compile、当前分支 294 个 backend tests、G01–G25、frontend type/lint/20 unit/build、Playwright G02/G15/G25、Mock readiness。失败即外网交付问题，不进入真实接入。
 
 ## 2. Adapter 探测
 
@@ -36,7 +36,7 @@ docs/gates/internal-*.md
 
 MCP probe 只探测 Tool/schema/health，不执行业务 DSL。LLM probe 不发送业务数据。
 
-真实 LLM 的四个主 operation（Agent C 含两个固定 Pass）、A/B/C 各自 repair schema、严禁迁移的 Mock 函数、日志字段、15 项切换门禁、Shadow 断言和失败回滚详见 [真实 LLM 切换手册](real_llm_cutover_runbook.md)、[三 Agent 决策权矩阵](decision_authority_matrix.md) 与 [双阶段可视化架构](visualization_agent_architecture.md)。正式 LLM 失败不得静默回退到 `rule_based`。
+真实 LLM 的四个主 operation（C1 在查询后动态提出 `AnalyticsToolRequest` 与图表候选，Host 执行后 C2 才输出总洞察/KPI）、A/B/C 各自 repair schema、严禁迁移的 Mock 函数、日志字段、15 项切换门禁、Shadow 断言和失败回滚详见 [真实 LLM 切换手册](real_llm_cutover_runbook.md)、[三 Agent 决策权矩阵](decision_authority_matrix.md) 与 [双阶段可视化架构](visualization_agent_architecture.md)。正式 LLM 失败不得静默回退到 `rule_based`。
 
 ## 3. Mapping 与 Semantic
 
@@ -44,7 +44,7 @@ MCP probe 只探测 Tool/schema/health，不执行业务 DSL。LLM probe 不发�
 
 ## 4. 业务语义确认
 
-最少确认：一条文档含义、“消息记录数/发送量”称谓、主时间字段、Channel、status 全量分组、failure numerator/denominator、Pending/Unknown/Null、minimum denominator、敏感/禁止明细。未确认项保留 Caveat 或禁用 Metric，不由 AI 补齐。
+最少确认：一条文档含义、“消息记录数/发送量”称谓、主时间字段、Channel、status 全量分组、failure numerator/denominator、Pending/Unknown/Null、minimum denominator、敏感/禁止明细。先将旧项目 Owner 已确认的 L1/L2 指标迁移为 MetricDefinition；它们认证正式 KPI/公式，但不得限制 C1 对受治理数值列选择探索统计。未确认项保留 Caveat 或禁用 Metric，不由 AI 补齐。
 
 ## 5. 真实只读 Smoke
 

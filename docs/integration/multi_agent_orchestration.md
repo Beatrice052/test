@@ -11,8 +11,8 @@
 - 主编排器是 LangGraph StateGraph 和版本化 State，不是第四个自由 LLM Agent；
 - Agent A 负责理解问题、上下文关系和 AnalysisPlan；
 - Agent B 负责逻辑 QueryPlan，不负责物理字段和 DSL；
-- Agent C 在查询后分两次结构化调用：先提出数据驱动的可视化探索，再基于受控 Preview 同时生成总体洞察、每图结论和图文绑定；
-- Resolver、Index Router、DSL Compiler、MCP Gateway、Metric/Statistic Engine、QA、Visualization Explorer、Grounding、Dashboard/Evidence Assembly 都是确定性程序。
+- Agent C 在查询后分两次结构化调用：先提出数据驱动的统计工具请求和可视化探索，再基于受控统计结果与 Preview 同时生成总体洞察、动态 KPI、每图结论和图文绑定；
+- Resolver、Index Router、DSL Compiler、MCP Gateway、Metric/Statistic Engine、QA、Visualization Explorer、Grounding、Dashboard/Evidence Assembly 都是确定性程序；它们执行/校验 Agent C 的选择，绝不按数据形状替它编造图或结论。
 
 多 Agent 的价值来自职责隔离、较小上下文和独立验收，不来自 Agent 数量。再增加一个“汇总 Agent”会重复 Agent C Pass 2、增加延迟并制造两个结论权威，因此不采用。
 
@@ -30,12 +30,13 @@ flowchart TD
     B --> QV["Consolidator + Finalizer + Index Router"]
     QV --> DSL["DSL Compiler + Validator"]
     DSL --> MCP["只读 MCP Gateway"]
-    MCP --> DATA["Normalize + Metric + Statistics + QA"]
-    DATA --> C1["Agent C Pass 1：探索意图 0/1/N"]
+    MCP --> DATA["Normalize + 正式指标 + QA"]
+    DATA --> C1["Agent C Pass 1：动态统计与图表探索"]
     REUSE -->|"PRESENTATION_CHANGE"| C1
     REUSE -->|"EXPLANATION"| C2
-    C1 --> VX["Visualization Explorer + Feasibility + Preview"]
-    VX --> C2["Agent C Pass 2：总分析 + Claim + 每图解释"]
+    C1 --> ST["Governed Analytics Tool"]
+    ST --> VX["Visualization Explorer + Feasibility + Preview"]
+    VX --> C2["Agent C Pass 2：总分析 + KPI + Claim + 每图解释"]
     C2 --> GR["Grounding + Coverage + 去重"]
     GR --> OUT["Dashboard + Evidence + AnswerSnapshot"]
     OUT --> END
@@ -107,7 +108,9 @@ Agent C 是同一个有界专业节点的两个结构化 Pass，而不是自由�
 
 ### Pass 1：`post_query_visual_exploration`
 
-输入为 AnalysisPlan、Dataset schema、受控 FeatureSummary/统计/QA 和图表目录；输出 0/1/N 个 `VisualizationCandidate`。每个候选必须绑定 task_id、dataset_id、维度、measure、分析目的和期望关系。图表数量和类型由本轮问题与实际数据决定，不存在默认四图或固定二维组合。
+输入为 AnalysisPlan、Dataset schema、受控 FeatureSummary/QA、MethodDefinition 和图表目录；输出 `AnalyticsToolRequest[]` 与动态 `VisualizationCandidate[]`。每个统计请求只引用已有 numeric metric/measure、受治理方法和允许参数；每个候选绑定 task_id、dataset_id、维度、measure、分析目的和期望关系。统计和图表数量/类型由本轮问题与实际数据决定，不存在默认四图、固定二维组合或程序替 Agent C 选图。
+
+非空且 QA 可用的 ChatBI 结果必须得到 C1 的 1/N 张真实图候选；空结果或 QA 阻断才可以没有图。C2 必须在 Host 返回统计结果与 Preview 后才生成 `overall_claim_ids`、`kpi_selections`、Claim 和图表解释。正式 KPI 仍由 Metric Engine 计算，探索统计由 StatisticEngine 计算；LLM 决定“为什么/分析什么”，不直接计算数字或公式。
 
 确定性 Visualization Explorer 随后检查 grain、cardinality、完整性、单位、排序、显式图表偏好和 Dashboard budget，生成包含最终 encoding、data profile 和可行性状态的 `VisualizationPreview`。当前 renderer 是安全 ECharts Adapter；LLM 不输出 ECharts option、Plotly code、Python 或 JavaScript。
 
@@ -117,7 +120,7 @@ Agent C 同时看到经 QA 的全部分析特征和最终 Preview，生成：
 
 - answer-first 总分析；
 - Grounded ClaimDraft；
-- 每张 Preview 的 purpose、findings、reading guide、caveat；
+- 每张 Preview 的 purpose、grounded findings、必要 caveat；`reading_guide` 仅为兼容 Contract 的内部辅助字段，主 UI 不展示机械阅读模板；
 - KPI 建议、限制和推荐追问。
 
 图与结论通过 task/dataset/measure/claim ID 显式绑定，不能先画固定图再按自然语言相似度匹配结论。Candidate ID 必须唯一；每条 Claim 必须有至少一个且名称唯一的 evidence binding。Grounding 会删除无证据、重复、跨粒度或绑定不一致的内容。
@@ -170,6 +173,6 @@ Semantic Package 有 package_version。一次用户轮次固定使用一个版�
 - 验证每个 required task 被 QueryStep 覆盖，取数粒度足以执行后续统计；
 - 验证 Index Router 对所选月份逐字段检查 observed mapping；
 - 验证 profile query 固定 `size:0` 且只覆盖政策允许字段；
-- 验证 Agent C 的 0/1/N 图表选择、每图解释和图文同源绑定；
+- 验证 Agent C 在非空、QA 可用数据上选择 1/N 张图表；每图解释和图文同源绑定；
 - 验证纯换图复用 DatasetBundle 且重跑 Pass 1，解释追问重跑 Pass 2；新增比较/下钻/统计方法/联合粒度必须重新规划和查询；
 - 用真实 Shadow 人工检查“总分析是否完整回答用户问题”，不能只检查 JSON Schema 通过。

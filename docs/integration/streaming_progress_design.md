@@ -11,7 +11,7 @@
   → 确定性 DSL 编译与校验
   → OpenSearch 只读检索
   → Analytics / Metric / Statistics / Data QA
-  → Agent C 可视化探索 → 受控 Adapter Preview → Agent C 洞察与图结论绑定
+  → Agent C 数据分析与图表探索 → 受治理统计执行 + Adapter Preview → Agent C 总洞察/KPI/图表解释
   → Grounding / Evidence / 最终答案
 ```
 
@@ -24,6 +24,7 @@
 - QueryPlan step 数和 grain；
 - 已编译查询数；
 - 执行记录数、FeatureSummary 数、QA route；
+- Agent C 选择的统计请求数、实际可应用/拒绝/不适用数量和验证图表数；
 - Dashboard block 数。
 
 不得显示：模型私有推理、system prompt、原始模型正文、API Key、Authorization header、完整 Semantic 候选、原始 DSL 或未经 Grounding 的洞察。

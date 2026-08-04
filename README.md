@@ -65,19 +65,19 @@ powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/verify-package.ps1
 ./scripts/verify-package.sh
 ```
 
-验包使用 lockfile，执行 ruff/format/mypy、全部 backend 与 G01–G25、41 个 Schema snapshot、57 个 OpenAPI 类型、Mock Semantic compile、frontend type/lint/unit/build、Playwright G02/G15/G25，并实际启动/probe Mock readiness 与 UI。
+验包使用 lockfile，执行 ruff/format/mypy、全部 backend 与 G01–G25、41 个 Schema snapshot、59 个 OpenAPI 类型、Mock Semantic compile、frontend type/lint/unit/build、Playwright G02/G15/G25，并实际启动/probe Mock readiness 与 UI。
 
-Dashboard 不是固定的 `Channel × Status × Month` 模板。Agent A 根据当前问题和 Semantic Package 中字段的语义角色、能力、别名、成熟度与受治理值动态选择指标、时间和分类维度；确定性 Analytics 再按实际选中的维度派生 rollup、排名、趋势和构成数据。Agent C 先提出 0/1/N 个探索请求，受控 Adapter 返回最终编码与数据剖面后，Agent C 再把每张图与同任务、同 Dataset、同 measure 的 Grounded Claim 一起生成。前端统一呈现去重后的总分析、KPI、每图结论/读法、边界与追问建议；OpenSearch 聚合结果表、指标计算、质量对账和高级 DSL 统一收纳在证据抽屉。详见 [Agent C 双阶段可视化架构](docs/integration/visualization_agent_architecture.md)。
+Dashboard 不是固定的 `Channel × Status × Month` 模板。Agent A 只决定本轮业务目标、候选正式/受控派生指标、取数任务和显式展示偏好；Agent B 只决定最小充分的逻辑 QueryPlan。查询与 QA 后，Agent C 才作为数据分析师基于实际 Dataset 特征动态选择要分析的数值列、统计方法和图表候选，并以严格 `AnalyticsToolRequest` / `VisualizationCandidate` Contract 交给宿主执行。宿主只运行版本化的统计方法和安全图表 Adapter；它不代替 Agent C 决定“该分析什么”。C2 在拿到统计结果与已验证 Preview 后形成总洞察、动态 KPI 选择和每图解释。非空且 QA 可用的 ChatBI 回答必须保留 1/N 张诚实图表；若 Agent C 没有给出可行图，会透明标记 PARTIAL，而不会用固定模板伪造一张图。详见 [Agent C 双阶段可视化架构](docs/integration/visualization_agent_architecture.md)。
 
 完整的逐节点“AI 判断 / 程序判断 / 输入 / 输出 / 失败策略 / 验收证据”见 [三 Agent 全流程决策权与验收矩阵](docs/integration/decision_authority_matrix.md)。其中明确：`RuleBasedMockLLMClient` 的关键词和固定示例任务只用于本地回归，正式 Agent A/B/C 必须由真实结构化 LLM 按本轮问题和真实数据动态决策；正式切换门禁会拒绝 Mock、固定任务 bundle 以及直接使用 `internal-template`。
 
 主流程是一个确定性 LangGraph 编排器与三个有界专业 Agent，不是自由 Supervisor/Swarm。Agent A 的候选和 Agent B 的 `ResolvedFieldDescriptor` 都能使用真实 Excel description、字段语义类型、能力、跨月兼容性与可选 cardinality 画像；两者都看不到 physical path 或 raw documents。MCP 的索引发现、Mapping 与 `size:0` 字段画像只在 Bootstrap/Refresh 阶段执行。详见 [受控多 Agent 编排](docs/integration/multi_agent_orchestration.md) 和 [MCP Adapter 指南](docs/integration/mcp_adapter_guide.md)。
 
-核心 KPI 只来自本轮 AnalysisPlan 中 `required/recommended` 的受治理 MetricDefinition，不会自动追加类别基数或技术口径检查。总分析按 Agent C 的输出顺序纳入全部去重且已 Grounding 的 Claim；当前 `rule_based` 仅用于无凭证结构回归，分析深度不是正式 LLM 的质量上限。真实模型必须逐项覆盖 required task，并通过 [真实 LLM 切换与 Mock 规则隔离手册](docs/integration/real_llm_cutover_runbook.md) 中的分析完整性验收。
+已注册 MetricDefinition 是正式业务 KPI/受控派生公式的认证来源，不是 Agent C 的分析上限：LLM 可选择任何已验证 Dataset 中的受治理数值 metric/measure 做探索性统计，但不能发明业务公式或把探索结果冒充正式 KPI。KPI 卡片也不是 Agent A 的默认指标列表，而是 C2 在结果出来后选择的标量值；无高价值标量时可以没有卡片。总分析由 C2 选定且 Grounding 的 `overall_claim_ids` 组成，图表解释只显示必要的“图表解读”，不显示机械的“本图回答/如何阅读/证据提示”文案。`rule_based` 仅用于无凭证结构回归，分析深度不是正式 LLM 的质量上限。
 
 用户发送问题后，前端通过 SSE 展示由实际 LangGraph 节点驱动的进度：Agent A 意图识别、Agent B QueryPlan、确定性 DSL 编译、OpenSearch 检索、Analytics/QA、Agent C 与 Dashboard。最终不可变答案加载后进度自动收起。展示的是可审计阶段和已确认的结构化摘要，不暴露模型私有推理、prompt 或原始 DSL。
 
-用户在初次问题或后续修改中明确指定柱状图、折线图、堆叠柱状图、热力图、环形图、点图、Pareto 或表格时，由 Agent A 将要求写入结构化 `presentation_preference`；Agent C 与 Visualization Explorer 根据真实结果选择并验证 Preview。兼容时优先采用；不兼容时降级为可核查表格并解释原因。图表数量没有固定默认值，允许 0、1 或多张，但每张必须回答不同问题并展示“本图回答、从图中可看出、如何阅读、解读边界”。当前 renderer 是安全 ECharts Adapter；Plotly 未实现/未启用，新增 renderer 必须走 ADR、Contract、Adapter 和测试，LLM 不能注入绘图代码。
+用户在初次问题或后续修改中明确指定柱状图、折线图、堆叠柱状图、热力图、环形图、点图、Pareto 或表格时，由 Agent A 将要求写入结构化 `presentation_preference`；Agent C 根据真实结果提出候选，Visualization Explorer 负责验证。兼容时优先采用；不兼容时保留可核查表格并说明原因，同时仍保留另一张真实图表（除非数据为空或 QA 阻断）。图表数与图型没有固定默认值，但每张图必须回答不同问题、包含业务 purpose、Grounded finding 和必要 caveat；前端以简洁“图表解读”展示。当前 renderer 是安全 ECharts Adapter；Plotly 未实现/未启用，新增 renderer 必须走 ADR、Contract、Adapter 和测试，LLM 不能注入绘图代码。
 
 ## Docker profiles
 

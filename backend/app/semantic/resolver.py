@@ -104,10 +104,13 @@ class AnalysisPlanResolver:
         self.fields.require(time_field_id, capability="range")
         resolved_field_ids.add(time_field_id)
 
+        active_decisions = {
+            item.metric_id: item
+            for item in plan.metric_decisions
+            if item.decision in {"required", "recommended", "optional"}
+        }
         resolved_metrics: list[ResolvedMetric] = []
-        for decision in plan.metric_decisions:
-            if decision.decision == "rejected":
-                continue
+        for decision in active_decisions.values():
             metric = self.metrics.require(decision.metric_id)
             required_field_ids = self._metric_required_fields(metric)
             executable = metric.enabled

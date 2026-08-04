@@ -34,7 +34,7 @@
 | 15 | 外网完整/内网轻接入 | scripts；semantic-input/internal-template；本手册 | internal_input_scripts；cutover | IMPLEMENTED + INTERNAL-INPUT |
 | 16 | 7 月 Channel Golden | evals/golden；fixtures | G02 等 Golden matrix | IMPLEMENTED |
 | 17 | 5–7 月多维 Golden | evals/golden；fixtures | G05 等；dynamic_dashboard | IMPLEMENTED |
-| 18 | 测试与评估 | backend/tests；frontend/tests/e2e；CI | 291 backend + 19 frontend + 1 E2E | IMPLEMENTED |
+| 18 | 测试与评估 | backend/tests；frontend/tests/e2e；CI | 294 backend + 20 frontend + 1 E2E | IMPLEMENTED |
 | 19 | 分阶段计划 | docs/gates/phase0–7；project_memory | 各阶段 Gate | DOCUMENTED |
 | 20 | 旧工程迁移策略 | 独立 greenfield 目录；ADR | reference_guardrails | IMPLEMENTED |
 | 21 | 上线前 Checklist | docs/internal_checklist.md | 手工签字 + probes/shadow | IMPLEMENTED + INTERNAL-INPUT |
@@ -44,7 +44,7 @@
 | 25 | 技术选型/部署 | pyproject/lockfiles；package.json；Compose | deployment_profiles；CI | IMPLEMENTED；Docker run NOT-CLAIMED |
 | 26 | 逐文件职责 | 模块目录；ADR；本手册 | architecture import guardrails | IMPLEMENTED |
 | 27 | StateGraph 节点/状态所有权 | orchestration/graph.py、state.py、phase nodes | phase2_graph；phase3_graph；Golden | IMPLEMENTED |
-| 28 | Contract 目录/版本兼容 | contracts；docs/schemas；OpenAPI | 41 schema snapshots；57 API schemas | IMPLEMENTED |
+| 28 | Contract 目录/版本兼容 | contracts；docs/schemas；OpenAPI | 41 schema snapshots；59 API schemas | IMPLEMENTED |
 | 29 | Semantic Compiler | semantic/*；scripts/prepare/compile/configure | compile package/conflicts/internal scripts | IMPLEMENTED |
 | 30 | 三 Agent Prompt 协议 | agents/prompts；agents/*.py；llm/client.py | reference_guardrails；cutover；adapter tests | IMPLEMENTED |
 | 31 | Query AST/Compiler/Validator | contracts/query.py；query/* | plan_compile；index_router；security Golden | IMPLEMENTED |
@@ -73,11 +73,12 @@
 | Agent A/B 使用字段语义 | Candidate/ResolvedFieldDescriptor 含 description、type、capability、compatibility、cardinality；无 physical path | compiler.py；retriever.py；resolver.py；analyst_planner.py；logical_query_planner.py | compile_package；phase2_graph；plan_compile |
 | MCP 索引发现与字段画像 | Bootstrap 自动 list/mapping；Policy-safe `size:0` profile；普通轮次 Agent 无 MCP | gateway/mcp.py；cli.py；snapshot-field-profile.* | mcp_adapter；reference_guardrails；compile_package |
 | 查询前数据充分性 | compile/resolution/finalizer/index route 四层检查；查询后 QA 兜底 | semantic/compiler.py；resolver.py；query/finalizer.py；index_router.py；analytics/qa.py | compile conflicts；plan_compile；index_router；metric_qa |
-| Agent C 不计算数字 | Pass 1 只输出 candidate；Pass 2 只输出 selector/preview binding | insight_dashboard.py；exploration.py；grounding.py | insight_dashboard；grounding_dashboard |
-| 动态指标 | required/recommended 受治理指标交集 | dashboard.py；metric registry | dynamic_dashboard；metric_qa |
-| 动态图表 0/1/N | Agent C 两段 + Explorer + Registry + Dataset | visualization registry；exploration.py；dashboard.py | dynamic_dashboard；chart_preferences |
+| Agent C 不计算数字 | Pass 1 只输出受治理统计请求/图表 candidate；Host 执行；Pass 2 只输出 selector/preview binding | insight_dashboard.py；governed_tool.py；grounding.py | insight_dashboard；governed_tool；grounding_dashboard |
+| 动态指标 | 注册表认证正式 KPI；C1 选择探索统计对象/方法，C2 在真实标量 Dataset 选择 KPI | dashboard.py；metric registry；governed_tool.py | dynamic_dashboard；governed_tool；metric_qa |
+| 动态图表（数据可用时 1/N） | Agent C 两段 + Explorer + Registry + Dataset | visualization registry；insight_dashboard.py；governed_tool.py；dashboard.py | dynamic_dashboard；chart_preferences；governed_tool |
+| 查询后动态统计/指标分析 | Agent C Pass 1 选择受治理统计工具；宿主确定性执行；Pass 2 依据结果总结 | `AnalyticsToolRequest` / `AnalyticsToolResult`；Statistic Engine；Evidence | governed_tool；insight_dashboard；grounding_dashboard |
 | 图与结论共同生成 | Preview 与 claim 显式 ID 绑定；task/dataset/measure/evidence 一致 | contracts；phase5_nodes.py；dashboard.py | grounding_dashboard；phase3_graph |
-| 每图可解释 | purpose/findings/reading guide/caveat | DashboardSpec；Dashboard.tsx | frontend type/build/E2E |
+| 每图可解释 | purpose/findings/必要 caveat；主界面不显示机械阅读模板 | DashboardSpec；Dashboard.tsx | frontend type/build/E2E |
 | 显式图表偏好 | Agent A 结构化；Validator 降级 | AnalysisPlan；phase5；SafeChart | line/heatmap/table tests |
 | 不固定二维模板 | tasks/dimensions/grain 驱动 | rule-independent formal chain | error-dimension、overview、table、Pareto Golden |
 | 高基数安全 | 无虚假前端 Top-N transform | dashboard.py | high-cardinality downgrade test |

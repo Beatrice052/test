@@ -117,7 +117,7 @@ describe("dynamic dashboard", () => {
     expect(screen.queryByText("验证明细")).not.toBeInTheDocument();
   });
 
-  it("explains every chart with its purpose, grounded finding, and reading guide", () => {
+  it("keeps a concise chart-local interpretation without template copy", () => {
     const chartAnswer = {
       dashboard_spec: {
         title: "动态分析",
@@ -126,7 +126,7 @@ describe("dynamic dashboard", () => {
             block_id: "summary",
             type: "answer_summary",
             title: "总分析",
-            content: { text: "A 类别贡献最高。" },
+            content: { text: "当前范围的主要贡献集中在少数类别。" },
           },
           {
             block_id: "chart",
@@ -157,11 +157,12 @@ describe("dynamic dashboard", () => {
       </QueryClientProvider>,
     );
 
-    expect(screen.getByText("本图回答")).toBeVisible();
+    expect(screen.getByText("图表解读")).toBeVisible();
     expect(screen.getByText("比较各类别的贡献规模。")).toBeVisible();
-    expect(screen.getByText("从图中可看出")).toBeVisible();
-    expect(screen.getAllByText("A 类别贡献最高。")).toHaveLength(2);
-    expect(screen.getByText("如何阅读")).toBeVisible();
+    expect(screen.queryByText("从图中可看出")).not.toBeInTheDocument();
+    expect(screen.getByText("A 类别贡献最高。")).toBeVisible();
+    expect(screen.queryByText("如何阅读")).not.toBeInTheDocument();
+    expect(screen.queryByText("图中数值与结论来自同一已验证 Dataset；精确值可通过悬停、下载 CSV 或查看证据核查。")).not.toBeInTheDocument();
     expect(screen.getByText("仅描述当前筛选范围。")).toBeVisible();
   });
 });

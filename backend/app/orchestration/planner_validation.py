@@ -69,9 +69,27 @@ class AnalysisPlanValidator:
         self._require_subset(
             "metric", (item.metric_id for item in draft.metric_decisions), allowed_metrics
         )
+        # ``downgraded`` and ``rejected`` are explanatory decisions, not executable
+        # metric selections.  A task may not quietly use either one as a query or
+        # statistics input.
         selected_metrics = {
-            item.metric_id for item in draft.metric_decisions if item.decision != "rejected"
+            item.metric_id
+            for item in draft.metric_decisions
+            if item.decision in {"required", "recommended", "optional"}
         }
+        required_or_recommended_metrics = {
+            item.metric_id
+            for item in draft.metric_decisions
+            if item.decision in {"required", "recommended"}
+        }
+        tasked_metrics = {metric_id for task in draft.tasks for metric_id in task.metric_ids}
+        unplanned_core_metrics = required_or_recommended_metrics - tasked_metrics
+        if unplanned_core_metrics:
+            raise AnalysisPlanValidationError(
+                "CORE_METRIC_NOT_TASKED",
+                "required/recommended metrics must be attached to an analytical task: "
+                f"{sorted(unplanned_core_metrics)}",
+            )
         for task in draft.tasks:
             self._require_subset("task metric", task.metric_ids, allowed_metrics)
             unselected_metrics = set(task.metric_ids) - selected_metrics
@@ -83,6 +101,11 @@ class AnalysisPlanValidator:
                 )
             self._require_subset("task dimension", task.dimension_ids, allowed_fields)
             self._require_subset("task method", task.statistical_method_ids, allowed_methods)
+            # These are pre-query analytical hypotheses, not an instruction to run
+            # every listed method.  Agent C selects the final post-query statistics
+            # from the validated Dataset columns.  In particular, a useful
+            # exploratory method may apply to a numeric measure even when the
+            # business question does not nominate a certified KPI.
             if self.allowed_visualization_intents:
                 self._require_subset(
                     "visualization intent",

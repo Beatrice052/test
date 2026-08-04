@@ -69,6 +69,17 @@
           "title": "Downloads",
           "type": "array"
         },
+        "exploratory_analysis": {
+          "default": [],
+          "items": {
+            "additionalProperties": {
+              "$ref": "#/$defs/JsonValue"
+            },
+            "type": "object"
+          },
+          "title": "Exploratory Analysis",
+          "type": "array"
+        },
         "metric_definitions": {
           "default": [],
           "items": {

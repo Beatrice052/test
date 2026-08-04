@@ -8,7 +8,7 @@
 
 ## 1. 总体判断
 
-该项目已经从“固定示例输出”校准为受治理、Adapter-based 的通用 ChatBI 框架。用户问题不会被硬编码为 Channel×Status×Month；正式意图、AnalysisPlan、QueryPlan 和查询后分析分别由真实 Agent A/B/C 决定。Agent C 当前采用“探索请求 → 受控 Preview → Claim/VisualInsight 同时绑定”的双阶段，确定性组件负责 ID/预算/DSL/指标/QA/Grounding/图表安全。
+该项目已经从“固定示例输出”校准为受治理、Adapter-based 的通用 ChatBI 框架。用户问题不会被硬编码为 Channel×Status×Month；正式意图、AnalysisPlan、QueryPlan 和查询后分析分别由真实 Agent A/B/C 决定。Agent C 当前采用“C1 动态统计工具请求 + 图表探索 → Host 返回受治理统计结果 + Preview → C2 总洞察/KPI/Claim/VisualInsight”的双阶段；确定性组件只负责 ID/预算/DSL/认证指标公式/统计执行/QA/Grounding/图表安全，不替模型选分析或补模板图。
 
 本轮没有只修单个截图。审计从用户输入、语义检索、三个 Agent、Query/DSL、Gateway、Analytics、Dashboard、Evidence、SSE、会话、安全、恢复、部署和内网切换逐层检查，并补充了跨层回归。
 
@@ -40,11 +40,11 @@
 | 中 | 审计装饰器模型标识曾误透传给统一 LLM Protocol | 正式 Adapter 调用签名不一致 | model 只进入 allowlisted 安全审计，不透传 delegate；mypy 捕获与修复 |
 | 中 | mcp profile 未显式携带 semantic input dir | cutover 只看 package，源输入仍可能指向 Mock | Compose/env/cutover 增加非 Mock Semantic Input 门禁 |
 | 中 | Playwright 自带 webServer 在 Windows 测试完成后可能挂住 | 自动化结果通过但进程不退出 | 改为同一 Python 进程托管静态服务并清理；npm test:e2e 可正常退出 |
-| 中 | pytest 固定仓库 basetemp/cache 会在 Windows/并发运行产生锁冲突 | 大量测试在 setup 前环境失败 | 移除固定 basetemp 和 cacheprovider 依赖；正式目录全量 291 通过 |
+| 中 | pytest 固定仓库 basetemp/cache 会在 Windows/并发运行产生锁冲突 | 大量测试在 setup 前环境失败 | 移除固定 basetemp 和 cacheprovider 依赖；正式目录全量 294 通过 |
 | 中 | Agent C required task 缺失只依赖一次输出 | 总分析可能合法但不完整 | required task→claim/limitation 完整性校验 + 两次定向 repair + PARTIAL |
-| 中 | 总分析曾可能截断/重复 | 关键发现不完整或重复展示 | 使用全部去重 Grounded Claim 作为总分析；补充发现只显示未纳入项 |
+| 中 | 总分析曾可能截断/重复，或被图表局部结论替代 | 用户得不到对原问题的完整回答 | C2 显式选择 `overall_claim_ids`；总分析只展示这些 Claim，不自动拼所有图表 finding，也不生成重复关键发现页 |
 | 中 | 技术聚合/QA 留在主 Dashboard | 用户难读，Evidence 边界错误 | 聚合表、计算、QA 统一 Evidence；主页面过滤技术块 |
-| 中 | 图表数量/指标存在固定化风险 | 普通问题看似总是同一 Dashboard | KPI 仅取本轮受治理决策；图表 0/1/N；显式 line/heatmap/table 和不同维度回归 |
+| 中 | 图表数量/指标存在固定化风险 | 普通问题看似总是同一 Dashboard | C1 依据真实数据动态选择统计工具和图表；C2 动态选择 KPI；非空且 QA 可用数据必须为 1/N 图，显式 line/heatmap/table 和不同维度回归 |
 | 高 | 候选图与结论分开生成后可能靠标题/关键词误配 | 图能画但结论不属于该图 | Agent C 双阶段；Preview/Claim 显式 ID；task/Dataset/measure/Evidence 五项一致性校验 |
 | 中 | 同 Dataset/intent 的不同指标会被过度去重 | 合法的多指标比较丢图 | 去重键加入最终 encoding；跨指标回归 |
 | 高 | Agent B 只有 resolved field ID，没有字段 description/类型/能力/兼容性/基数 | 真实模型可能规划出信息不足或超桶预算的数据集 | 新增无 physical path 的 ResolvedFieldDescriptor；Agent A 候选补齐安全语义元数据；跨层测试 |
@@ -53,7 +53,7 @@
 | 高 | 正式 profile 曾允许直接指向 `internal-template`，Mock 文本图表 parser 与固定规则又可能被误导入正式模块 | 内网 AI 可能带着模板口径或关键词规则上线 | 正式配置拒绝 template/mock 输入；Mock parser 独立为 `mock_chart_preferences.py`；15 项 cutover 递归扫描 Agent、Prompt、编排、Query、Analytics、Presentation |
 | 高 | presentation/explanation 复用曾只改旧 Dashboard 或复制旧结论 | 换图没有重新探索，解释追问没有结合当前 Preview/FeatureSummary 重新分析 | 纯换图零查询但重跑 Agent C Pass 1 + Adapter；解释零查询但重跑 Pass 2 + Grounding；语义包或逐任务签名变化强制重查 |
 | 高 | 不兼容的显式图型可能在偏好应用阶段丢掉任务 | 用户要求保留但任务被静默省略 | Candidate 保留并安全降级为业务表格；warning 进入证据/状态，不把技术失败做成主页面大模块 |
-| 高 | week time grain 被编译为 day，统计方法未对所有受治理数值列统一执行默认参数和最小样本 | 趋势粒度和统计结论可能错误或不完整 | 统一 minute/hour/day/week/month/quarter/year 编译；AnalyticsPipeline 按 MethodDefinition 对所有适用列执行并产出 applicability |
+| 高 | week time grain 被编译为 day，或将注册指标误当作统计分析上限 | 趋势粒度错误，或 LLM 无法对实际数值列进行专业探索 | 统一 minute/hour/day/week/month/quarter/year 编译；C1 基于完整 FeatureSummary 动态选择受治理数值列/MethodDefinition，Host 按默认参数和最小样本确定性执行并产出 applicability |
 | 高 | 统计 Claim 只指向普通行列，没有 method/result 身份 | 同一数据可被错误统计结果解释 | selector 支持 `statistic:<method>@<column>`；EvidenceRef 增加 method ID 和 result hash，Grounding 校验唯一适用结果 |
 | 高 | AnalysisPlan、Candidate、Claim 的身份/证据约束不完整 | 重复 ID 会覆盖覆盖率，task 可引用 rejected metric，空 binding 文案可绕过 Grounding | Validator 拒绝重复 task/metric decision、未选中指标；Explorer 拒绝重复 Candidate ID；Grounder 拒绝空或重名 binding |
 | 中 | `AnalysisPlan.max_queries` 未端到端约束 | Agent B 可能在合法上限外扩张查询 | Finalizer/Consolidator 按服务器预算拒绝超限，Agent A 不能扩大注入预算 |
@@ -62,13 +62,13 @@
 
 | 层 | 已验证事实 | 结果 |
 |---|---|---|
-| Contract | 41 个权威 JSON Schema snapshot；57 个 OpenAPI/TS schema | PASS |
-| 静态质量 | Ruff、format、mypy 132 source files | PASS |
-| 后端 | 单元、集成、架构、契约、G01–G25 | 291 PASS |
-| 前端 | ESLint、TypeScript、7 个 Vitest 文件/19 用例 | PASS |
+| Contract | 41 个权威 JSON Schema snapshot；59 个 OpenAPI/TS schema | PASS |
+| 静态质量 | Ruff、format、mypy 133 source files | PASS |
+| 后端 | 单元、集成、架构、契约、G01–G25 | 294 PASS |
+| 前端 | ESLint、TypeScript、7 个 Vitest 文件/20 用例 | PASS |
 | 构建 | Vite production build | PASS，有 bundle size warning |
 | 浏览器 | Chromium 会话隔离/恢复/安全图表/Evidence | 1 PASS |
-| Semantic | 同输入两次编译、12 文件逐 hash 一致 | PASS；sp_5f523f5d403098ae |
+| Semantic | 同输入两次编译、12 文件逐 hash 一致 | PASS；sp_eb33e93bdb36bb29 |
 | Cutover | 正式模拟配置、Mock/模板/固定 task 隔离、动态目录、Compiler DSL 边界 | 15/15 PASS |
 | API 实测 | 新分析、纯换图复用、实质新问题重查、多指标 | PASS |
 | 安全 | raw DSL/write/prompt/owner/CSV/XSS/Evidence ACL | PASS |
@@ -76,7 +76,9 @@
 
 ## 5. 指标与计算核查
 
-- KPI 只来自 AnalysisPlan 中 required/recommended、已注册、已计算且质量可用的 MetricDefinition。
+- 旧项目 Owner 已确认的 L1/L2 指标必须迁移为 MetricDefinition，以认证公式、版本和可重算 Evidence；这不是探索分析上限，迁移要求见 `docs/integration/legacy_metric_registry_migration.md`。
+- C1 基于完整 FeatureSummary/数据集选择要分析的数值列、MethodDefinition 和允许参数；Host 确定性执行，C2 只使用返回的结果 hash 做统计结论。LLM 不生成公式或代码。
+- KPI 卡片只由 C2 基于已验证的整体标量 Dataset 动态选择，不再按 Agent A 的 required/recommended 默认列表填充。
 - message_record_count 是记录数，不在未确认时伪称业务发送量。
 - failure_rate 保留公式、numerator、denominator、excluded、minimum denominator 和 quality；internal-template 默认不启用未确认率口径。
 - 月/分类/总计 Reconciliation、率范围、空分母、部分结果、shard failure、高基数和 composite 完整性均有 QA。
@@ -85,10 +87,10 @@
 ## 6. 可视化与 Dashboard 核查
 
 - 总分析位于最前，已出现的关键发现不重复。
-- 关键 KPI 数量不固定，允许 0/1/N。
-- 图表数量不固定，允许 0/1/N；每图必须回答不同问题。
-- Agent C 先决定值得探索的关系，Adapter 返回最终 encoding/剖面，Agent C 再同时生成图结论；不是先画图再按文本匹配。
-- 每张图展示“本图回答、从图中可看出、如何阅读、解读边界”，findings 必须 Grounding。
+- KPI 数量由 C2 基于实际标量 Dataset 动态选择；可为 0/1/N，注册指标只是正式 KPI 的认证口径，不是探索范围。
+- 空结果或 QA 阻断才可无图；其他 ChatBI 回答图表数量为 1/N，每图必须回答不同分析问题。
+- Agent C 先决定值得探索的统计关系与图表，Host 返回受治理统计结果和 Preview，Agent C 再形成总体洞察和图表结论；不是先画图再按文本匹配。
+- 每张图只展示简洁“图表解读”（purpose、grounded findings、必要 caveat），findings 必须 Grounding；技术证据在 Evidence Drawer。
 - 用户显式 line/heatmap/table 可识别；兼容时采用，不兼容时有解释并降级。
 - 图表只消费真实 Dataset grain/columns，不把同一 category 同时作为轴和重复 series，避免重复 SMS/EMAIL。
 - 高基数、部分结果、空结果和不完整 series 不伪装成完整可视化。
@@ -98,14 +100,14 @@
 
 ## 7. 叙事与结论核查
 
-Mock 总分析较简单的根因不是 Dashboard 架构，而是 RuleBasedMockLLMClient 只产生有限的结构回归 Claim。正式 Agent C Prompt 和 Contract 已要求：
+Mock 总分析较简单的根因不是 Dashboard 架构，而是 RuleBasedMockLLMClient 只产生有限的结构回归对象。正式 Agent C Prompt、受治理统计工具 Contract 和 C2 合同已要求：
 
 - 逐一覆盖 required task 或写 limitation；
 - 直接回答问题，不输出空占位语；
-- 趋势、比较、集中度、构成、异常、分组差异只在证据支持时出现；
+- 根据问题和真实数据动态选择趋势、比较、集中度、构成、异常、分组差异及统计方法；不是固定候选图后配结论；
 - 所有数字和类别经过 Grounding；
 - 不写无证据因果或基准；
-- Claim 数量由问题决定。
+- Claim、KPI 和图表数量由问题及结果决定；非空且 QA 可用时必须保留至少一张 Agent C 选择并通过 Preview 的图。
 
 内网必须用真实模型做分析质量 Shadow，不能把 Mock 规则扩写为生产业务逻辑。
 

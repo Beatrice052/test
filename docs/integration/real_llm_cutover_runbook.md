@@ -1,6 +1,6 @@
 # 真实 LLM 切换与 Mock 规则隔离手册
 
-当前版本：2026-08-04 / MI-NEW。Agent C 当前采用 `post_query_visual_exploration → GovernedVisualizationExplorer → post_query_insight_dashboard` 双阶段；任何只描述旧单阶段 Agent C 的历史文档均已失效。
+当前版本：2026-08-04 / MI-NEW。Agent C 当前采用 `post_query_visual_exploration → GovernedAnalyticsTool + GovernedVisualizationExplorer → post_query_insight_dashboard` 双阶段；任何只描述旧单阶段 Agent C、固定图表或将注册指标当分析上限的历史文档均已失效。
 
 ## 1. 最终结论
 
@@ -39,18 +39,19 @@ CHATBI_SEMANTIC_INPUT_DIR=<生成该 Package 的已审核非 Mock Semantic Input
 
 ### 2.2 真实 Agent C 的双阶段与总分析强制要求
 
-正式 Agent C 必须先用 `post_query_visual_exploration` 提出 0/1/N 个探索请求；程序生成验证 `VisualizationPreview` 后，再由 `post_query_insight_dashboard` 根据 `AnalysisPlan`、实际 Dataset schema、`FeatureSummary`、MetricDefinition、DataQA 和 Preview 完成 answer-first 分析。两个 operation 都是 strict Schema 调用，不带 tools/tool_choice。完整不变量见 [Agent C 双阶段可视化架构](visualization_agent_architecture.md)。具体要求如下：
+正式 Agent C 必须先用 `post_query_visual_exploration` 提出严格 `AnalyticsToolRequest[]` 和动态 1/N 个探索请求；Host 生成审计化 `AnalyticsToolResult` 与验证 `VisualizationPreview` 后，再由 `post_query_insight_dashboard` 根据 `AnalysisPlan`、实际 Dataset schema、`FeatureSummary`、MetricDefinition、DataQA、统计结果和 Preview 完成 answer-first 分析及动态 KPI 选择。两个 operation 都是 strict Schema 调用，不带自由 tools/tool_choice。完整不变量见 [Agent C 双阶段可视化架构](visualization_agent_architecture.md)。具体要求如下：
 
 1. 逐项覆盖 `AnalysisPlan.tasks` 中所有 `required` task；每个 required task 必须有至少一个可 Grounding 的 Claim，或在 `limitations` 中明确说明为什么证据不足。
 2. Claim 数量不固定。只输出与当前问题相关且互不重复的发现；当数据支持用户所问的趋势、比较、集中度、构成、异常或分组差异时，不能只给一句整体值就结束。
 3. `primary` Claim 直接回答问题和给出决定性结论；`secondary` Claim 解释重要比较、变化或驱动；`supporting` 只放必要背景。限制和数据质量信息放 `limitations` 或 Evidence，不伪装成业务发现。
 4. 所有数字、排名、时间点、类别名和数据依赖判断都必须写成带显式 binding 的 `ClaimDraft`。最终“总分析”只使用通过 `ClaimGrounder` 的 Claim；模型自由文本 `answer_summary` 不能携带未经绑定的数字绕过验证。
 5. 禁止输出“分析已完成”“Validated results are ready”一类空泛结论来代替可用发现。若有数据，应陈述实际结果；若无数据或证据不足，应明确说明空结果或限制。
-6. Claim 的输出顺序就是总分析的阅读顺序。编排器会纳入全部去重且已 Grounding 的 Claim，不再只截取前三条 primary Claim；已经进入总分析的发现不会在“补充发现”中重复。
-7. Pass 1 的图表数量可以是 0/1/N，不得为了“看起来像 Dashboard”固定生成四张图；Pass 2 只能选择 Adapter 返回的 Preview。
-8. 每张图必须回答一个不同分析问题，并显式绑定同 task、同 Dataset、同最终 measure 的 Grounded Claim；不能按文字相似度后配结论。
-9. 每张图必须有 purpose、grounded findings、最终 encoding 对应的 reading guide 和必要 caveat。
-10. 不得将描述性相关或统计异常写成因果结论。行动建议必须与已验证发现相符，并明确其建议性质，不能编造业务原因、Benchmark 或目标值。
+6. 总分析仅由 C2 的 `overall_claim_ids` 指向的 Grounded Claim 组成；它不是把所有图表 finding 自动拼接，也不会再创建重复“补充发现”页。
+7. Pass 1 图表数不固定，但非空且 QA 可用结果必须为 1/N，不得为了“看起来像 Dashboard”固定生成四张图；Pass 2 只能选择 Adapter 返回的 Preview，Host 不得在 C1 空缺时自造图。
+8. 每个统计请求只能使用已有 Dataset、numeric metric/measure、注册 MethodDefinition 和允许参数；C2 只能引用返回统计 hash，不能发明公式或将探索统计写为正式 KPI。
+9. 每张图必须回答一个不同分析问题，并显式绑定同 task、同 Dataset、同最终 measure 的 Grounded Claim；不能按文字相似度后配结论。
+10. 每张图必须有 purpose、grounded findings 和必要 caveat；UI 不展示机械“本图回答/如何阅读”模板。
+11. 不得将描述性相关或统计异常写成因果结论。行动建议必须与已验证发现相符，并明确其建议性质，不能编造业务原因、Benchmark 或目标值。
 
 真实模型 Shadow 验收必须增加“问题—任务—结论”覆盖矩阵：
 
@@ -62,7 +63,7 @@ CHATBI_SEMANTIC_INPUT_DIR=<生成该 Package 的已审核非 Mock Semantic Input
 | 指标 | 使用受治理 MetricDefinition；率指标可核查分子、分母、排除项与质量状态 |
 | 趋势/比较/异常 | 只在 FeatureSummary 和 Dataset 支持时出现；措辞与统计适用性一致 |
 | 行动建议 | 能追溯到已验证发现，不引入输入中不存在的业务事实 |
-| 图表 | 0/1/N 动态；与 required/recommended task 对应且各自回答不同问题；Preview/Claim 一致性通过 |
+| 图表 | 非空且 QA 可用数据必须为 1/N 动态图；各自回答不同问题；Preview/Claim 一致性通过 |
 
 如果真实模型只能稳定输出一两句泛化结论，即使 JSON Schema 校验通过，也应判定 Shadow 失败；不得用 Mock 规则补齐分析质量。
 
@@ -76,7 +77,7 @@ CHATBI_SEMANTIC_INPUT_DIR=<生成该 Package 的已审核非 Mock Semantic Input
   → AnalysisPlan Validator/Resolver 校验 ID、能力与语义范围
   → Agent B 只为任务引用的指标规划查询
   → Metric Engine 按受治理公式计算并完成 QA
-  → Dashboard Builder 取“required/recommended ∩ 已注册 MetricDefinition ∩ 已产出有效整体值”
+  → Agent C Pass 2 从已验证的标量 Dataset 中动态选择有价值的 KPI；已注册 MetricDefinition 只认证正式业务 KPI/公式，不限制探索性统计的候选数值列
   → 核心指标总览
 ```
 
@@ -109,7 +110,7 @@ CHATBI_SEMANTIC_INPUT_DIR=<生成该 Package 的已审核非 Mock Semantic Input
 | Agent A：`turn_and_analysis_plan` | `AnalysisPlanDraft` | 多轮关系、用户意图、指标/维度/时间/任务、显式图表偏好；使用有界字段 description/语义能力/兼容性/画像 | 不查 OpenSearch、不写 DSL、不计算指标、不看 physical path |
 | Agent A/B/C 修复：`json_repair` | 原 Draft Contract | 根据结构化错误码修复 Draft 或 Claim/Preview/required-task 覆盖 | 不放宽 Schema、不绕过 Validator |
 | Agent B：`logical_query_plan` | `QueryPlanDraft` | 根据 `ResolvedFieldDescriptor` 和任务设计最小充分查询步骤、依赖、grain、result contract、预算内合并策略 | 不输出 physical path、不输出最终 DSL、不调用 MCP |
-| Agent C Pass 1：`post_query_visual_exploration` | `VisualizationExplorationDraft` | 基于任务和真实数据形态提出 0/1/N 个探索请求 | 不输出 Claim、数值、代码或任意绘图库 option |
+| Agent C Pass 1：`post_query_visual_exploration` | `VisualizationExplorationDraft` | 基于真实 Dataset/FeatureSummary 动态提出受治理统计工具请求和图表探索；非空且 QA 可用时必须提出至少一张可行图 | 不输出 Claim、数值、代码或任意绘图库 option |
 | Agent C Pass 2：`post_query_insight_dashboard` | `InsightDashboardDraft` | 基于真实 FeatureSummary/Preview 的洞察、Claim selector、Preview/Claim 绑定和追问建议 | 不编造数值、不算指标、不输出 ECharts/Plotly option |
 
 下列环节在真实模式中仍必须是确定性程序，不能因为“已经接了大模型”而改成 LLM：
@@ -283,7 +284,7 @@ Invoke-RestMethod http://127.0.0.1:8000/api/v1/health/ready
 
 1. 新问题：验证 `turn_and_analysis_plan` + `logical_query_plan` + `post_query_visual_exploration` + `post_query_insight_dashboard`；
 2. 多轮修改：验证 Agent A 判断 FILTER/TIME/DIMENSION/PRESENTATION/EXPLANATION，而不是规则路由；
-3. 非固定形态问题：验证 0/1/多图、单维/二维/时间趋势/异常/Pareto/表格可根据真实数据变化。
+3. 非固定形态问题：验证非空、QA 可用数据得到 1/多图，单维/二维/时间趋势/异常/Pareto/表格可根据真实数据变化。
 
 服务端审计日志应只记录这些安全字段：
 
@@ -304,7 +305,7 @@ schema_validation=passed|failed
 
 - 每个新分析至少出现 Agent A operation；
 - 需要新查询时出现 Agent B operation；
-- 有验证数据且进入回答阶段时依次出现 Agent C 两个 operation；即使最终是 0 张图，探索 operation 也必须返回合法空 Candidate 集；
+- 有验证数据且进入回答阶段时依次出现 Agent C 两个 operation；空结果或 QA 阻断时探索 operation 可返回合法空 Candidate 集，其他情况必须由 Agent C 返回至少一个可行 Candidate；
 - 展示复用场景不执行 Agent B/OpenSearch，但必须有 Agent A 的结构化 turn decision，并执行 Agent C Pass 1；解释复用必须执行 Agent C Pass 2；
 - DSL 的 provenance/producer 指向 deterministic compiler，不指向 LLM；
 - 指标结果可从 Evidence 中按公式、分子/分母和 Dataset 行重算；
@@ -323,7 +324,7 @@ schema_validation=passed|failed
 | Compiled DSL | index/time/filter/agg/size/timeout | 只能由 Compiler 差异产生；不得来自 LLM raw DSL |
 | Dataset | 行、列、grain、完整性 | 与相同 DSL 结果一致 |
 | Metric/QA | 公式、分子分母、质量状态 | 必须与业务口径精确一致 |
-| Insight/Dashboard | 关键发现、Preview/Claim 绑定、数量、每图解释 | 可 0/1/多图；不得重复、误导、错绑或脱离证据 |
+| Insight/Dashboard | 总体洞察、动态 KPI、Preview/Claim 绑定、数量、每图解释 | 空/QA 阻断可无图；其他情况为 1/多图；不得重复、误导、错绑或脱离证据 |
 | Evidence | 原始检索表、计算、DSL、hash | 必须可追踪、可重算、权限正确 |
 
 先用 `build-shadow-report` 保存各层 hash，再由业务 Owner 对真实口径给出 PASS/FAIL/NEEDS_REVIEW。不要为了让真实结果“看起来像 Mock”而把 Mock 关键词规则移入正式代码。

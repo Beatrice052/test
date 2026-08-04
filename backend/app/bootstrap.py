@@ -213,6 +213,7 @@ async def build_container(settings: AppSettings) -> ApplicationContainer:
         visualization_explorer=GovernedVisualizationExplorer(chart_validator),
         evidence_builder=EvidenceBuilder(),
         metric_definitions=package.metrics(),
+        method_definitions=package.methods(),
         visualization_definitions=package.visualizations(),
         semantic_package_version=package.manifest.package_version,
     )

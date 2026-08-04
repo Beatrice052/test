@@ -6,6 +6,7 @@ import type {
   AdvancedEvidence,
   BusinessEvidence,
   DatasetRowsResponse,
+  JsonValue,
 } from "../api/generated";
 import {
   asRecord,
@@ -30,6 +31,24 @@ function readableQuality(message: string): string {
     "additive Dashboard rollup reconciles to its source Dataset": "派生聚合与原始检索结果总量一致",
   };
   return translations[message] ?? message;
+}
+
+function analyticalResultSummary(value: JsonValue | undefined): string {
+  const result = asRecord(value);
+  if (result === null) return "未返回可展示的统计结果。";
+  const items = Object.entries(result)
+    .filter((entry): entry is [string, string | number | boolean] => {
+      const [key, item] = entry;
+      return key !== "column" && (typeof item === "string" || typeof item === "number" || typeof item === "boolean");
+    })
+    .map(([key, item]) => `${key}: ${String(item)}`);
+  if (items.length > 0) return items.join("；");
+  const collection = Object.entries(result).find(
+    (entry): entry is [string, JsonValue[]] => Array.isArray(entry[1]),
+  );
+  return collection === undefined
+    ? "统计结果已计算；详细数值可结合对应数据表核查。"
+    : `${collection[0]}：已返回 ${collection[1].length} 项结果。`;
 }
 
 function EvidenceTableBrowser({ datasets }: { datasets: DatasetRowsResponse[] }) {
@@ -91,6 +110,7 @@ function BusinessEvidenceContent({ evidence }: { evidence: BusinessEvidence }) {
   const calculations = extractMetricCalculations(evidence, datasets);
   const quality = evidence.quality ?? [];
   const reconciliations = evidence.reconciliations ?? [];
+  const exploratoryAnalysis = evidence.exploratory_analysis ?? [];
   const loading = datasetQueries.some((query) => query.isPending);
   const failed = datasetQueries.some((query) => query.isError);
 
@@ -122,9 +142,29 @@ function BusinessEvidenceContent({ evidence }: { evidence: BusinessEvidence }) {
           {!loading && calculations.length === 0 ? <p className="drawer-empty">本次没有可展示的正式指标计算。</p> : null}
         </div>
       </section>
+      <section className="evidence-section" aria-labelledby="evidence-analysis-title">
+        <div className="evidence-section-heading">
+          <div><span>03 · 分析</span><h3 id="evidence-analysis-title">AI 选择的统计分析</h3></div>
+        </div>
+        <p className="evidence-help">AI 选择分析方法与指标列；后端按受治理方法在已验证数据上确定性计算。未适用的方法也会在这里保留原因。</p>
+        <div className="calculation-list">
+          {exploratoryAnalysis.map((item, index) => (
+            <article className="calculation-card" key={asString(item.request_id) ?? `analysis-${String(index)}`}>
+              <div className="calculation-title">
+                <strong>{asString(item.method_id) ?? "统计分析"}</strong>
+                <span>{asString(item.decision) ?? "UNKNOWN"}</span>
+              </div>
+              <p>{asString(item.measure_column) ?? "未标明指标列"} · 样本 {asNumber(item.sample_size) ?? 0}</p>
+              <p>{analyticalResultSummary(item.result)}</p>
+              <small>{asString(item.reason) ?? "无额外说明"}</small>
+            </article>
+          ))}
+          {exploratoryAnalysis.length === 0 ? <p className="drawer-empty">本次没有额外的探索性统计计算。</p> : null}
+        </div>
+      </section>
       <section className="evidence-section" aria-labelledby="evidence-qa-title">
         <div className="evidence-section-heading">
-          <div><span>03 · 核验</span><h3 id="evidence-qa-title">质量与对账</h3></div>
+          <div><span>04 · 核验</span><h3 id="evidence-qa-title">质量与对账</h3></div>
         </div>
         <ul className="evidence-checks">
           {reconciliations.map((item, index) => (

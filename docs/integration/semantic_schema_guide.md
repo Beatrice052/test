@@ -1,5 +1,7 @@
 # Semantic / Schema 接入指南
 
+> 旧项目中经过 Owner 确认的正式/受控派生指标必须按 [legacy_metric_registry_migration.md](legacy_metric_registry_migration.md) 迁入 `metric_registry`。Registry 是 L1/L2 口径认证层，不是 Agent C 的探索性分析上限：C1 可以在已验证 numeric metric/measure 上选择 L3 统计方法，但不能自创业务公式。
+
 ## 输入与产物
 
 真实输入为字段 description Excel/CSV、MCP 导出的 Mapping Snapshot，以及可选但推荐的受控 FieldProfileSnapshot。`semantic-input/internal-template/` 只提供需要复制到新 `semantic-input/internal/` 目录后逐项审核、删除或改写的结构示例；正式配置会拒绝直接使用模板目录。Dataset/Metric/Value/Recipe/Method/Visualization/Policy 必须成为真实业务已审核输入，不能把模板 Recipe 当作默认任务清单。Excel description 是业务语义来源；Mapping 是技术字段与跨索引兼容性来源；Profile 只提供基数、缺失、范围和经 Policy 筛选后的聚合样例值，三者不能相互替代。

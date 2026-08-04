@@ -10,31 +10,32 @@
 |---|---|
 | Ruff lint | PASS |
 | Ruff format | PASS |
-| mypy strict | PASS，132 source files |
-| Backend pytest | PASS，291 tests |
+| mypy strict | PASS，133 source files |
+| Backend pytest | PASS，294 tests |
 | G01–G25 | PASS，包含在后端全量 |
 | JSON Schema snapshots | PASS，41 models |
-| OpenAPI/TypeScript schemas | PASS，57 schemas |
+| OpenAPI/TypeScript schemas | PASS，59 schemas |
 | Frontend ESLint | PASS |
 | Frontend TypeScript | PASS |
-| Frontend Vitest | PASS，7 files / 19 tests |
+| Frontend Vitest | PASS，7 files / 20 tests |
 | Vite production build | PASS |
 | Chromium Playwright | PASS，1 end-to-end journey |
 | Semantic compile repeatability | PASS，12 files 内容 hash 完全一致 |
-| Mock package version | sp_5f523f5d403098ae |
+| Mock package version | sp_eb33e93bdb36bb29 |
 | Real LLM cutover static gate | PASS，15/15 |
 
-后端全量命令在 backend 目录执行，结果为 291 passed、0 failed、0 skipped。pytest 不再依赖仓库内固定 basetemp/cache，避免 Windows 并发或残留句柄造成 setup 级假失败。
+后端全量命令在 backend 目录执行，结果为 294 passed、0 failed、0 skipped。pytest 不再依赖仓库内固定 basetemp/cache，避免 Windows 并发或残留句柄造成 setup 级假失败。
 
 ## 2. 重点业务流程覆盖
 
-- 新问题：Agent A → Resolver → Agent B → Compiler → Gateway → Analytics/QA → Agent C Pass 1 → Visualization Explorer → Agent C Pass 2 → Grounding → Dashboard/Evidence。
+- 新问题：Agent A → Resolver → Agent B → Compiler → Gateway → Analytics/QA → Agent C Pass 1（动态统计工具请求 + 图表候选）→ GovernedAnalyticsTool/Visualization Explorer → Agent C Pass 2（总洞察/KPI/图表解释）→ Grounding → Dashboard/Evidence。
 - 纯换图：逐任务数据签名不变时零 Gateway，但重跑 Agent C Pass 1 和可视化 Adapter；解释追问零 Gateway，但重跑 Agent C Pass 2 与 Grounding。
 - 混合“实质新问题 + 图表要求”：不会误复用；强制新查询。
 - 时间、过滤或任一 task 的指标、维度、联合 grain、统计方法变化：数据签名变化即 requery。
 - 单值、排名、趋势、二维、构成、Pareto、异常、明细、空结果、高基数。
 - 用户显式 line、heatmap、table；兼容采用，不兼容安全降级。
-- KPI 数量和图表数量动态；普通问题不固定四卡/四图。
+- 注册指标只认证正式 KPI；C1 可在任何受治理 numeric metric/measure 上动态请求统计，C2 动态选择 KPI；普通问题不固定四卡/四图。
+- 非空且 QA 可用的 ChatBI 结果必须保留由 Agent C 选择的 1/N 图；若 C1 未给出可行图，答案透明标记 PARTIAL，Host 不用模板补图。
 - required task 对应 Grounded Claim 或 limitation；Agent C 有界 repair。
 - AnalysisPlan 拒绝重复 task/metric decision ID，以及 task 引用未选中或已拒绝的指标。
 - Claim 必须至少有一个且名称唯一的 Evidence binding；可视化 Candidate ID 必须唯一。
@@ -54,7 +55,8 @@
 - Composite 多页限制与完整性；后续页 shard failure 会产生 fatal QA。
 - Gateway timeout/retry/size/cancel；总轮次 TURN_TIMEOUT 是 retryable FAILED。
 - 递归 Bucket normalization、稳定 row_id、grain/column/completeness。
-- message_record_count、failure_rate 的受治理公式和质量。
+- message_record_count、failure_rate 的受治理公式和质量；真实内网 L1/L2 指标必须从旧项目 Owner 已确认的注册表迁移，见 `integration/legacy_metric_registry_migration.md`。
+- Agent C 的探索性统计由 `AnalyticsToolRequest` 选择 Dataset/数值列/MethodDefinition/允许参数，Host 按最低样本和语义能力确定性执行并把结果 hash 交给 C2 Grounding。
 - 率指标 numerator、denominator、excluded、minimum denominator。
 - total/subtotal、范围、分母、时区、Mapping、空/部分结果对账。
 
@@ -74,7 +76,7 @@
 - Session 新建、切换、归档、刷新恢复。
 - 实际 LangGraph 节点 SSE 进度，不显示隐藏推理。
 - 最终 AnswerSnapshot 到达后进度自动收起。
-- Answer-first Dashboard、动态 KPI、每图 purpose/findings/reading guide/caveat 和追问。
+- Answer-first Dashboard、动态 KPI、每图简洁 purpose/findings/必要 caveat 和追问；不展示机械“本图回答/如何阅读/证据提示”。
 - 技术 QA/“聚合明细与指标口径”不在主页面。
 - Evidence Drawer 的业务层和授权高级层。
 - SafeChart 仅从声明式字段构造安全 option。
@@ -85,12 +87,11 @@
 同一个 semantic-input/mock 编译到两个独立目录：
 
 ~~~text
-package_version = sp_5f523f5d403098ae
+package_version = sp_eb33e93bdb36bb29
 field_count = 12
 artifact_file_count = 12
 file_names = identical
 sha256_per_file = identical
-manifest_sha256 = 41f9c55352d0e42d2879ccc3338a6162cd6408d2808f9caadf85a23265b22390
 ~~~
 
 Compiler 的 FTS、manifest、Import Report 和内容产物可重复。

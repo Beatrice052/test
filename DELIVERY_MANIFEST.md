@@ -21,16 +21,17 @@
 3. docs/integration/decision_authority_matrix.md
 4. docs/requirements_traceability.md
 5. docs/integration/real_llm_cutover_runbook.md
-6. docs/integration/multi_agent_orchestration.md
-7. docs/integration/mcp_adapter_guide.md
-8. docs/integration/visualization_agent_architecture.md
-9. docs/internal_checklist.md
+6. docs/integration/legacy_metric_registry_migration.md
+7. docs/integration/multi_agent_orchestration.md
+8. docs/integration/mcp_adapter_guide.md
+9. docs/integration/visualization_agent_architecture.md
+10. docs/internal_checklist.md
 
 `docs/gates/` 和早期 phase 审计只保留为历史证据，不能作为当前实现说明；其中旧的单阶段 Agent C 描述已被上述入口文档取代。
 
 ## 包含内容
 
-- backend：FastAPI、确定性 LangGraph 主编排器、三个有界 Agents、字段语义 Descriptor、Query、MCP index/mapping/profile Gateway、Analytics、Agent C 双阶段 Visualization Explorer、Presentation、Persistence、Security、CLI、Alembic；
+- backend：FastAPI、确定性 LangGraph 主编排器、三个有界 Agents、字段语义 Descriptor、Query、MCP index/mapping/profile Gateway、Analytics、Agent C 双阶段（受治理统计工具请求 + 图表探索 → 结果/Preview 驱动洞察）、Presentation、Persistence、Security、CLI、Alembic；
 - frontend：React/TypeScript/Vite/ECharts 安全工作区、Session、Dashboard、Evidence、SSE；
 - semantic-input/mock：可运行 Mock 输入；
 - semantic-input/internal-template：真实输入结构模板，不含真实业务数据且禁止被正式配置直接使用；
@@ -53,16 +54,16 @@
 
 | 项目 | 结果 |
 |---|---|
-| Backend pytest | 291 passed |
+| Backend pytest | 294 passed |
 | Ruff / format | passed |
-| mypy | 132 sources passed |
+| mypy | 133 sources passed |
 | Schema snapshots | 41 matched |
-| OpenAPI/TS | 57 matched |
-| Frontend tests | 19 passed |
+| OpenAPI/TS | 59 matched |
+| Frontend tests | 20 passed |
 | Production build | passed |
 | Chromium E2E | 1 passed |
 | Semantic repeatability | 12 files, identical hashes |
-| Mock semantic version | sp_5f523f5d403098ae |
+| Mock semantic version | sp_eb33e93bdb36bb29 |
 | Real cutover static gate | 15/15 passed |
 
 补充门禁：`uv sync --all-groups --locked`、`npm ci`、`npm audit --audit-level=high`（0 vulnerabilities）和 Mock readiness 均通过。

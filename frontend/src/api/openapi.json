@@ -382,6 +382,90 @@
         "title": "AnalyticalTask",
         "type": "object"
       },
+      "AnalyticsToolResult": {
+        "additionalProperties": false,
+        "description": "Auditable result returned by the host's governed analytics tool.",
+        "properties": {
+          "content_hash": {
+            "pattern": "^sha256:[0-9a-f]{64}$",
+            "title": "Content Hash",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "dataset_id": {
+            "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+            "title": "Dataset Id",
+            "type": "string"
+          },
+          "decision": {
+            "title": "Decision",
+            "type": "string"
+          },
+          "measure_column": {
+            "title": "Measure Column",
+            "type": "string"
+          },
+          "method_id": {
+            "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+            "title": "Method Id",
+            "type": "string"
+          },
+          "object_id": {
+            "pattern": "^[a-z][a-z0-9_-]{2,127}$",
+            "title": "Object Id",
+            "type": "string"
+          },
+          "provenance": {
+            "$ref": "#/components/schemas/Provenance"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "request_id": {
+            "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+            "title": "Request Id",
+            "type": "string"
+          },
+          "result": {
+            "$ref": "#/components/schemas/StatisticalResult"
+          },
+          "schema_version": {
+            "default": "1.0",
+            "pattern": "^[1-9][0-9]*\\.[0-9]+$",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "task_ids": {
+            "items": {
+              "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+              "type": "string"
+            },
+            "title": "Task Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "object_id",
+          "created_at",
+          "content_hash",
+          "provenance",
+          "request_id",
+          "task_ids",
+          "dataset_id",
+          "method_id",
+          "measure_column",
+          "decision",
+          "result",
+          "reason"
+        ],
+        "title": "AnalyticsToolResult",
+        "type": "object"
+      },
       "AnswerSnapshot": {
         "additionalProperties": false,
         "properties": {
@@ -405,6 +489,14 @@
               }
             ],
             "title": "Analytical Base Answer Id"
+          },
+          "analytics_tool_results": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/AnalyticsToolResult"
+            },
+            "title": "Analytics Tool Results",
+            "type": "array"
           },
           "chronological_parent_answer_id": {
             "anyOf": [
@@ -473,6 +565,14 @@
             "title": "Feature Summaries",
             "type": "array"
           },
+          "kpi_selections": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/KpiSelectionDraft"
+            },
+            "title": "Kpi Selections",
+            "type": "array"
+          },
           "limitations": {
             "default": [],
             "items": {
@@ -492,6 +592,15 @@
             "pattern": "^[a-z][a-z0-9_-]{2,127}$",
             "title": "Object Id",
             "type": "string"
+          },
+          "overall_claim_ids": {
+            "default": [],
+            "items": {
+              "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+              "type": "string"
+            },
+            "title": "Overall Claim Ids",
+            "type": "array"
           },
           "provenance": {
             "$ref": "#/components/schemas/Provenance"
@@ -588,6 +697,17 @@
               "type": "string"
             },
             "title": "Downloads",
+            "type": "array"
+          },
+          "exploratory_analysis": {
+            "default": [],
+            "items": {
+              "additionalProperties": {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              "type": "object"
+            },
+            "title": "Exploratory Analysis",
             "type": "array"
           },
           "metric_definitions": {
@@ -2093,6 +2213,51 @@
           "definition"
         ],
         "title": "KpiItem",
+        "type": "object"
+      },
+      "KpiSelectionDraft": {
+        "additionalProperties": false,
+        "description": "Agent C's post-analysis request to surface one already computed KPI.",
+        "properties": {
+          "dataset_id": {
+            "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+            "title": "Dataset Id",
+            "type": "string"
+          },
+          "measure_column": {
+            "minLength": 1,
+            "title": "Measure Column",
+            "type": "string"
+          },
+          "reason": {
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Reason",
+            "type": "string"
+          },
+          "selection_id": {
+            "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+            "title": "Selection Id",
+            "type": "string"
+          },
+          "task_ids": {
+            "items": {
+              "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+              "type": "string"
+            },
+            "minItems": 1,
+            "title": "Task Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "selection_id",
+          "dataset_id",
+          "measure_column",
+          "task_ids",
+          "reason"
+        ],
+        "title": "KpiSelectionDraft",
         "type": "object"
       },
       "MetricDecision": {

@@ -14,9 +14,9 @@
 
 1. Greenfield、Mock-first、Adapter-based。
 2. 一个模块化 FastAPI、一个 low-level LangGraph StateGraph、三个有界结构化 LLM Node。
-3. Agent A 决定多轮/意图/AnalysisPlan/指标/任务/展示偏好；Agent B 决定逻辑 QueryPlan；Agent C 决定证据绑定洞察和 VisualizationCandidate。
-4. Agent 无 Tool/Gateway/DB；不生成 DSL、不计算正式指标、不生成 ECharts raw option。
-5. DSL、指标、统计、QA、Grounding、图表可行性、Evidence、持久化均确定性。
+3. Agent A 决定多轮/意图/AnalysisPlan/指标/任务/展示偏好；Agent B 决定逻辑 QueryPlan；Agent C 先动态选择受治理统计分析和 VisualizationCandidate，再基于实际结果/Preview 决定总体洞察、KPI 与图表解释。
+4. Agent 没有自由 Tool/Gateway/DB；C1 只能通过严格 `AnalyticsToolRequest` 请求 Host 执行已注册方法。不生成 DSL、业务公式、ECharts/Plotly/Python raw code。
+5. DSL、认证指标公式、统计执行、QA、Grounding、图表可行性、Evidence、持久化均确定性；LLM 决定分析问题、分析对象、统计方法和解释。
 6. AnalysisPlan → ResolvedAnalysis → QueryPlan → CompiledQuery → ExecutionRecord → DatasetBundle → AnswerSnapshot 各层不可合并。
 7. Semantic Package 由 Excel/CSV + Mapping + Registry + Policy 确定性编译并 hash 版本化。
 8. 真实 OpenSearch 默认使用获准的官方只读 MCP；direct 不是当前可用旁路。
@@ -27,10 +27,10 @@
 13. message_record_count 是记录数；未确认前不称“发送量”。
 14. failure_rate 必须有确认的状态分组、分子、分母、排除项、最小分母、Owner 和版本。
 15. Dashboard answer-first；聚合明细、指标计算、QA 放 Business Evidence；DSL 仅授权 Advanced Evidence。
-16. KPI 仅为本轮 required/recommended ∩ 已注册 ∩ 有效计算，数量 0/1/N。
-17. 图表由 Agent C + Registry + Dataset 共同决定，数量 0/1/N；用户偏好兼容则采用，不兼容安全降级。
+16. MetricDefinition 只认证正式 KPI/受控派生公式；C2 从实际标量 Dataset 动态选择 KPI，数量可为 0/1/N；C1 可在任何受治理数值列上选择已注册统计方法。
+17. 图表由 Agent C + Registry + Dataset 共同决定；非空且 QA 可用时必须为 1/N，空/QA 阻断才可无图；用户偏好兼容则采用，不兼容请求安全降级为表且仍保留诚实可行图。
 18. SafeChart 不执行任意 option/HTML/JavaScript。
-19. 总分析使用全部去重 Grounded Claim；required task 必须 claim 或 limitation。
+19. 总分析只使用 C2 显式选定的 `overall_claim_ids`；它不自动拼接所有图表 finding，也不创建重复关键发现页；required task 必须 claim 或 limitation。
 20. 多轮复用需要 scope 与每个 task 的 metric/dimension/grain/statistical method 数据签名不变；否则强制 requery。纯换图重跑 Agent C Pass 1，解释追问重跑 Pass 2。
 21. SSE 只展示真实节点阶段和安全摘要；最终答案出现后自动收起，不展示隐藏推理。
 22. Session/Answer/Dataset/Evidence subject-scoped；AnswerSnapshot 和历史 Dataset 不可变。
@@ -39,14 +39,14 @@
 
 ## 当前验证事实
 
-- Backend：291 tests passed。
-- Ruff/format：196 files passed。
-- mypy strict：132 source files passed。
+- Backend：294 tests passed。
+- Ruff/format：186 files passed。
+- mypy strict：133 source files passed。
 - Schema snapshots：41。
-- OpenAPI/TypeScript schemas：57。
-- Frontend：7 Vitest files / 19 tests passed。
+- OpenAPI/TypeScript schemas：59。
+- Frontend：7 Vitest files / 20 tests passed。
 - Chromium E2E：1 journey passed。
-- Mock Semantic：sp_5f523f5d403098ae；12 文件两次编译逐 hash 一致；manifest SHA-256 为 41f9c55352d0e42d2879ccc3338a6162cd6408d2808f9caadf85a23265b22390。
+- Mock Semantic：sp_eb33e93bdb36bb29；12 文件两次编译逐 hash 一致。
 - Real LLM cutover 静态门禁：15/15 passed。
 - Mock LLM：RuleBasedMockLLMClient，无外部模型/API；仅用于结构与流程回归。
 - CI：Python 3.12、Node 22.17.0、后端/前端/E2E，并含 npm 高危 audit 门禁。

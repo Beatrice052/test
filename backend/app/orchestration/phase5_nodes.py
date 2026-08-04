@@ -5,23 +5,28 @@ from __future__ import annotations
 from datetime import UTC, datetime
 
 from app.agents.insight_dashboard import InsightDashboardAgent
+from app.analytics.governed_tool import GovernedAnalyticsTool
 from app.contracts.analysis import AnswerStatus, TurnKind
 from app.contracts.common import Provenance, semantic_hash
 from app.contracts.dashboard import (
     DashboardBlock,
     DashboardSpec,
+    VisualizationCandidate,
     VisualizationDefinition,
     VisualizationPreview,
 )
 from app.contracts.dataset import DatasetBundle, TabularDataset
 from app.contracts.insight import (
+    AnalyticsToolResult,
     ClaimBinding,
     ClaimDraft,
     ClaimSpec,
+    FeatureSummary,
     InsightDashboardDraft,
+    KpiSelectionDraft,
     VisualInsightDraft,
 )
-from app.contracts.metric import MetricDefinition
+from app.contracts.metric import MethodDefinition, MetricDefinition
 from app.contracts.session import ActiveAnalyticalContext, AnswerSnapshot
 from app.orchestration.state import ChatBIState
 from app.persistence.answer_repository import AnswerRepository
@@ -50,6 +55,7 @@ class Phase5Nodes:
         visualization_explorer: GovernedVisualizationExplorer,
         evidence_builder: EvidenceBuilder,
         metric_definitions: tuple[MetricDefinition, ...],
+        method_definitions: tuple[MethodDefinition, ...],
         visualization_definitions: tuple[VisualizationDefinition, ...],
         semantic_package_version: str,
     ) -> None:
@@ -61,6 +67,8 @@ class Phase5Nodes:
         self.visualization_explorer = visualization_explorer
         self.evidence_builder = evidence_builder
         self.metric_definitions = metric_definitions
+        self.method_definitions = method_definitions
+        self.analytics_tool = GovernedAnalyticsTool(method_definitions)
         self.visualization_definitions = visualization_definitions
         self.semantic_package_version = semantic_package_version
 
@@ -76,6 +84,8 @@ class Phase5Nodes:
         dashboard = base.dashboard_spec
         previews = base.visualization_previews
         claims = base.claims
+        overall_claim_ids = base.overall_claim_ids
+        kpi_selections = base.kpi_selections
         limitations = base.limitations
         reuse_warnings: tuple[str, ...] = ()
         if (
@@ -89,9 +99,14 @@ class Phase5Nodes:
             and dashboard is not None
             and base.dataset_bundle is not None
         ):
-            dashboard, claims, limitations, reuse_warnings = await self._explain_reused_data(
-                state, base
-            )
+            (
+                dashboard,
+                claims,
+                overall_claim_ids,
+                kpi_selections,
+                limitations,
+                reuse_warnings,
+            ) = await self._explain_reused_data(state, base)
         answer_id = new_id("ans")
         warnings = tuple(dict.fromkeys([*base.warnings, *reuse_warnings]))
         status = (
@@ -111,6 +126,8 @@ class Phase5Nodes:
             "dashboard_hash": None if dashboard is None else dashboard.content_hash,
             "visualization_preview_hashes": [item.content_hash for item in previews],
             "claim_hashes": [item.content_hash for item in claims],
+            "overall_claim_ids": overall_claim_ids,
+            "kpi_selection_ids": [item.selection_id for item in kpi_selections],
             "limitations": limitations,
             "status": status,
             "warnings": warnings,
@@ -134,9 +151,12 @@ class Phase5Nodes:
             query_plan=base.query_plan,
             dataset_bundle=base.dataset_bundle,
             feature_summaries=base.feature_summaries,
+            analytics_tool_results=base.analytics_tool_results,
             dashboard_spec=dashboard,
             visualization_previews=previews,
             claims=claims,
+            overall_claim_ids=overall_claim_ids,
+            kpi_selections=kpi_selections,
             evidence_package=base.evidence_package,
             limitations=limitations,
             warnings=warnings,
@@ -163,7 +183,14 @@ class Phase5Nodes:
         self,
         state: ChatBIState,
         base: AnswerSnapshot,
-    ) -> tuple[DashboardSpec, tuple[ClaimSpec, ...], tuple[str, ...], tuple[str, ...]]:
+    ) -> tuple[
+        DashboardSpec,
+        tuple[ClaimSpec, ...],
+        tuple[str, ...],
+        tuple[KpiSelectionDraft, ...],
+        tuple[str, ...],
+        tuple[str, ...],
+    ]:
         """Answer an explanation follow-up from immutable data without another query."""
 
         assert base.dashboard_spec is not None
@@ -172,6 +199,8 @@ class Phase5Nodes:
             return (
                 base.dashboard_spec,
                 base.claims,
+                base.overall_claim_ids,
+                base.kpi_selections,
                 base.limitations,
                 ("explanation synthesis unavailable for a legacy answer",),
             )
@@ -181,8 +210,10 @@ class Phase5Nodes:
                 bundle=base.dataset_bundle,
                 feature_summaries=base.feature_summaries,
                 metric_definitions=self.metric_definitions,
+                method_definitions=self.method_definitions,
                 visualization_definitions=self.visualization_definitions,
                 visualization_previews=base.visualization_previews,
+                analytics_tool_results=base.analytics_tool_results,
                 correlation_id=state["correlation_id"],
                 fixture_id=state.get("fixture_id"),
             )
@@ -239,23 +270,21 @@ class Phase5Nodes:
                 base.visualization_previews,
                 grounding.claims,
             )
+            summary_claims = self._claims_for_ids(grounding.claims, draft.overall_claim_ids)
             limitations = tuple(dict.fromkeys([*base.limitations, *draft.limitations]))
             dashboard = self.dashboard_builder.build(
                 title=state["analysis_plan"].analysis_goal[:160],
                 answer_summary=self._summary_from_claims(
-                    grounding.claims,
+                    summary_claims,
                     fallback=draft.answer_summary,
                 ),
                 previews=base.visualization_previews,
                 visual_insights=visual_insights,
                 claims=grounding.claims,
+                summary_claims=summary_claims,
                 bundle=base.dataset_bundle,
                 max_blocks=state["analysis_plan"].budget.max_blocks,
-                kpi_metric_ids=tuple(
-                    item.metric_id
-                    for item in state["analysis_plan"].metric_decisions
-                    if item.decision in {"required", "recommended"}
-                ),
+                kpi_selections=draft.kpi_selections,
                 limitations=limitations,
                 follow_up_suggestions=draft.follow_up_suggestions,
                 ensure_result_table=bool(grounding.failures or completeness),
@@ -266,11 +295,20 @@ class Phase5Nodes:
                     *completeness,
                 ]
             )
-            return dashboard, grounding.claims, limitations, warnings
+            return (
+                dashboard,
+                grounding.claims,
+                draft.overall_claim_ids,
+                draft.kpi_selections,
+                limitations,
+                warnings,
+            )
         except Exception:
             return (
                 base.dashboard_spec,
                 base.claims,
+                base.overall_claim_ids,
+                base.kpi_selections,
                 base.limitations,
                 ("explanation synthesis adapter failed; previous verified answer retained",),
             )
@@ -311,6 +349,7 @@ class Phase5Nodes:
                 bundle=base.dataset_bundle,
                 feature_summaries=base.feature_summaries,
                 metric_definitions=self.metric_definitions,
+                method_definitions=self.method_definitions,
                 visualization_definitions=self.visualization_definitions,
                 correlation_id=state["correlation_id"],
                 fixture_id=state.get("fixture_id"),
@@ -325,6 +364,12 @@ class Phase5Nodes:
                 base.dataset_bundle,
                 analysis_plan=state["analysis_plan"],
             )
+            previews, visual_warnings = self._ensure_required_visualization(
+                state,
+                previews,
+                original_candidates=exploration.candidates,
+                bundle=base.dataset_bundle,
+            )
             visual_insights = self._reuse_visual_insights(previews, base.claims)
             follow_ups = tuple(
                 suggestion
@@ -334,20 +379,14 @@ class Phase5Nodes:
             )
             dashboard = self.dashboard_builder.build(
                 title=state["analysis_plan"].analysis_goal[:160],
-                answer_summary=self._summary_from_claims(
-                    base.claims,
-                    fallback=self._dashboard_summary(base.dashboard_spec),
-                ),
+                answer_summary=self._dashboard_summary(base.dashboard_spec),
                 previews=previews,
                 visual_insights=visual_insights,
                 claims=base.claims,
+                summary_claims=self._claims_for_ids(base.claims, base.overall_claim_ids),
                 bundle=base.dataset_bundle,
                 max_blocks=state["analysis_plan"].budget.max_blocks,
-                kpi_metric_ids=tuple(
-                    item.metric_id
-                    for item in state["analysis_plan"].metric_decisions
-                    if item.decision in {"required", "recommended"}
-                ),
+                kpi_selections=base.kpi_selections,
                 limitations=tuple(
                     dict.fromkeys(
                         [
@@ -359,7 +398,7 @@ class Phase5Nodes:
                 follow_up_suggestions=follow_ups,
                 ensure_result_table=True,
             )
-            warnings.extend(preference_notes)
+            warnings.extend((*preference_notes, *visual_warnings))
             if not previews:
                 warnings.append("presentation exploration returned no feasible preview")
             return dashboard, previews, tuple(warnings)
@@ -374,6 +413,55 @@ class Phase5Nodes:
                 base.visualization_previews,
                 (*warnings, "presentation exploration adapter failed", *fallback_warnings),
             )
+
+    def _ensure_required_visualization(
+        self,
+        state: ChatBIState,
+        previews: tuple[VisualizationPreview, ...],
+        *,
+        original_candidates: tuple[VisualizationCandidate, ...],
+        bundle: DatasetBundle,
+    ) -> tuple[tuple[VisualizationPreview, ...], tuple[str, ...]]:
+        """Keep ChatBI visual-first without making a business-specific chart rule.
+
+        Agent C remains the decision maker.  This guard only retries Agent C's
+        *unmodified* candidate when an explicit table/incompatible chart preference
+        turned it into a table.  It never invents a candidate from a hard-coded
+        data shape: if C supplied no feasible chart, the answer is transparently
+        partial and the real-LLM quality gate must correct the agent behavior.
+        """
+
+        if not any(item.rows for item in bundle.datasets):
+            return previews, ()
+        if self._has_chart_preview(previews):
+            return previews, ()
+        fallback_previews = self.visualization_explorer.explore(
+            original_candidates,
+            bundle,
+            analysis_plan=state["analysis_plan"],
+        )
+        charts = tuple(item for item in fallback_previews if self._is_chart_preview(item))
+        if charts:
+            return (*previews, *charts), (
+                "a readable governed chart was retained alongside the requested tabular fallback",
+            )
+        return previews, (
+            "Agent C did not produce a feasible governed chart for non-empty data; "
+            "the answer is marked partial instead of a program-selected chart being invented",
+        )
+
+    @staticmethod
+    def _is_chart_preview(preview: VisualizationPreview) -> bool:
+        return (
+            preview.decision in {"ACCEPT", "ACCEPT_WITH_TRANSFORM"}
+            and preview.renderer == "echarts_contract"
+            and preview.chart_type not in {None, "table", "pivot"}
+            and preview.encoding is not None
+        )
+
+    @classmethod
+    def _has_chart_preview(cls, previews: tuple[VisualizationPreview, ...]) -> bool:
+        return any(cls._is_chart_preview(item) for item in previews)
 
     @staticmethod
     def _reuse_visual_insights(
@@ -534,16 +622,29 @@ class Phase5Nodes:
     async def produce_answer(self, state: ChatBIState) -> dict[str, object]:
         exploration_failed = False
         preference_notes: tuple[str, ...] = ()
+        analytics_tool_results: tuple[AnalyticsToolResult, ...] = ()
+        analysis_feature_summaries = state["feature_summaries"]
+        analytics_warnings: tuple[str, ...] = ()
         try:
             exploration = await self.agent.explore(
                 analysis_plan=state["analysis_plan"],
                 bundle=state["dataset_bundle"],
                 feature_summaries=state["feature_summaries"],
                 metric_definitions=self.metric_definitions,
+                method_definitions=self.method_definitions,
                 visualization_definitions=self.visualization_definitions,
                 correlation_id=state["correlation_id"],
                 fixture_id=state.get("fixture_id"),
             )
+            analytics_execution = self.analytics_tool.execute(
+                exploration.analytics_requests,
+                analysis_plan=state["analysis_plan"],
+                bundle=state["dataset_bundle"],
+                feature_summaries=state["feature_summaries"],
+            )
+            analytics_tool_results = analytics_execution.results
+            analysis_feature_summaries = analytics_execution.feature_summaries
+            analytics_warnings = analytics_execution.warnings
             preferred_candidates, preference_notes = apply_candidate_preference(
                 exploration.candidates,
                 self.visualization_definitions,
@@ -554,18 +655,27 @@ class Phase5Nodes:
                 state["dataset_bundle"],
                 analysis_plan=state["analysis_plan"],
             )
+            previews, visual_warnings = self._ensure_required_visualization(
+                state,
+                previews,
+                original_candidates=exploration.candidates,
+                bundle=state["dataset_bundle"],
+            )
         except Exception:
             exploration_failed = True
             previews = ()
+            visual_warnings = ("visualization exploration adapter failed",)
         agent_failed = False
         try:
             draft = await self.agent.plan(
                 analysis_plan=state["analysis_plan"],
                 bundle=state["dataset_bundle"],
-                feature_summaries=state["feature_summaries"],
+                feature_summaries=analysis_feature_summaries,
                 metric_definitions=self.metric_definitions,
+                method_definitions=self.method_definitions,
                 visualization_definitions=self.visualization_definitions,
                 visualization_previews=previews,
+                analytics_tool_results=analytics_tool_results,
                 correlation_id=state["correlation_id"],
                 fixture_id=state.get("fixture_id"),
             )
@@ -579,12 +689,17 @@ class Phase5Nodes:
         grounding = self.grounder.ground(
             draft.claims,
             state["dataset_bundle"],
-            feature_summaries=state["feature_summaries"],
+            feature_summaries=analysis_feature_summaries,
         )
         completeness_errors = self._claim_completeness_errors(state, draft, grounding, previews)
         if (grounding.failures or completeness_errors) and not draft.fallback_requested:
             draft, grounding, completeness_errors = await self._repair_grounding(
-                state, draft, grounding, completeness_errors, previews
+                state,
+                draft,
+                grounding,
+                completeness_errors,
+                previews,
+                feature_summaries=analysis_feature_summaries,
             )
         if draft.fallback_requested or not grounding.claims:
             fallback_drafts = self._fallback_claims(state)
@@ -595,13 +710,21 @@ class Phase5Nodes:
             )
             claims = fallback_grounding.claims
             grounding_failures = (*grounding.failures, *fallback_grounding.failures)
+            overall_claim_ids = tuple(
+                item.source_claim_id for item in claims if item.source_claim_id is not None
+            )
+            summary_claims = claims
             answer_summary = self._summary_from_claims(
-                claims, fallback=self._fallback_summary(state)
+                summary_claims, fallback=self._fallback_summary(state)
             )
         else:
             claims = grounding.claims
             grounding_failures = grounding.failures
-            answer_summary = self._summary_from_claims(claims, fallback=draft.answer_summary)
+            overall_claim_ids = draft.overall_claim_ids
+            summary_claims = self._claims_for_ids(claims, overall_claim_ids)
+            answer_summary = self._summary_from_claims(
+                summary_claims, fallback=draft.answer_summary
+            )
         analytical_limitations = tuple(
             dict.fromkeys(
                 [
@@ -616,13 +739,10 @@ class Phase5Nodes:
             previews=previews if not agent_failed else (),
             visual_insights=draft.visual_insights if not agent_failed else (),
             claims=claims,
+            summary_claims=summary_claims,
             bundle=state["dataset_bundle"],
             max_blocks=state["analysis_plan"].budget.max_blocks,
-            kpi_metric_ids=tuple(
-                item.metric_id
-                for item in state["analysis_plan"].metric_decisions
-                if item.decision in {"required", "recommended"}
-            ),
+            kpi_selections=() if agent_failed else draft.kpi_selections,
             limitations=analytical_limitations,
             follow_up_suggestions=draft.follow_up_suggestions,
             ensure_result_table=(agent_failed or exploration_failed or draft.fallback_requested),
@@ -633,15 +753,20 @@ class Phase5Nodes:
             compiled_queries=state["compiled_queries"],
             executions=state["execution_records"],
             bundle=state["dataset_bundle"],
+            analytics_tool_results=analytics_tool_results,
             metric_definitions=self.metric_definitions,
             semantic_package_version=self.semantic_package_version,
         )
+        visualization_requirement_failed = any(
+            item.rows for item in state["dataset_bundle"].datasets
+        ) and not self._has_chart_preview(previews)
         partial = (
             agent_failed
             or exploration_failed
             or draft.fallback_requested
             or bool(grounding_failures)
             or bool(completeness_errors)
+            or visualization_requirement_failed
             or not state["dataset_bundle"].complete
         )
         status = AnswerStatus.PARTIAL if partial else AnswerStatus.ANSWERED
@@ -651,6 +776,8 @@ class Phase5Nodes:
                 + [item.message for item in grounding_failures]
                 + list(completeness_errors)
                 + list(preference_notes)
+                + list(visual_warnings)
+                + list(analytics_warnings)
                 + (["deterministic insight fallback used"] if agent_failed else [])
                 + (["visualization exploration unavailable"] if exploration_failed else [])
             )
@@ -667,6 +794,8 @@ class Phase5Nodes:
             "dashboard_hash": dashboard.content_hash,
             "evidence_hash": evidence.content_hash,
             "claim_hashes": [item.content_hash for item in claims],
+            "overall_claim_ids": overall_claim_ids,
+            "kpi_selection_ids": [item.selection_id for item in draft.kpi_selections],
             "warnings": warnings,
         }
         snapshot = AnswerSnapshot(
@@ -695,10 +824,13 @@ class Phase5Nodes:
             analysis_plan=state["analysis_plan"],
             query_plan=state["query_plan"],
             dataset_bundle=state["dataset_bundle"],
-            feature_summaries=state["feature_summaries"],
+            feature_summaries=analysis_feature_summaries,
+            analytics_tool_results=analytics_tool_results,
             dashboard_spec=dashboard,
             visualization_previews=previews,
             claims=claims,
+            overall_claim_ids=overall_claim_ids,
+            kpi_selections=() if agent_failed else draft.kpi_selections,
             evidence_package=evidence,
             limitations=analytical_limitations,
             warnings=warnings,
@@ -730,6 +862,8 @@ class Phase5Nodes:
         grounding: GroundingResult,
         completeness_errors: tuple[str, ...],
         previews: tuple[VisualizationPreview, ...],
+        *,
+        feature_summaries: tuple[FeatureSummary, ...],
     ) -> tuple[InsightDashboardDraft, GroundingResult, tuple[str, ...]]:
         """Give Agent C at most two directed attempts to repair rejected claim bindings."""
 
@@ -750,7 +884,7 @@ class Phase5Nodes:
                     errors=errors,
                     analysis_plan=state["analysis_plan"],
                     bundle=state["dataset_bundle"],
-                    feature_summaries=state["feature_summaries"],
+                    feature_summaries=feature_summaries,
                     visualization_previews=previews,
                     attempt=attempt,
                     correlation_id=state["correlation_id"],
@@ -762,7 +896,7 @@ class Phase5Nodes:
             current_grounding = self.grounder.ground(
                 current_draft.claims,
                 state["dataset_bundle"],
-                feature_summaries=state["feature_summaries"],
+                feature_summaries=feature_summaries,
             )
             current_completeness = self._claim_completeness_errors(
                 state, current_draft, current_grounding, previews
@@ -790,6 +924,14 @@ class Phase5Nodes:
         ):
             errors.append(f"claim:DUPLICATE_CLAIM_ID:{claim_id}")
         declared_claim_ids = set(draft_claim_ids)
+        overall_claim_ids = list(draft.overall_claim_ids)
+        for claim_id in sorted(
+            {item for item in overall_claim_ids if overall_claim_ids.count(item) > 1}
+        ):
+            errors.append(f"summary:DUPLICATE_CLAIM_ID:{claim_id}")
+        unknown_overall_claims = set(overall_claim_ids) - declared_claim_ids
+        if unknown_overall_claims:
+            errors.append(f"summary:UNKNOWN_CLAIM:{','.join(sorted(unknown_overall_claims))}")
         insight_ids = [item.insight_id for item in draft.visual_insights]
         for insight_id in sorted({item for item in insight_ids if insight_ids.count(item) > 1}):
             errors.append(f"visual_insight:DUPLICATE_INSIGHT_ID:{insight_id}")
@@ -847,13 +989,62 @@ class Phase5Nodes:
                         errors.append(
                             f"visual_insight:MEASURE_MISMATCH:{insight.insight_id}:{claim_id}"
                         )
+        chart_preview_ids = {
+            item.object_id for item in previews if Phase5Nodes._is_chart_preview(item)
+        }
+        selected_chart_preview_ids = {
+            item.preview_id
+            for item in draft.visual_insights
+            if item.preview_id in chart_preview_ids
+        }
+        if (
+            any(item.rows for item in state["dataset_bundle"].datasets)
+            and chart_preview_ids
+            and not selected_chart_preview_ids
+        ):
+            errors.append("visualization:MISSING_CHART_INTERPRETATION")
+        selection_ids = [item.selection_id for item in draft.kpi_selections]
+        for selection_id in sorted(
+            {item for item in selection_ids if selection_ids.count(item) > 1}
+        ):
+            errors.append(f"kpi:DUPLICATE_SELECTION_ID:{selection_id}")
+        datasets = {item.dataset_id: item for item in state["dataset_bundle"].datasets}
+        for selection in draft.kpi_selections:
+            dataset = datasets.get(selection.dataset_id)
+            if dataset is None:
+                errors.append(f"kpi:UNKNOWN_DATASET:{selection.selection_id}")
+                continue
+            unknown_tasks = set(selection.task_ids) - task_ids
+            if unknown_tasks:
+                errors.append(
+                    "kpi:UNKNOWN_TASK_ID:"
+                    f"{selection.selection_id}:{','.join(sorted(unknown_tasks))}"
+                )
+            column = next(
+                (item for item in dataset.columns if item.name == selection.measure_column),
+                None,
+            )
+            if (
+                column is None
+                or column.semantic_role not in {"metric", "measure"}
+                or column.data_type not in {"integer", "number", "metric"}
+            ):
+                errors.append(f"kpi:INVALID_MEASURE:{selection.selection_id}")
+            if dataset.grain or len(dataset.rows) != 1:
+                errors.append(f"kpi:NOT_A_SCALAR_DATASET:{selection.selection_id}")
+        if any(item.rows for item in state["dataset_bundle"].datasets) and not overall_claim_ids:
+            errors.append("summary:MISSING_OVERALL_SYNTHESIS")
+        for claim_id in overall_claim_ids:
+            claim = grounded_by_id.get(claim_id)
+            if claim is None:
+                errors.append(f"summary:UNGROUNDED_CLAIM:{claim_id}")
         for index, claim in enumerate(grounding.claims):
             unknown = set(claim.task_ids) - task_ids
             if unknown:
                 errors.append(f"{index}:UNKNOWN_TASK_ID:{','.join(sorted(unknown))}")
-        covered = {
+        summary_covered = {
             task_id
-            for claim in grounding.claims
+            for claim in Phase5Nodes._claims_for_ids(grounding.claims, tuple(overall_claim_ids))
             for task_id in claim.task_ids
             if task_id in task_ids
         }
@@ -862,15 +1053,24 @@ class Phase5Nodes:
             for task_id in required
             if any(task_id in limitation for limitation in draft.limitations)
         }
-        for task_id in sorted(required - covered - explicitly_limited):
-            errors.append(f"coverage:MISSING_REQUIRED_TASK:{task_id}")
+        for task_id in sorted(required - summary_covered - explicitly_limited):
+            errors.append(f"summary:MISSING_REQUIRED_TASK:{task_id}")
+        summary_claims = Phase5Nodes._claims_for_ids(grounding.claims, tuple(overall_claim_ids))
         if (
             any(item.rows for item in state["dataset_bundle"].datasets)
-            and grounding.claims
-            and not any(item.importance == "primary" for item in grounding.claims)
+            and summary_claims
+            and not any(item.importance == "primary" for item in summary_claims)
         ):
-            errors.append("coverage:MISSING_PRIMARY_CLAIM")
+            errors.append("summary:MISSING_PRIMARY_CLAIM")
         return tuple(errors)
+
+    @staticmethod
+    def _claims_for_ids(
+        claims: tuple[ClaimSpec, ...],
+        claim_ids: tuple[str, ...],
+    ) -> tuple[ClaimSpec, ...]:
+        by_id = {item.source_claim_id: item for item in claims if item.source_claim_id is not None}
+        return tuple(by_id[item] for item in claim_ids if item in by_id)
 
     @staticmethod
     def _chart_preference(state: ChatBIState) -> ChartPreference:

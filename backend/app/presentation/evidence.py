@@ -16,6 +16,7 @@ from app.contracts.evidence import (
     EvidenceRedaction,
 )
 from app.contracts.execution import ExecutionRecord
+from app.contracts.insight import AnalyticsToolResult
 from app.contracts.metric import MetricDefinition
 from app.contracts.query import CompiledQuery, QueryPlan
 from app.contracts.request import IdentityContext
@@ -31,6 +32,7 @@ class EvidenceBuilder:
         compiled_queries: tuple[CompiledQuery, ...],
         executions: tuple[ExecutionRecord, ...],
         bundle: DatasetBundle,
+        analytics_tool_results: tuple[AnalyticsToolResult, ...] = (),
         metric_definitions: tuple[MetricDefinition, ...],
         semantic_package_version: str,
     ) -> EvidencePackage:
@@ -62,6 +64,21 @@ class EvidenceBuilder:
             data_tables=tuple(item.object_id for item in bundle.datasets),
             reconciliations=tuple(item.model_dump(mode="json") for item in bundle.reconciliation),
             quality=tuple(item.model_dump(mode="json") for item in bundle.data_qa),
+            exploratory_analysis=tuple(
+                {
+                    "request_id": item.request_id,
+                    "task_ids": list(item.task_ids),
+                    "dataset_id": item.dataset_id,
+                    "method_id": item.method_id,
+                    "measure_column": item.measure_column,
+                    "decision": item.decision,
+                    "reason": item.reason,
+                    "sample_size": item.result.sample_size,
+                    "result": item.result.values,
+                    "warnings": list(item.result.warnings),
+                }
+                for item in analytics_tool_results
+            ),
             downloads=tuple(f"/api/v1/datasets/{item.object_id}/csv" for item in bundle.datasets),
         )
         advanced = AdvancedEvidence(

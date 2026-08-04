@@ -6,6 +6,7 @@ from pydantic import Field
 
 from app.contracts.analysis import GovernedChartType
 from app.contracts.common import Identifier, JsonScalar, JsonValue, StrictModel, VersionedModel
+from app.contracts.insight import AnalyticsToolRequest
 
 
 class VisualizationCandidate(StrictModel):
@@ -22,8 +23,14 @@ class VisualizationCandidate(StrictModel):
 
 
 class VisualizationExplorationDraft(StrictModel):
-    """Agent C's bounded request for chart previews, never executable code."""
+    """Agent C's bounded request for analytical results and chart previews.
 
+    The orchestration host executes its ``analytics_requests`` first, then feeds
+    both the deterministic tool results and visualization previews back to Agent C
+    pass 2.  Neither field grants direct tool or code execution to the model.
+    """
+
+    analytics_requests: tuple[AnalyticsToolRequest, ...] = Field(default=(), max_length=12)
     candidates: tuple[VisualizationCandidate, ...] = Field(default=(), max_length=20)
     dropped_candidate_ids: tuple[Identifier, ...] = ()
     limitations: tuple[str, ...] = ()

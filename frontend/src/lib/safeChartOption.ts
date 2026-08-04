@@ -60,7 +60,11 @@ export function validateChartDataset(
   const encodedGrain = unique(
     [categoryField, seriesField].filter((item): item is string => item !== undefined),
   );
-  if (encodedGrain.length === 0) return "图表没有绑定分析维度。";
+  const singleScopeBar = encodedGrain.length === 0
+    && dataset.grain.length === 0
+    && dataset.rows.length === 1
+    && block.chart_type === "bar";
+  if (encodedGrain.length === 0 && !singleScopeBar) return "图表没有绑定分析维度。";
   const columnNames = dataset.columns.map((column) => column.name);
   const missing = encodedGrain.filter((item) => !columnNames.includes(item));
   if (missing.length > 0) return `图表字段不存在：${missing.join("、")}。`;
@@ -85,7 +89,13 @@ export function buildSafeOption(block: DashboardBlock, dataset: DatasetRowsRespo
     ?? block.encoding?.color
     ?? undefined;
   const percent = block.axis_format?.value === "percent";
-  const categories = unique(dataset.rows.map((row) => textValue(row.values[categoryField ?? ""])));
+  const singleScopeBar = categoryField === undefined
+    && dataset.grain.length === 0
+    && dataset.rows.length === 1
+    && block.chart_type === "bar";
+  const categories = singleScopeBar
+    ? [block.title ?? "当前查询范围"]
+    : unique(dataset.rows.map((row) => textValue(row.values[categoryField ?? ""])));
   const axisLabel = percent ? { formatter: "{value}%" } : undefined;
   const common: EChartsOption = {
     animationDuration: 260,
@@ -203,7 +213,7 @@ export function buildSafeOption(block: DashboardBlock, dataset: DatasetRowsRespo
       : dataset.rows.filter((row) => textValue(row.values[seriesField]) === seriesName);
     const valueByCategory = new Map(
       matchingRows.map((row) => [
-        textValue(row.values[categoryField ?? ""]),
+        singleScopeBar ? categories[0] : textValue(row.values[categoryField ?? ""]),
         numberValue(row.values[valueField ?? ""], percent),
       ]),
     );

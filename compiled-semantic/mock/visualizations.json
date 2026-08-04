@@ -1,6 +1,18 @@
 [
   {
     "allowed_chart_types": [
+      "bar"
+    ],
+    "intent": "single_value",
+    "maximum_categories": 1,
+    "minimum_rows": 1,
+    "minimum_time_points": 1,
+    "requires_complete_distribution": false,
+    "version": "v1",
+    "visualization_id": "single_value"
+  },
+  {
+    "allowed_chart_types": [
       "bar",
       "dot"
     ],

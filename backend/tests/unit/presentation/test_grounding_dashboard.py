@@ -23,6 +23,7 @@ from app.contracts.insight import (
     ClaimBinding,
     ClaimDraft,
     InsightDashboardDraft,
+    KpiSelectionDraft,
     StatisticalResult,
     VisualInsightDraft,
 )
@@ -284,12 +285,58 @@ async def test_required_analysis_tasks_need_explicit_grounded_claim_coverage() -
     assert (
         Phase5Nodes._claim_completeness_errors(
             state,
-            InsightDashboardDraft(answer_summary="draft", claims=(covered_draft,)),
+            InsightDashboardDraft(
+                answer_summary="draft",
+                claims=(covered_draft,),
+                overall_claim_ids=(covered_draft.claim_id,),
+            ),
             covered_grounding,
             (),
         )
         == ()
     )
+
+
+@pytest.mark.asyncio
+async def test_agent_c_kpi_selection_must_be_a_scalar_governed_measure() -> None:
+    _, analysis, _, _, _, _ = await _plans("查询2026年7月各Channel失败率")
+    bundle = _bundle()
+    task_ids = tuple(item.task_id for item in analysis.tasks if item.priority == "required")
+    draft_claim = ClaimDraft(
+        claim_id="claim_scalar_kpi_coverage",
+        claim_type="ranking",
+        importance="primary",
+        task_ids=task_ids,
+        template="Top value is {value}.",
+        bindings=(
+            ClaimBinding(
+                name="value",
+                dataset_id="channel_metrics",
+                selector="argmax:message_record_count.v1",
+                column="message_record_count.v1",
+            ),
+        ),
+    )
+    grounding = ClaimGrounder().ground((draft_claim,), bundle)
+    state = cast(Any, {"analysis_plan": analysis, "dataset_bundle": bundle})
+    invalid = InsightDashboardDraft(
+        answer_summary="draft",
+        claims=(draft_claim,),
+        overall_claim_ids=(draft_claim.claim_id,),
+        kpi_selections=(
+            KpiSelectionDraft(
+                selection_id="kpi_non_scalar",
+                dataset_id="channel_metrics",
+                measure_column="message_record_count.v1",
+                task_ids=task_ids,
+                reason="This is deliberately a grouped table, not a KPI card.",
+            ),
+        ),
+    )
+
+    errors = Phase5Nodes._claim_completeness_errors(state, invalid, grounding, ())
+
+    assert "kpi:NOT_A_SCALAR_DATASET:kpi_non_scalar" in errors
 
 
 def test_ambiguous_causal_and_qa_blocked_claims_are_deleted() -> None:
@@ -417,7 +464,7 @@ def test_dashboard_accepts_useful_chart_deduplicates_and_has_no_raw_option() -> 
     assert not any(item.type == "insight_list" for item in dashboard.blocks)
     assert not any(item.type == "data_table" for item in dashboard.blocks)
     summary = dashboard.blocks[0]
-    assert summary.insights == ("Top value is 100.",)
+    assert summary.insights == ()
     serialized = dashboard.model_dump_json()
     assert "raw_option" not in serialized
     assert "javascript" not in serialized

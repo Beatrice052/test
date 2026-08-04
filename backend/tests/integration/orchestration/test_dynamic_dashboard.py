@@ -77,7 +77,11 @@ async def test_recent_operational_question_builds_an_answer_first_dashboard(
     }
 
     block_types = [item.type for item in answer.dashboard_spec.blocks]
-    assert block_types[:2] == ["answer_summary", "kpi_group"]
+    assert block_types[0] == "answer_summary"
+    # The Mock intentionally does not choose KPI cards. In the formal path Agent C
+    # selects them after post-query analysis; the Dashboard must not resurrect the
+    # old Agent-A metric list as a fixed KPI template.
+    assert "kpi_group" not in block_types
     assert "insight_list" not in block_types
     assert "data_table" not in block_types
     assert "context_summary" in block_types
@@ -91,22 +95,20 @@ async def test_recent_operational_question_builds_an_answer_first_dashboard(
     }
     assert all(item.description and item.evidence_refs for item in charts)
 
-    kpi_block = next(item for item in answer.dashboard_spec.blocks if item.type == "kpi_group")
-    assert {item.label for item in kpi_block.kpis} == {"消息记录数", "失败率"}
-    assert len(kpi_block.kpis) == len(
-        {
-            item.metric_id
-            for item in plan.metric_decisions
-            if item.decision in {"required", "recommended"}
-        }
-    )
     summary = next(item for item in answer.dashboard_spec.blocks if item.type == "answer_summary")
     summary_text = str(summary.content.get("text"))
     assert "269" in summary_text
     assert "Validated results are ready" not in summary_text
-    assert "消息记录数最高" in summary_text
-    assert "期间峰值" in summary_text
+    # Agent C's top synthesis is distinct from the chart-local ranking/trend
+    # interpretation. The old Dashboard duplicated every chart finding here.
+    assert "消息记录数最高" not in summary_text
+    assert "期间峰值" not in summary_text
     assert summary.insights == ()
+    assert any(
+        block.chart_analysis is not None
+        and any("消息记录数最高" in finding.text for finding in block.chart_analysis.findings)
+        for block in charts
+    )
 
     base = next(item for item in answer.dataset_bundle.datasets if item.kind == "base")
     assert answer.evidence_package is not None
@@ -249,7 +251,7 @@ async def test_explicit_compatible_chart_type_is_honored_in_the_initial_question
 
 
 @pytest.mark.asyncio
-async def test_explicit_table_request_uses_validated_tables_without_a_chart(
+async def test_explicit_table_request_keeps_a_chart_and_adds_validated_tables(
     container: ApplicationContainer,
 ) -> None:
     result = await _ask(
@@ -259,5 +261,5 @@ async def test_explicit_table_request_uses_validated_tables_without_a_chart(
     )
 
     assert result.answer is not None
-    assert not any(item.type == "chart" for item in result.answer.dashboard_spec.blocks)
+    assert any(item.type == "chart" for item in result.answer.dashboard_spec.blocks)
     assert any(item.type == "data_table" for item in result.answer.dashboard_spec.blocks)

@@ -23,7 +23,8 @@
 4. docs/requirements_traceability.md：需求到代码、测试和证据的映射。
 5. docs/integration/real_llm_cutover_runbook.md：真实 LLM、Mock 隔离和 Shadow 质量要求。
 6. docs/integration/multi_agent_orchestration.md：主编排器、Agent A/B/C、字段元数据和充分性门禁。
-7. docs/integration/visualization_agent_architecture.md：Agent C 双阶段图表/结论架构。
+7. docs/integration/visualization_agent_architecture.md：Agent C 双阶段统计、图表/结论架构。
+8. docs/integration/legacy_metric_registry_migration.md：把旧项目已确认指标迁入正式 Registry，同时不把它误当作分析上限。
 8. docs/integration/mcp_adapter_guide.md：官方只读 OpenSearch MCP、索引发现和字段画像。
 9. docs/integration/semantic_schema_guide.md：真实 Excel/Mapping/Profile 到 Semantic Package。
 10. docs/integration/streaming_progress_design.md：SSE/Ingress。
@@ -153,7 +154,7 @@ Agent A 的正式 operation 是 turn_and_analysis_plan，输出 AnalysisPlanDraf
 - 问题原型和分析目标；
 - 数据集、时间范围、过滤、维度、粒度；
 - 每个受治理 MetricDefinition 的 required/recommended/optional/rejected/downgraded 决策及原因；
-- 0/1/N 个分析任务、优先级、期望统计方法和 visualization intent；
+- 动态数量的分析任务、优先级、查询前统计假设和展示偏好；这些不是固定任务包，也不是查询后统计/图表的最终决定；
 - 用户明确指定的图表/表格偏好；目录外类型进入 unsupported_chart_label。
 
 它不能决定物理字段、索引、最终查询步骤、DSL、指标公式或数据结果。
@@ -198,14 +199,14 @@ DataQA 与 Reconciliation 覆盖 shard failure、timeout、空/部分结果、�
 
 ### 4.7 Agent C、总分析与动态 Dashboard
 
-Agent C 是同一个受限 Node 内的两个结构化 Pass。Pass 1 的 operation 是 `post_query_visual_exploration`，只提出 0/1/N 个 `VisualizationCandidate`；受控 `GovernedVisualizationExplorer` 校验真实 Dataset grain、列、基数、完整性、变异度和用户偏好，返回 `VisualizationPreview`。Pass 2 的 operation 是 `post_query_insight_dashboard`，综合 AnalysisPlan、Dataset schema、FeatureSummary、MetricDefinition、DataQA 和验证 Preview，同时输出 ClaimDraft 与 VisualInsightDraft。两个 Pass 都不读取原始大表、不执行查询、不调用 Tool。
+Agent C 是同一个受限 Node 内的两个结构化 Pass。Pass 1 的 operation 是 `post_query_visual_exploration`：它依据真实 Dataset 特征动态提出严格 `AnalyticsToolRequest`（数值列、版本化 MethodDefinition、受限参数）和 1/N 个 `VisualizationCandidate`；Host 先用 `GovernedAnalyticsTool` 确定性执行统计，再由 `GovernedVisualizationExplorer` 校验真实 Dataset grain、列、基数、完整性、变异度和用户偏好，返回 `AnalyticsToolResult` 与 `VisualizationPreview`。Pass 2 的 operation 是 `post_query_insight_dashboard`，综合 AnalysisPlan、Dataset schema、FeatureSummary、统计结果、MetricDefinition、DataQA 和 Preview，输出总洞察 Claim、`overall_claim_ids`、动态 `kpi_selections` 与 VisualInsightDraft。两个 Pass 都不读取原始大表、不执行查询、不调用自由 Tool。
 
 它负责：
 
 - 为每个 required task 提出 ClaimDraft，或在 limitations 中写明证据缺口；
 - 组织 primary/secondary/supporting 的 answer-first 阅读顺序；
 - 使用 selector grammar 引用 Dataset 行列，不能自己写数字；
-- Pass 1 根据真实任务、粒度、基数、完整性和用户偏好提出 0/1/N 个 VisualizationCandidate；
+- Pass 1 根据真实任务、粒度、基数、完整性和用户偏好提出动态统计请求与 1/N 个 VisualizationCandidate；非空且 QA 可用结果没有可行图即为 Agent C 质量失败，系统不会程序自选图补救；
 - Pass 2 只选择 Adapter 返回的非拒绝 Preview，并把每张图与本次 Claim ID 显式绑定；
 - 每张图回答不同问题，且 Claim 与图必须同 task、同 Dataset、同最终 measure；
 - 给出必要且可追溯的后续建议。
@@ -215,9 +216,9 @@ ClaimGrounder 要求每条 Claim 至少有一个且名称唯一的 binding，将
 Dashboard Builder 的规则：
 
 - 第一块是直接回答/总分析；已在总分析中的发现不再重复为“关键发现”；
-- KPI 只来自本轮 AnalysisPlan 中 required/recommended 且已计算有效的 MetricDefinition；
-- KPI、图表和区块数量均允许 0/1/N，不固定四个；
-- 图表类型由 Agent C Pass 1 + Visualization Registry + Dataset 形态共同决定，图结论由 Agent C Pass 2 在验证 Preview 上生成；
+- 旧项目 Owner 已确认的 L1/L2 MetricDefinition 认证正式 KPI/公式；C2 只从实际已验证的标量 Dataset 动态选择 KPI。该认证库不是 C1 探索统计的列或方法上限，迁移步骤见 `legacy_metric_registry_migration.md`；
+- KPI 和区块数量动态，不固定四个；KPI 必须由 C2 在结果出来后选择。图表为非空 QA 可用结果的 1/N 动态集合，空/QA 阻断时才没有图；
+- 图表类型由 Agent C Pass 1 + Visualization Registry + Dataset 形态共同决定，统计方法由 C1 + Method Registry + Dataset 能力共同决定，图结论和总洞察均由 Agent C Pass 2 在统计结果与验证 Preview 上生成；
 - 用户明确指定类型时兼容则采用，不兼容则解释并降级表格；
 - 完整高基数数据也不会伪造前端 Top-N/Other 变换；超出可读上限直接安全降级表格；
 - 页面不显示整块技术 QA 或“聚合明细与指标口径”。
@@ -276,8 +277,8 @@ Adapter 发送 chat-completions 兼容请求，使用 strict JSON Schema respons
 | json_repair_AnalysisPlanDraft | AnalysisPlanDraft | 只修复 Agent A Contract 错误 |
 | logical_query_plan | QueryPlanDraft | Agent B：逻辑查询步骤、依赖、粒度、ResultContract |
 | json_repair_QueryPlanDraft | QueryPlanDraft | 只修复 Agent B Contract 错误 |
-| post_query_visual_exploration | VisualizationExplorationDraft | Agent C Pass 1：0/1/N 个受控可视化探索请求 |
-| post_query_insight_dashboard | InsightDashboardDraft | Agent C Pass 2：完整洞察及 Preview/Claim 显式绑定 |
+| post_query_visual_exploration | VisualizationExplorationDraft | Agent C Pass 1：动态 AnalyticsToolRequest + 1/N 个受控可视化探索请求 |
+| post_query_insight_dashboard | InsightDashboardDraft | Agent C Pass 2：统计/Preview 后的总洞察、动态 KPI 及 Preview/Claim 显式绑定 |
 | json_repair_InsightDashboardDraft | InsightDashboardDraft | 只修复 Grounding/required-task/Schema 错误 |
 
 切换前运行：
@@ -368,7 +369,7 @@ Pattern 必须是已审核的 Dataset 前缀。确定性 Adapter 调用 ListInde
 - Top N 依赖；
 - 构成、Pareto、异常、明细；
 - 追问：过滤/时间/维度/换图/解释/新主题；
-- 0/1/N 图、显式图表请求和不兼容降级；
+- 非空且 QA 可用结果必须由 Agent C 选择 1/N 图；显式图表请求不兼容时保留分析任务并安全降级为表格，同时仍由 Agent C 为可用数据选择诚实图；
 - 空结果、部分 shard、超时、高基数、跨月 Mapping、时区边界；
 - raw DSL/写请求/越权/Prompt injection；
 - 幂等、跨用户隔离、刷新恢复。
@@ -499,7 +500,7 @@ error_type
 | MCP 真可用且只读 | probe-mcp 与 smoke PASSED |
 | 指标可信 | Owner 口径 + 分子分母重算 + QA |
 | 分析完整 | required task → grounded claim/limitation |
-| Dashboard 动态 | 多种问题得到 0/1/N 不同视图，显式偏好可识别 |
+| Dashboard 动态 | 多种问题得到 1/N 不同视图（空/QA 阻断结果除外），显式偏好可识别 |
 | Evidence 可检查 | 聚合表、计算、QA、授权 DSL 均可回溯 |
 | 多轮正确 | 纯展示复用；数据签名变化重查 |
 | SSE 友好安全 | 阶段实时、最终收起、断连可取消、无私有推理 |

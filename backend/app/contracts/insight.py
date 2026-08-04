@@ -4,7 +4,7 @@ from typing import Literal
 
 from pydantic import Field
 
-from app.contracts.common import Identifier, JsonValue, StrictModel, VersionedModel
+from app.contracts.common import Identifier, JsonScalar, JsonValue, StrictModel, VersionedModel
 
 
 class StatisticalResult(StrictModel):
@@ -15,6 +15,36 @@ class StatisticalResult(StrictModel):
     values: dict[str, JsonValue] = Field(default_factory=dict)
     warnings: tuple[str, ...] = ()
     exploratory: bool = True
+
+
+class AnalyticsToolRequest(StrictModel):
+    """Agent C's bounded request to a deterministic statistical-analysis tool.
+
+    The request deliberately references an already validated Dataset column and a
+    registered method.  It is not executable code and cannot introduce a business
+    formula, query, physical field, or renderer specification.
+    """
+
+    request_id: Identifier
+    task_ids: tuple[Identifier, ...] = Field(min_length=1)
+    dataset_id: Identifier
+    method_id: Identifier
+    measure_column: str = Field(min_length=1)
+    parameters: dict[str, JsonScalar] = Field(default_factory=dict)
+    purpose: str = Field(min_length=1, max_length=500)
+
+
+class AnalyticsToolResult(VersionedModel):
+    """Auditable result returned by the host's governed analytics tool."""
+
+    request_id: Identifier
+    task_ids: tuple[Identifier, ...]
+    dataset_id: Identifier
+    method_id: Identifier
+    measure_column: str
+    decision: str
+    result: StatisticalResult
+    reason: str
 
 
 class FeatureSummary(VersionedModel):
@@ -57,9 +87,29 @@ class VisualInsightDraft(StrictModel):
     caveats: tuple[str, ...] = ()
 
 
+class KpiSelectionDraft(StrictModel):
+    """Agent C's post-analysis request to surface one already computed KPI."""
+
+    selection_id: Identifier
+    dataset_id: Identifier
+    measure_column: str = Field(min_length=1)
+    task_ids: tuple[Identifier, ...] = Field(min_length=1)
+    reason: str = Field(min_length=1, max_length=500)
+
+
 class InsightDashboardDraft(StrictModel):
+    """Agent C pass-2 output.
+
+    ``overall_claim_ids`` identifies the grounded claims that form the answer-first
+    synthesis.  Chart-local selections stay explicit in ``VisualInsightDraft`` so
+    DashboardBuilder never has to infer chart meaning; an indispensable fact may
+    intentionally appear in both places without creating a separate key-findings page.
+    """
+
     answer_summary: str
     claims: tuple[ClaimDraft, ...] = ()
+    overall_claim_ids: tuple[Identifier, ...] = ()
+    kpi_selections: tuple[KpiSelectionDraft, ...] = ()
     visual_insights: tuple[VisualInsightDraft, ...] = ()
     dropped_preview_ids: tuple[Identifier, ...] = ()
     limitations: tuple[str, ...] = ()

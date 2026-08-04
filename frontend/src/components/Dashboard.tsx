@@ -176,28 +176,21 @@ function VisualBlock({ block }: { block: DashboardBlock }) {
       {isTable && block.description ? (
         <div className="chart-explanation"><strong>展示内容</strong><p>{block.description}</p></div>
       ) : null}
-      {!isTable && analysis ? (
-        <div className="chart-purpose"><strong>本图回答</strong><p>{analysis.purpose}</p></div>
-      ) : null}
       <DatasetBlock block={block} />
       {!isTable && analysis ? (
-        <div className="chart-analysis" aria-label="图表分析与阅读说明">
+        <div className="chart-analysis" aria-label="图表解读">
+          <div className="chart-purpose"><strong>图表解读</strong><p>{analysis.purpose}</p></div>
           <div className="chart-findings">
-            <strong>从图中可看出</strong>
             <ul>
               {analysis.findings.map((finding) => (
                 <li key={finding.claim_id}>{finding.text}</li>
               ))}
             </ul>
           </div>
-          <div className="chart-reading"><strong>如何阅读</strong><p>{analysis.reading_guide}</p></div>
           {caveats.length > 0 ? (
-            <div className="chart-caveats"><strong>解读边界</strong><p>{caveats.join("；")}</p></div>
+            <div className="chart-caveats"><strong>注意</strong><p>{caveats.join("；")}</p></div>
           ) : null}
         </div>
-      ) : null}
-      {block.type === "chart" ? (
-        <p className="chart-note">图中数值与结论来自同一已验证 Dataset；精确值可通过悬停、下载 CSV 或查看证据核查。</p>
       ) : null}
     </section>
   );

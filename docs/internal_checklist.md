@@ -55,10 +55,10 @@
 - [ ] FieldProfile 查询固定 `size:0`，不含 `_source`/raw documents；dataset/index/mapping hash 校验通过
 - [ ] Agent A 候选和 Agent B `ResolvedFieldDescriptor` 均包含真实 description、能力、兼容性和 cardinality 摘要，且不含 physical path
 - [ ] Agent B 的 QueryPlan 对每个 required task 取得最小充分粒度；高基数和跨月不兼容走预算/路由失败路径
-- [ ] 真实多轮、非固定维度和 0/1/多图 Shadow 已通过
+- [ ] 真实多轮、非固定维度和 1/多图 Shadow 已通过；空/QA 阻断场景只显示真实不可用状态
 - [ ] AnalysisPlan 的 task/metric decision ID 唯一，task 没有引用 rejected/未选中指标
 - [ ] required task 均有 Grounded Claim 或明确 limitation
-- [ ] `post_query_visual_exploration` 只输出 Candidate，`post_query_insight_dashboard` 只选择验证 Preview
+- [ ] `post_query_visual_exploration` 只输出 Contract 化的 AnalyticsToolRequest/Candidate，`post_query_insight_dashboard` 只使用返回的统计结果和验证 Preview
 - [ ] Candidate ID 唯一；每条 Claim 至少有一个且名称唯一的 binding
 - [ ] 每张图与 Claim 的 task、Dataset、measure、EvidenceRef 完全一致
 - [ ] 统计 Claim 的 EvidenceRef 可定位 method ID、source column 与 statistical result hash
@@ -71,8 +71,11 @@
 - [ ] Dataset 与旧/权威结果对账
 - [ ] Claim Grounding 100%
 - [ ] 图表不重复、不误导
-- [ ] 图表数量是 0/1/N 动态结果；没有固定四图、固定二维形态或固定业务字段
-- [ ] 每张图均展示本图目的、Grounded findings、读图说明和必要 caveat
+- [ ] 非空且 QA 可用的 ChatBI 结果具有 Agent C 选择的 1/N 图；没有固定四图、固定二维形态或固定业务字段，也没有程序自选 fallback 图
+- [ ] 每张图均有业务目的、Grounded findings 和必要 caveat；UI 没有机械“本图回答/如何阅读/证据提示”模板
+- [ ] C1 的统计请求只使用实际 Dataset numeric metric/measure、注册 MethodDefinition 和允许参数；APPLICABLE/NOT_APPLICABLE 均可在 Evidence 核查
+- [ ] C2 在统计结果和 Preview 返回后生成 overall_claim_ids、kpi_selections 和图表解释；KPI 不从 Agent A 的 metric 列表默认回填
+- [ ] 已将旧项目 Owner 确认的 L1/L2 指标迁入 internal metric_registry，并完成重算/Owner verdict
 - [ ] Evidence 可核查
 - [ ] Business Evidence 无 DSL；Advanced Evidence 有角色
 - [ ] Debug 默认关闭

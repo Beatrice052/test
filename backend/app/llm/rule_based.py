@@ -22,6 +22,7 @@ from app.contracts.analysis import (
 from app.contracts.common import TimeRange
 from app.contracts.dashboard import VisualizationCandidate, VisualizationExplorationDraft
 from app.contracts.insight import (
+    AnalyticsToolRequest,
     ClaimBinding,
     ClaimDraft,
     InsightDashboardDraft,
@@ -242,6 +243,82 @@ class RuleBasedMockLLMClient:
             if isinstance(label, str) and label:
                 return label
             return str(column.get("metric_id") or column.get("name") or "指标")
+
+        # This client is a fixture-only structural double.  It reads the deployed
+        # catalog from the payload instead of keeping a formal chart rule table.
+        # The real structured Agent C makes these choices from the same facts.
+        raw_visualization_definitions = payload.get("visualization_intents", ())
+        visualization_definitions = (
+            tuple(item for item in raw_visualization_definitions if isinstance(item, dict))
+            if isinstance(raw_visualization_definitions, list)
+            else ()
+        )
+
+        def minimum_rows(intent: str, default: int = 1) -> int:
+            definition = next(
+                (item for item in visualization_definitions if item.get("intent") == intent),
+                None,
+            )
+            value = definition.get("minimum_rows") if definition is not None else default
+            return int(value) if isinstance(value, int) else default
+
+        available_visualization_intents = {
+            str(item["intent"])
+            for item in visualization_definitions
+            if isinstance(item.get("intent"), str)
+        }
+
+        def numeric_measure_column(schema: dict[str, object]) -> str | None:
+            return next(
+                (
+                    str(item["name"])
+                    for item in columns(schema)
+                    if isinstance(item.get("name"), str)
+                    and item.get("semantic_role") in {"metric", "measure"}
+                    and item.get("data_type") in {"integer", "number", "metric"}
+                ),
+                None,
+            )
+
+        raw_tool_catalog = payload.get("governed_analysis_tools", {})
+        statistical_catalog = (
+            raw_tool_catalog.get("statistical_analysis", {})
+            if isinstance(raw_tool_catalog, dict)
+            else {}
+        )
+        method_catalog = (
+            tuple(item for item in statistical_catalog.get("methods", ()) if isinstance(item, dict))
+            if isinstance(statistical_catalog, dict)
+            else ()
+        )
+
+        def eligible_statistic_dataset(
+            definition: dict[str, object],
+        ) -> tuple[dict[str, object], str] | None:
+            raw_requirements = definition.get("required_semantic_types", ())
+            requirements = (
+                {str(item) for item in raw_requirements}
+                if isinstance(raw_requirements, tuple | list)
+                else set()
+            )
+            for schema in schema_items:
+                if not has_rows(schema):
+                    continue
+                measure = numeric_measure_column(schema)
+                if measure is None:
+                    continue
+                schema_grain = grain(schema)
+                has_time = any(is_time(schema, item) for item in schema_grain)
+                has_category = any(
+                    is_category(schema, item) and not is_status(schema, item)
+                    for item in schema_grain
+                )
+                if "time_dimension" in requirements and not has_time:
+                    continue
+                if "categorical_dimension" in requirements and not has_category:
+                    continue
+                return schema, measure
+            return None
 
         def find_schema(*, exact_grain: tuple[str, ...] | None = None) -> dict[str, object] | None:
             return next(
@@ -512,6 +589,40 @@ class RuleBasedMockLLMClient:
             )
 
         visualizations: list[VisualizationCandidate] = []
+        analytics_requests: list[AnalyticsToolRequest] = []
+        if exploration_stage:
+            # Mock-only generic adapter behavior: relay the plan's provisional
+            # method hypotheses into the same catalog-bound tool request Contract
+            # used by a real Agent C.  It contains no business keyword mapping.
+            for task in tasks:
+                task_id = task.get("task_id")
+                raw_method_ids = task.get("statistical_method_ids", ())
+                if not isinstance(task_id, str) or not isinstance(raw_method_ids, list):
+                    continue
+                for method_id in raw_method_ids:
+                    definition = next(
+                        (item for item in method_catalog if item.get("method_id") == method_id),
+                        None,
+                    )
+                    if not isinstance(definition, dict) or not isinstance(method_id, str):
+                        continue
+                    selected = eligible_statistic_dataset(definition)
+                    if selected is None:
+                        continue
+                    schema, measure = selected
+                    dataset_id = schema.get("dataset_id")
+                    if not isinstance(dataset_id, str):
+                        continue
+                    analytics_requests.append(
+                        AnalyticsToolRequest(
+                            request_id=f"mock_analysis_{task_id}_{method_id}",
+                            task_ids=(task_id,),
+                            dataset_id=dataset_id,
+                            method_id=method_id,
+                            measure_column=measure,
+                            purpose="Mock contract exercise for a planned statistical hypothesis.",
+                        )
+                    )
         time_row_count = (
             int(summary_by_dataset.get(str(time_only["dataset_id"]), {}).get("row_count", 0))
             if time_only is not None
@@ -531,7 +642,12 @@ class RuleBasedMockLLMClient:
         wants_time = wants(time_intent) or (time_intent == "anomaly" and wants("time_trend"))
         # One analytical question gets one default chart. A readable multi-series view
         # subsumes the aggregate trend; otherwise use the single-series rollup.
-        if wants_time and time_category is not None and 1 < series_count <= 8:
+        if (
+            wants_time
+            and time_category is not None
+            and time_category_row_count >= minimum_rows(time_intent, 2)
+            and 1 < series_count <= 8
+        ):
             time_field = next(item for item in grain(time_category) if is_time(time_category, item))
             category_field = next(
                 item
@@ -561,7 +677,9 @@ class RuleBasedMockLLMClient:
                     ),
                 )
             )
-        elif wants_time and time_only is not None and time_row_count >= 2:
+        elif (
+            wants_time and time_only is not None and time_row_count >= minimum_rows(time_intent, 2)
+        ):
             visualizations.append(
                 VisualizationCandidate(
                     candidate_id="vc_total_time_trend",
@@ -583,7 +701,16 @@ class RuleBasedMockLLMClient:
                 )
             )
         comparison_intent = "pareto" if "pareto" in analysis_types else "ranked_comparison"
-        if category is not None and (wants(comparison_intent) or wants("ranked_comparison")):
+        category_row_count = (
+            int(summary_by_dataset.get(str(category["dataset_id"]), {}).get("row_count", 0))
+            if category is not None
+            else 0
+        )
+        if (
+            category is not None
+            and category_row_count >= minimum_rows(comparison_intent, 2)
+            and (wants(comparison_intent) or wants("ranked_comparison"))
+        ):
             category_field = grain(category)[0]
             category_label = display_name(category, category_field)
             visualizations.append(
@@ -610,7 +737,20 @@ class RuleBasedMockLLMClient:
                     ),
                 )
             )
-        if category_composition is not None and wants("composition"):
+        composition_row_count = (
+            int(
+                summary_by_dataset.get(str(category_composition["dataset_id"]), {}).get(
+                    "row_count", 0
+                )
+            )
+            if category_composition is not None
+            else 0
+        )
+        if (
+            category_composition is not None
+            and composition_row_count >= minimum_rows("composition", 2)
+            and wants("composition")
+        ):
             status_field = next(
                 item
                 for item in grain(category_composition)
@@ -635,8 +775,32 @@ class RuleBasedMockLLMClient:
                     reason=f"解释每个{category_label}在{status_label}维度上的结构与差异。",
                 )
             )
+        if (
+            not visualizations
+            and overall is not None
+            and "single_value" in available_visualization_intents
+        ):
+            scalar_measure = numeric_measure_column(overall)
+            if scalar_measure is not None:
+                visualizations.append(
+                    VisualizationCandidate(
+                        candidate_id="vc_overall_scope",
+                        analytical_question="当前查询范围的核心汇总值",
+                        intent="single_value",
+                        preferred_chart_types=("bar",),
+                        dataset_id=str(overall["dataset_id"]),
+                        task_ids=required_task_ids,
+                        dimension_roles={},
+                        measure_roles={"value": scalar_measure},
+                        priority="required",
+                        reason="用单值图保留当前分析范围的已验证核心量级。",
+                    )
+                )
         if exploration_stage:
-            return VisualizationExplorationDraft(candidates=tuple(visualizations))
+            return VisualizationExplorationDraft(
+                analytics_requests=tuple(analytics_requests),
+                candidates=tuple(visualizations),
+            )
 
         def claim_task_ids(claim: ClaimDraft) -> tuple[str, ...]:
             if claim.claim_id.startswith("claim_category_composition"):
@@ -701,6 +865,14 @@ class RuleBasedMockLLMClient:
         return InsightDashboardDraft(
             answer_summary="已根据问题中实际选择的指标、维度与粒度完成受治理分析。",
             claims=prepared_claims,
+            # Test-only client: preserve the same separation required from a real
+            # Agent C response. Overall-scope claims form the answer synthesis;
+            # category/time claims remain chart-local findings.
+            overall_claim_ids=tuple(
+                item.claim_id
+                for item in prepared_claims
+                if item.claim_id.startswith("claim_overall")
+            ),
             visual_insights=tuple(visual_insights),
             limitations=("消息量按记录数统计, 不自动等同于去重发送量。",),
             follow_up_suggestions=(

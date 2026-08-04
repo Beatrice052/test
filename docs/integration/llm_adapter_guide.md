@@ -9,9 +9,9 @@
 - `recorded`：回放已脱敏、经审阅的结构化响应；
 - `openai_compatible`：内网 Copilot/获准端点。
 
-三个 Node 可共享一个模型，但使用不同 system prompt 和 Pydantic output schema。Agent C 在同一个有界 Node 内使用探索与综合两个 operation。统一接口只有 `generate()`，operation 只能来自 `ALLOWED_OPERATIONS` 冻结集合；请求没有 Tool、MCP、DB、Gateway、Mapping 或通用 chat escape hatch。
+三个 Node 可共享一个模型，但使用不同 system prompt 和 Pydantic output schema。Agent C 在同一个有界 Node 内使用探索与综合两个 operation。统一接口只有 `generate()`，operation 只能来自 `ALLOWED_OPERATIONS` 冻结集合；请求没有自由 Tool、MCP、DB、Gateway、Mapping 或通用 chat escape hatch。
 
-正式职责为：Agent A 决定多轮关系、意图、AnalysisPlan 和显式展示偏好；Agent B 决定逻辑 QueryPlan；Agent C Pass 1 决定可视化探索请求，受控 Explorer 返回 Preview，Agent C Pass 2 决定洞察和 Preview/Claim 显式绑定。Finalizer、DSL Compiler、指标计算、Claim Grounding 和图表可行性校验必须保持确定性。自然语言规则解析只能存在于 `rule_based` Mock Adapter 内，不能成为 `mcp`/生产编排路径。
+正式职责为：Agent A 决定多轮关系、意图、AnalysisPlan 和显式展示偏好；Agent B 决定逻辑 QueryPlan；Agent C Pass 1 基于真实 Dataset/FeatureSummary 动态提出 `AnalyticsToolRequest`（数值列、MethodDefinition、允许参数、分析目的）和可视化探索请求；Host 运行受治理统计工具和 Explorer，Agent C Pass 2 再根据 `AnalyticsToolResult` 与 Preview 决定总体洞察、动态 KPI 和 Preview/Claim 显式绑定。这里的“工具”是模型输出的严格 Contract，由宿主验证后执行，绝不是把函数、代码执行器或数据连接直接交给模型。Finalizer、DSL Compiler、正式 KPI 公式、统计执行、Claim Grounding 和图表可行性校验必须保持确定性。自然语言规则解析只能存在于 `rule_based` Mock Adapter 内，不能成为 `mcp`/生产编排路径。
 
 三个 Agent 可以使用同一个真实模型 endpoint 与 model name，通过不同 system prompt 和 strict output schema 隔离职责，不需要部署三个模型。主编排器是确定性 LangGraph，不得替换成第四个 Supervisor LLM。Agent A 的 candidate metadata 与 Agent B 的 `ResolvedFieldDescriptor` 已包含字段 description、semantic/mapping type、capability、maturity、compatibility 和可选 cardinality；Adapter 不得再把完整 Mapping、physical path、MCP Tool 或 raw documents追加到 Prompt。详见 `multi_agent_orchestration.md`。
 

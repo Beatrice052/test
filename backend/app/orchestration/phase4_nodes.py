@@ -107,7 +107,6 @@ class Phase4Nodes:
                 query,
                 result,
                 tuple(step_executions),
-                method_ids=state["resolved_analysis"].method_ids,
             )
             datasets.extend(analyzed.bundle.datasets)
             qa_records.extend(analyzed.bundle.data_qa)

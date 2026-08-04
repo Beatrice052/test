@@ -77,8 +77,40 @@ class AnalyticsPipeline:
         reconciliation: tuple[ReconciliationRecord, ...] = ()
         feature_targets: list[TabularDataset] = [base]
         metric_values_by_row = {}
+        requested_metric_ids = tuple(dict.fromkeys(query.semantics.metric_ids))
+        missing_metrics = tuple(item for item in requested_metric_ids if item not in self.metrics)
+        requested_methods = tuple(dict.fromkeys(method_ids))
+        missing_methods = tuple(item for item in requested_methods if item not in self.methods)
+        if missing_metrics:
+            all_qa.append(
+                DataQARecord(
+                    rule_id="qa_registered_metric",
+                    severity="FATAL",
+                    passed=False,
+                    message=(
+                        "compiled query references unregistered metric definitions: "
+                        f"{','.join(missing_metrics)}"
+                    ),
+                    dataset_id=base.dataset_id,
+                    details={"metric_ids": list(missing_metrics)},
+                )
+            )
+        if missing_methods:
+            all_qa.append(
+                DataQARecord(
+                    rule_id="qa_registered_statistical_method",
+                    severity="FATAL",
+                    passed=False,
+                    message=(
+                        "analysis plan references unregistered statistical methods: "
+                        f"{','.join(missing_methods)}"
+                    ),
+                    dataset_id=base.dataset_id,
+                    details={"method_ids": list(missing_methods)},
+                )
+            )
         requested_metrics = tuple(
-            self.metrics[item] for item in query.semantics.metric_ids if item in self.metrics
+            self.metrics[item] for item in requested_metric_ids if item in self.metrics
         )
         if requested_metrics and not self.qa.has_fatal(base_qa):
             status_dictionary = self._status_dictionary(query)
@@ -162,7 +194,10 @@ class AnalyticsPipeline:
                 summaries = tuple(
                     self.features.build(
                         target,
-                        statistical_results=self._statistics_for(target, method_ids),
+                        statistical_results=self._statistics_for(
+                            target,
+                            method_ids=method_ids,
+                        ),
                         qa_records=tuple(all_qa),
                     )
                     for target in feature_targets
@@ -241,26 +276,70 @@ class AnalyticsPipeline:
         )
 
     def _statistics_for(
-        self, dataset: TabularDataset, method_ids: tuple[str, ...]
+        self,
+        dataset: TabularDataset,
+        method_ids: tuple[str, ...] = (),
     ) -> tuple[StatisticalResult, ...]:
+        """Compatibility helper for direct callers and historical snapshots.
+
+        The formal post-query path delegates new exploratory statistics to Agent C's
+        governed Analytics Tool; this helper deliberately remains deterministic and
+        does not define the product's post-query analysis policy.
+        """
+
         time_column = next(
             (item.name for item in dataset.columns if item.data_type == "datetime"), None
         )
         results: list[StatisticalResult] = []
-        for method_id in dict.fromkeys(method_ids):
+        requests = tuple((method_id, ()) for method_id in method_ids)
+        seen: set[tuple[str, str]] = set()
+        for method_id, requested_metric_ids in requests:
             definition = self.methods.get(method_id)
-            base_params: dict[str, JsonValue] = (
-                dict(definition.default_params) if definition is not None else {}
-            )
+            if definition is None:
+                # ``process`` has already failed closed.  This defensive branch
+                # keeps direct callers deterministic without inventing a result.
+                continue
+            base_params: dict[str, JsonValue] = dict(definition.default_params)
             base_params.setdefault("n", 5)
             if time_column is not None:
                 base_params.setdefault("time_column", time_column)
-            for measure in self._analysis_measures(dataset):
+            measures = (
+                self._analysis_measures_for_metric_ids(dataset, requested_metric_ids)
+                if requested_metric_ids
+                else self._analysis_measures(dataset)
+            )
+            for measure in measures:
+                key = (method_id, measure)
+                if key in seen:
+                    continue
+                seen.add(key)
+                unavailable_capabilities = self._missing_method_capabilities(
+                    definition, dataset, measure
+                )
+                if unavailable_capabilities:
+                    results.append(
+                        StatisticalResult(
+                            method_id=definition.method_id,
+                            version=definition.version,
+                            applicability="NOT_APPLICABLE",
+                            sample_size=sum(
+                                1
+                                for row in dataset.rows
+                                if isinstance(row.values.get(measure), int | float)
+                                and not isinstance(row.values.get(measure), bool)
+                            ),
+                            values={"column": measure},
+                            warnings=(
+                                "registered method capability is not available: "
+                                f"{','.join(unavailable_capabilities)}",
+                            ),
+                        )
+                    )
+                    continue
                 params = {**base_params, "column": measure}
                 result = self.statistics.compute(method_id, dataset, params)
                 if (
-                    definition is not None
-                    and result.applicability == "APPLICABLE"
+                    result.applicability == "APPLICABLE"
                     and result.sample_size < definition.minimum_rows
                 ):
                     result = result.model_copy(
@@ -278,6 +357,59 @@ class AnalyticsPipeline:
                     )
                 results.append(result)
         return tuple(results)
+
+    @staticmethod
+    def _analysis_measures_for_metric_ids(
+        dataset: TabularDataset,
+        metric_ids: tuple[str, ...],
+    ) -> tuple[str, ...]:
+        requested = set(metric_ids)
+        return tuple(
+            item.name
+            for item in dataset.columns
+            if item.semantic_role == "metric"
+            and item.data_type in {"integer", "number", "metric"}
+            and (
+                item.name in requested
+                or item.metric_id in requested
+                or (
+                    item.metric_id is not None
+                    and any(
+                        requested_id.startswith(f"{item.metric_id}.") for requested_id in requested
+                    )
+                )
+            )
+        )
+
+    @staticmethod
+    def _missing_method_capabilities(
+        definition: MethodDefinition,
+        dataset: TabularDataset,
+        measure: str,
+    ) -> tuple[str, ...]:
+        available = {"numeric_measure"}
+        if any(
+            item.data_type == "datetime" or item.semantic_type == "time_dimension"
+            for item in dataset.columns
+        ):
+            available.add("time_dimension")
+        if any(
+            item.semantic_role == "dimension"
+            and item.data_type != "datetime"
+            and item.semantic_type != "time_dimension"
+            for item in dataset.columns
+        ):
+            available.add("categorical_dimension")
+        if not any(
+            item.name == measure and item.data_type in {"integer", "number", "metric"}
+            for item in dataset.columns
+        ):
+            available.discard("numeric_measure")
+        return tuple(
+            capability
+            for capability in definition.required_semantic_types
+            if capability not in available
+        )
 
     @staticmethod
     def _empty_dictionary() -> ValueDictionary:

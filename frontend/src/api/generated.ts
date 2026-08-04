@@ -72,6 +72,22 @@ export type AnalyticalTask = {
   drop_conditions?: Array<string>;
 };
 
+export type AnalyticsToolResult = {
+  schema_version?: string;
+  object_id: string;
+  created_at: string;
+  content_hash: string;
+  provenance: Provenance;
+  request_id: string;
+  task_ids: Array<string>;
+  dataset_id: string;
+  method_id: string;
+  measure_column: string;
+  decision: string;
+  result: StatisticalResult;
+  reason: string;
+};
+
 export type AnswerSnapshot = {
   schema_version?: string;
   object_id: string;
@@ -89,9 +105,12 @@ export type AnswerSnapshot = {
   query_plan?: QueryPlan | null;
   dataset_bundle?: DatasetBundle | null;
   feature_summaries?: Array<FeatureSummary>;
+  analytics_tool_results?: Array<AnalyticsToolResult>;
   dashboard_spec?: DashboardSpec | null;
   visualization_previews?: Array<VisualizationPreview>;
   claims?: Array<ClaimSpec>;
+  overall_claim_ids?: Array<string>;
+  kpi_selections?: Array<KpiSelectionDraft>;
   evidence_package?: EvidencePackage | null;
   limitations?: Array<string>;
   warnings?: Array<string>;
@@ -111,6 +130,9 @@ export type BusinessEvidence = {
   [key: string]: JsonValue;
 }>;
   quality?: Array<{
+  [key: string]: JsonValue;
+}>;
+  exploratory_analysis?: Array<{
   [key: string]: JsonValue;
 }>;
   downloads?: Array<string>;
@@ -367,6 +389,14 @@ export type KpiItem = {
   quality?: "valid" | "insufficient_sample" | "not_applicable";
   definition: string;
   evidence_row_ids?: Array<string>;
+};
+
+export type KpiSelectionDraft = {
+  selection_id: string;
+  dataset_id: string;
+  measure_column: string;
+  task_ids: Array<string>;
+  reason: string;
 };
 
 export type MetricDecision = {

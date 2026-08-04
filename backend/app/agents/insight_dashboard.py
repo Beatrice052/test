@@ -10,8 +10,8 @@ from app.contracts.dashboard import (
     VisualizationPreview,
 )
 from app.contracts.dataset import DatasetBundle
-from app.contracts.insight import FeatureSummary, InsightDashboardDraft
-from app.contracts.metric import MetricDefinition
+from app.contracts.insight import AnalyticsToolResult, FeatureSummary, InsightDashboardDraft
+from app.contracts.metric import MethodDefinition, MetricDefinition
 from app.llm.redaction import redact_secrets
 from app.llm.repair import build_insight_dashboard_repair_payload
 
@@ -27,6 +27,7 @@ class InsightDashboardAgent:
         bundle: DatasetBundle,
         feature_summaries: tuple[FeatureSummary, ...],
         metric_definitions: tuple[MetricDefinition, ...],
+        method_definitions: tuple[MethodDefinition, ...],
         visualization_definitions: tuple[VisualizationDefinition, ...],
         correlation_id: str,
         fixture_id: str | None = None,
@@ -36,6 +37,7 @@ class InsightDashboardAgent:
             bundle=bundle,
             feature_summaries=feature_summaries,
             metric_definitions=metric_definitions,
+            method_definitions=method_definitions,
             visualization_definitions=visualization_definitions,
         )
         payload["stage"] = "propose_bounded_visual_exploration"
@@ -57,8 +59,10 @@ class InsightDashboardAgent:
         bundle: DatasetBundle,
         feature_summaries: tuple[FeatureSummary, ...],
         metric_definitions: tuple[MetricDefinition, ...],
+        method_definitions: tuple[MethodDefinition, ...],
         visualization_definitions: tuple[VisualizationDefinition, ...],
         visualization_previews: tuple[VisualizationPreview, ...],
+        analytics_tool_results: tuple[AnalyticsToolResult, ...] = (),
         correlation_id: str,
         fixture_id: str | None = None,
     ) -> InsightDashboardDraft:
@@ -67,11 +71,15 @@ class InsightDashboardAgent:
             bundle=bundle,
             feature_summaries=feature_summaries,
             metric_definitions=metric_definitions,
+            method_definitions=method_definitions,
             visualization_definitions=visualization_definitions,
         )
         payload["stage"] = "synthesize_insights_from_validated_visual_previews"
         payload["visualization_previews"] = [
             item.model_dump(mode="json") for item in visualization_previews
+        ]
+        payload["analytics_tool_results"] = [
+            item.model_dump(mode="json") for item in analytics_tool_results
         ]
         if fixture_id is not None:
             payload["fixture_id"] = fixture_id
@@ -91,6 +99,7 @@ class InsightDashboardAgent:
         bundle: DatasetBundle,
         feature_summaries: tuple[FeatureSummary, ...],
         metric_definitions: tuple[MetricDefinition, ...],
+        method_definitions: tuple[MethodDefinition, ...],
         visualization_definitions: tuple[VisualizationDefinition, ...],
     ) -> dict[str, object]:
         dataset_schemas = [
@@ -119,6 +128,27 @@ class InsightDashboardAgent:
                 }
                 for item in metric_definitions
             ],
+            "governed_analysis_tools": {
+                "statistical_analysis": {
+                    "request_contract": {
+                        "dataset_id": "one supplied dataset_id",
+                        "measure_column": "one supplied numeric metric/measure column",
+                        "method_id": "one registered method_id",
+                        "parameters": "only registered default parameter names",
+                    },
+                    "methods": [
+                        {
+                            "method_id": item.method_id,
+                            "version": item.version,
+                            "display_name": item.display_name,
+                            "minimum_rows": item.minimum_rows,
+                            "required_semantic_types": item.required_semantic_types,
+                            "default_params": item.default_params,
+                        }
+                        for item in method_definitions
+                    ],
+                }
+            },
             "data_qa": [item.model_dump(mode="json") for item in bundle.data_qa],
             "visualization_intents": [
                 item.model_dump(mode="json") for item in visualization_definitions

@@ -11,17 +11,18 @@
 2. `docs/integration/decision_authority_matrix.md`
 3. `docs/requirements_traceability.md`
 4. `docs/integration/real_llm_cutover_runbook.md`
-5. `docs/integration/multi_agent_orchestration.md`
-6. `docs/integration/visualization_agent_architecture.md`
-7. `docs/internal_checklist.md`
+5. `docs/integration/legacy_metric_registry_migration.md`
+6. `docs/integration/multi_agent_orchestration.md`
+7. `docs/integration/visualization_agent_architecture.md`
+8. `docs/internal_checklist.md`
 
 ## 不可破坏的架构边界
 
 - 保持一个模块化 FastAPI 应用、一个 low-level LangGraph StateGraph、三个有界结构化 LLM Node。
-- Agent A 负责多轮关系、意图、AnalysisPlan、指标选择、任务与展示偏好；Agent B 只负责逻辑 QueryPlan；Agent C 是同一个有界 Node 内的两个结构化 Pass：先提出 VisualizationCandidate 探索请求，受控 Adapter 返回 Preview 后，再同时生成 ClaimDraft 与 VisualInsightDraft。
-- LLM 不得直接访问 MCP、OpenSearch、数据库或任意 Tool；不得生成/执行 raw DSL、PPL、SQL、Python、JavaScript、Plotly spec、ECharts option；不得计算正式指标。Agent C 只能消费受控 VisualizationPreview，不能自由调用绘图库。
+- Agent A 负责多轮关系、意图、AnalysisPlan、业务指标选择、任务与展示偏好；Agent B 只负责逻辑 QueryPlan；Agent C 是同一个有界 Node 内的两个结构化 Pass：先从实际 Dataset 特征提出 `AnalyticsToolRequest` 与 `VisualizationCandidate`，由编排器调用受治理统计/图表 Adapter，再基于结果生成总洞察、Claim、KPI 选择与 VisualInsight。
+- LLM 不得直接访问 MCP、OpenSearch、数据库或任意自由 Tool；不得生成/执行 raw DSL、PPL、SQL、Python、JavaScript、Plotly spec、ECharts option；不得计算正式业务指标。Agent C 只能提出严格 Contract 的统计/可视化请求，不能自由调用绘图库或自定义公式；Host 在已验证数据上确定性执行并审计。
 - Agent A 的字段候选必须包含经治理的 description/semantic type/capability/compatibility/cardinality 摘要且不得包含 physical path；Agent B 必须通过 `ResolvedFieldDescriptor` 获得同类语义事实。索引发现、Mapping 和 profile 只能由 Bootstrap/Refresh 确定性节点调用 MCP，不能变成 Agent Tool。
-- 最终 DSL、索引路由、指标公式、统计、QA、Grounding、图表可行性、Evidence、权限、持久化全部保持确定性。
+- 最终 DSL、索引路由、指标公式、统计执行、QA、Grounding、图表可行性、Evidence、权限、持久化全部保持确定性；LLM 决定分析目标、方法、对象、取舍和解释，程序决定能否算、实际怎样算和能否展示。
 - 禁止引入 AgentExecutor、ReAct、Supervisor、自由 Tool Loop、LLM→MCP、通用 chat fallback 或前端指标计算。
 - `AnalysisPlan → ResolvedAnalysis → QueryPlan → CompiledQuery → ExecutionRecord → DatasetBundle → Claim/Dashboard/Evidence → AnswerSnapshot` 各层不可合并。
 
@@ -77,7 +78,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/verify-package.ps1
 - 不提交 `.env`、Secret、真实业务数据、真实 Mapping/Excel、生产日志、Shadow 明文、运行数据库或构建缓存。
 - 所有新增正式能力必须有 Contract、确定性校验、失败路径、单元/集成/Golden 测试和文档。
 - Dashboard 的 KPI 数量、图表数量、图表类型、维度和粒度必须由本轮问题、受治理语义和实际数据共同决定，不得固定为四卡、四图或 Channel×Status×Month。
-- 用户显式图表偏好由 Agent A 结构化；Agent C Pass 1 基于数据提出 0/1/N 候选；Registry/Validator/Explorer 产生验证 Preview；Agent C Pass 2 将图与同任务、同 Dataset、同 measure 的 Grounded Claim 同时绑定；不兼容时解释并安全降级为表格。
-- 每张最终图必须有 purpose、grounded findings、按最终 encoding 生成的 reading guide 和必要 caveat；不得先画固定候选再按文字相似度配结论。
+- 用户显式图表偏好由 Agent A 结构化；非空且 QA 可用的 ChatBI 结果必须保留 1/N 张真实分析图。Agent C Pass 1 基于数据提出动态候选与统计请求；Registry/Validator/Explorer 产生验证 Preview；Agent C Pass 2 在统计结果和 Preview 都返回后形成总洞察，并将图与同任务、同 Dataset、同 measure 的 Grounded Claim 同时绑定；不兼容时可增加安全表格，但不得静默删掉全部图。空结果或 QA 阻断时显示真实不可用状态，绝不伪造图。
+- 每张最终图必须有业务 purpose、grounded findings 和必要 caveat；前端只显示简洁的“图表解读”，不显示机械的“本图回答/如何阅读/证据提示”模板。不得先画固定候选再按文字相似度配结论。
 - 主 Dashboard answer-first；技术聚合明细、指标计算、QA/对账放 Business Evidence；DSL 只在 Advanced Evidence 且经过授权时展示。
 - 流式 UI 只展示真实阶段和安全结构化摘要，不展示隐藏推理、Prompt、完整用户文本、原始模型输出、Secret 或未授权 DSL；最终答案出现后自动收起。

@@ -1,4 +1,12 @@
 visualizations:
+  - visualization_id: single_value
+    version: v1
+    intent: single_value
+    allowed_chart_types: [bar]
+    minimum_rows: 1
+    maximum_categories: 1
+    minimum_time_points: 1
+    requires_complete_distribution: false
   - visualization_id: ranked_comparison
     version: v1
     intent: ranked_comparison

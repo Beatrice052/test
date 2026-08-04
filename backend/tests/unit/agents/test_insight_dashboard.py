@@ -59,6 +59,7 @@ async def test_agent_c_payload_has_schema_and_feature_summary_but_no_full_rows_o
         bundle=bundle,
         feature_summaries=features,
         metric_definitions=package.metrics(),
+        method_definitions=package.methods(),
         visualization_definitions=package.visualizations(),
         visualization_previews=(),
         correlation_id="cor_agent_c_capture",
@@ -67,8 +68,24 @@ async def test_agent_c_payload_has_schema_and_feature_summary_but_no_full_rows_o
     serialized = json.dumps(client.payload, ensure_ascii=False)
     assert "dataset_schemas" in client.payload
     assert "feature_summaries" in client.payload
+    tools = client.payload["governed_analysis_tools"]
+    assert isinstance(tools, dict)
+    statistical_tool = tools["statistical_analysis"]
+    assert isinstance(statistical_tool, dict)
+    methods = statistical_tool["methods"]
+    assert isinstance(methods, list)
+    assert any(item["method_id"] == "rank" for item in methods)
     assert '"rows"' not in json.dumps(client.payload["dataset_schemas"])
-    for forbidden in ("query_dsl", "raw_results", "compiled_queries", "MCP", "tool_bindings"):
+    for forbidden in (
+        "query_dsl",
+        "raw_results",
+        "compiled_queries",
+        "MCP",
+        "tool_bindings",
+        "python",
+        "javascript",
+        "echarts_option",
+    ):
         assert forbidden not in serialized
 
 
@@ -83,6 +100,7 @@ async def test_rule_based_agent_c_uses_selectors_and_never_constructs_row_ids() 
         bundle=bundle,
         feature_summaries=features,
         metric_definitions=package.metrics(),
+        method_definitions=package.methods(),
         visualization_definitions=package.visualizations(),
         visualization_previews=(),
         correlation_id="cor_agent_c_rule",

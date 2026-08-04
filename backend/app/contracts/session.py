@@ -9,7 +9,12 @@ from app.contracts.common import Identifier, StrictModel, VersionedModel
 from app.contracts.dashboard import DashboardSpec, VisualizationPreview
 from app.contracts.dataset import DatasetBundle
 from app.contracts.evidence import EvidencePackage
-from app.contracts.insight import ClaimSpec, FeatureSummary
+from app.contracts.insight import (
+    AnalyticsToolResult,
+    ClaimSpec,
+    FeatureSummary,
+    KpiSelectionDraft,
+)
 from app.contracts.query import QueryPlan
 
 
@@ -46,9 +51,12 @@ class AnswerSnapshot(VersionedModel):
     query_plan: QueryPlan | None = None
     dataset_bundle: DatasetBundle | None = None
     feature_summaries: tuple[FeatureSummary, ...] = ()
+    analytics_tool_results: tuple[AnalyticsToolResult, ...] = ()
     dashboard_spec: DashboardSpec | None = None
     visualization_previews: tuple[VisualizationPreview, ...] = ()
     claims: tuple[ClaimSpec, ...] = ()
+    overall_claim_ids: tuple[Identifier, ...] = ()
+    kpi_selections: tuple[KpiSelectionDraft, ...] = ()
     evidence_package: EvidencePackage | None = None
     limitations: tuple[str, ...] = ()
     warnings: tuple[str, ...] = ()

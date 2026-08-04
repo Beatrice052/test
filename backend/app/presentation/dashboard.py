@@ -20,7 +20,7 @@ from app.contracts.dashboard import (
     VisualizationPreview,
 )
 from app.contracts.dataset import DatasetBundle, DatasetColumn, TabularDataset
-from app.contracts.insight import ClaimSpec, VisualInsightDraft
+from app.contracts.insight import ClaimSpec, KpiSelectionDraft, VisualInsightDraft
 from app.contracts.metric import MetricDefinition, MetricLevel
 from app.persistence.ids import new_id
 
@@ -42,6 +42,12 @@ def chart_reading_guide(
 ) -> str:
     """Explain the final visual grammar without inventing a conclusion."""
 
+    if chart_type in {"bar", "dot"} and not (encoding.category or encoding.x or dimension_label):
+        return (
+            "Show the selected-scope value for "
+            f"{measure_label or encoding.value or encoding.y or 'the measure'}. "
+            "This one-value chart is not a category comparison."
+        )
     dimension = dimension_label or encoding.category or encoding.x or "横轴分组"
     measure = measure_label or encoding.value or encoding.y or "指标值"
     series = series_label or encoding.series or encoding.color
@@ -93,15 +99,11 @@ class ChartFeasibilityValidator:
                     FeasibilityDecision.REJECT,
                     reason=f"candidate references unknown tasks: {sorted(unknown_task_ids)}",
                 )
-            if not any(
-                candidate.intent in task_visualization_intents[task_id]
-                for task_id in candidate.task_ids
-            ):
-                return FeasibilityResult(
-                    candidate,
-                    FeasibilityDecision.REJECT,
-                    reason="candidate intent was not requested by any referenced analytical task",
-                )
+            # Agent A may provide an initial visualization hypothesis, but Agent C
+            # is the post-query analyst that makes the final chart decision from
+            # the observed Dataset profile.  A candidate must therefore name a
+            # real task, while its governed intent is checked against the deployed
+            # registry below rather than being constrained to a pre-query template.
         dataset = next(
             (item for item in bundle.datasets if item.dataset_id == candidate.dataset_id),
             None,
@@ -153,6 +155,12 @@ class ChartFeasibilityValidator:
                 FeasibilityDecision.REJECT,
                 reason="chart requires a complete distribution",
             )
+        is_single_value = (
+            candidate.intent == "single_value"
+            and not dataset.grain
+            and len(dataset.rows) == 1
+            and chart_type == "bar"
+        )
         try:
             dimension = self._role_column(
                 dataset,
@@ -176,7 +184,13 @@ class ChartFeasibilityValidator:
                 FeasibilityDecision.DOWNGRADE_TO_TABLE,
                 reason="chart has no measure binding",
             )
-        if not self._has_variance(dataset, measure.name):
+        if dimension is None and not is_single_value:
+            return FeasibilityResult(
+                candidate,
+                FeasibilityDecision.DOWNGRADE_TO_TABLE,
+                reason="chart has no dimension binding",
+            )
+        if not self._has_variance(dataset, measure.name) and not is_single_value:
             return FeasibilityResult(
                 candidate,
                 FeasibilityDecision.REJECT,
@@ -280,7 +294,7 @@ class ChartFeasibilityValidator:
             FeasibilityDecision.ACCEPT,
             chart_type=chart_type,
             encoding=encoding,
-            transforms=("stable_color_assignment",),
+            transforms=("single_scope_bar",) if is_single_value else ("stable_color_assignment",),
             reason="candidate is feasible",
         )
 
@@ -335,8 +349,10 @@ class DashboardBuilder:
         previews: tuple[VisualizationPreview, ...],
         visual_insights: tuple[VisualInsightDraft, ...],
         claims: tuple[ClaimSpec, ...],
+        summary_claims: tuple[ClaimSpec, ...] = (),
         bundle: DatasetBundle,
         max_blocks: int,
+        kpi_selections: tuple[KpiSelectionDraft, ...] = (),
         kpi_metric_ids: tuple[str, ...] = (),
         limitations: tuple[str, ...] = (),
         follow_up_suggestions: tuple[str, ...] = (),
@@ -348,12 +364,15 @@ class DashboardBuilder:
                 type="answer_summary",
                 title="总分析",
                 description="回答中的数字均来自已验证 Dataset, 并可在证据面板定位。",
-                evidence_refs=tuple(item.object_id for item in claims),
+                evidence_refs=tuple(item.object_id for item in summary_claims),
                 content={"text": answer_summary},
-                insights=self._insights_not_in_summary(answer_summary, claims),
+                # The top synthesis is authored from Agent C's dedicated overall
+                # claims. Chart-local findings stay with their chart rather than
+                # being silently repeated as a second key-findings section.
+                insights=(),
             )
         ]
-        kpis = self._kpis(bundle, kpi_metric_ids)
+        kpis = self._kpis(bundle, kpi_selections, legacy_metric_ids=kpi_metric_ids)
         if kpis:
             blocks.append(
                 DashboardBlock(
@@ -605,33 +624,16 @@ class DashboardBuilder:
             return name.rsplit(".", 1)[-1]
         return column.display_name or column.name.rsplit(".", 1)[-1]
 
-    @classmethod
-    def _insights_not_in_summary(
-        cls,
-        answer_summary: str,
-        claims: tuple[ClaimSpec, ...],
-    ) -> tuple[str, ...]:
-        summary = cls._normalize_narrative(answer_summary)
-        results: list[str] = []
-        seen: set[str] = set()
-        for claim in claims:
-            normalized = cls._normalize_narrative(claim.text)
-            if not normalized or normalized in summary or normalized in seen:
-                continue
-            seen.add(normalized)
-            results.append(claim.text)
-        return tuple(results)
-
-    @staticmethod
-    def _normalize_narrative(value: str) -> str:
-        return "".join(character.casefold() for character in value if character.isalnum())
-
     def _kpis(
         self,
         bundle: DatasetBundle,
-        selected_metric_ids: tuple[str, ...],
+        selections: tuple[KpiSelectionDraft, ...],
+        *,
+        legacy_metric_ids: tuple[str, ...] = (),
     ) -> tuple[KpiItem, ...]:
-        requested = tuple(dict.fromkeys(selected_metric_ids))
+        requested = tuple(dict.fromkeys(legacy_metric_ids))
+        if selections:
+            return self._selected_kpis(bundle, selections)
         if not requested:
             return ()
         overall = next(
@@ -706,6 +708,73 @@ class DashboardBuilder:
                 )
             )
         return tuple(result)
+
+    def _selected_kpis(
+        self,
+        bundle: DatasetBundle,
+        selections: tuple[KpiSelectionDraft, ...],
+    ) -> tuple[KpiItem, ...]:
+        """Render only Agent C-selected, one-row, already-computed KPI values."""
+
+        if len({item.selection_id for item in selections}) != len(selections):
+            return ()
+        by_dataset = {item.dataset_id: item for item in bundle.datasets}
+        selected: list[KpiItem] = []
+        for selection in selections:
+            dataset = by_dataset.get(selection.dataset_id)
+            if dataset is None or dataset.grain or len(dataset.rows) != 1:
+                continue
+            column = next(
+                (item for item in dataset.columns if item.name == selection.measure_column),
+                None,
+            )
+            if (
+                column is None
+                or column.semantic_role not in {"metric", "measure"}
+                or column.data_type not in {"integer", "number", "metric"}
+            ):
+                continue
+            value = dataset.rows[0].values.get(column.name)
+            if not isinstance(value, int | float) or isinstance(value, bool):
+                continue
+            metric_definition = self.metric_definitions.get(column.name)
+            if metric_definition is None and column.metric_id is not None:
+                metric_definition = next(
+                    (
+                        item
+                        for item in self.metric_definitions.values()
+                        if item.metric_id == column.metric_id
+                    ),
+                    None,
+                )
+            selected.append(
+                KpiItem(
+                    kpi_id=selection.selection_id,
+                    label=(
+                        column.display_name
+                        or (
+                            metric_definition.display_name
+                            if metric_definition is not None
+                            else column.name.rsplit(".", 1)[-1]
+                        )
+                    ),
+                    value=value,
+                    formatted_value=self._format_metric(value, column.unit),
+                    unit=column.unit,
+                    semantic_level=(
+                        self._semantic_level(metric_definition)
+                        if metric_definition is not None
+                        else "operational"
+                    ),
+                    definition=(
+                        metric_definition.business_definition
+                        if metric_definition is not None
+                        else selection.reason
+                    ),
+                    evidence_row_ids=(dataset.rows[0].row_id,),
+                )
+            )
+        return tuple(selected)
 
     @staticmethod
     def _semantic_level(
