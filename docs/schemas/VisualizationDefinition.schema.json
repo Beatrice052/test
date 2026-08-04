@@ -1,9 +1,25 @@
 {
+  "$defs": {
+    "GovernedChartType": {
+      "enum": [
+        "bar",
+        "line",
+        "heatmap",
+        "stacked_bar",
+        "donut",
+        "dot",
+        "pareto",
+        "table",
+        "pivot"
+      ],
+      "type": "string"
+    }
+  },
   "additionalProperties": false,
   "properties": {
     "allowed_chart_types": {
       "items": {
-        "type": "string"
+        "$ref": "#/$defs/GovernedChartType"
       },
       "title": "Allowed Chart Types",
       "type": "array"

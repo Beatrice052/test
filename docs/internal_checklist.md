@@ -2,23 +2,24 @@
 
 ## Semantic
 
-- [ ] 已完整阅读 `AGENTS.md` 与 `docs/integration/INTERNAL_AI_START_HERE.md`
+- [ ] 已完整阅读 `AGENTS.md`、`docs/integration/INTERNAL_AI_START_HERE.md` 与 `docs/integration/decision_authority_matrix.md`
 - [ ] 正式 `CHATBI_SEMANTIC_INPUT_DIR` 与 Package 均指向已审核非 Mock 目录
+- [ ] 正式 Semantic Input/Package 路径不含 `internal-template`；模板 Recipe 已按真实业务删除或审核
 - [ ] 同一真实输入重复编译的 package_version、文件清单与逐文件 hash 一致
 - [ ] description 表已成功导入
 - [ ] 目标月与相邻月 Mapping Snapshot 已保存并有 hash
 - [ ] Import Report 无阻塞冲突
 - [ ] 时间字段与 `Asia/Hong_Kong` 已确认
-- [ ] Channel/Status/Message ID 粒度已确认或有明确 Caveat
+- [ ] 实际分类、状态、主键/记录 ID 与时间粒度已确认或有明确 Caveat；不得照抄 Mock 字段名
 - [ ] Value Dictionary 已审核
 - [ ] 敏感字段已分类
 
 ## Metric
 
 - [ ] 文档记录业务名称已确认
-- [ ] failure_rate.v1 分子/分母已确认
-- [ ] Pending/Unknown/Null 已确认
-- [ ] minimum denominator 已确认
+- [ ] 每个认证率指标的分子/分母、排除项和版本已确认
+- [ ] 每个 Value Dictionary 的未知/空值/待处理语义已确认
+- [ ] 各率指标 minimum denominator 已确认
 - [ ] Metric Owner/版本/生效日期已记录
 - [ ] 真实数据 numerator/denominator/excluded 对账通过
 - [ ] 未认证指标未显示为正式 KPI
@@ -40,11 +41,13 @@
 ## Real LLM
 
 - [ ] `APP_ENV=mcp` 且 readiness 显示 `openai_compatible · mcp`
-- [ ] `check-real-llm-cutover` 12/12 PASS
+- [ ] `check-real-llm-cutover` 15/15 PASS
 - [ ] `probe-llm` strict JSON Schema 探测 PASS
 - [ ] Agent A、Agent B、Agent C 两个 Pass 的四个主 operation 均有真实端点审计记录
 - [ ] AnalysisPlanDraft、QueryPlanDraft、InsightDashboardDraft 三类 repair schema name 可区分
-- [ ] 正式 Agent/编排未 import 或复制 `rule_based`/fixture/recorded 逻辑
+- [ ] 正式 Agent/Prompt/编排/Query/Analytics/Presentation 未 import 或复制 `rule_based`/fixture/recorded 逻辑
+- [ ] 正式路径未导入 `mock_chart_preferences`，也不存在固定趋势/排名/构成 task bundle
+- [ ] Agent A 与 Plan Validator 的 visualization catalog 来自当前 Semantic Package，而非 Python 固定问题映射
 - [ ] 真实 LLM 失败不会静默回退到 Mock
 - [ ] Agent B 只输出 QueryPlan；最终 DSL 仍由确定性 Compiler 生成
 - [ ] 通过 `ListIndexTool` 固化 exact index list，Mapping Snapshot 与目标月份一致
@@ -53,14 +56,18 @@
 - [ ] Agent A 候选和 Agent B `ResolvedFieldDescriptor` 均包含真实 description、能力、兼容性和 cardinality 摘要，且不含 physical path
 - [ ] Agent B 的 QueryPlan 对每个 required task 取得最小充分粒度；高基数和跨月不兼容走预算/路由失败路径
 - [ ] 真实多轮、非固定维度和 0/1/多图 Shadow 已通过
+- [ ] AnalysisPlan 的 task/metric decision ID 唯一，task 没有引用 rejected/未选中指标
 - [ ] required task 均有 Grounded Claim 或明确 limitation
 - [ ] `post_query_visual_exploration` 只输出 Candidate，`post_query_insight_dashboard` 只选择验证 Preview
+- [ ] Candidate ID 唯一；每条 Claim 至少有一个且名称唯一的 binding
 - [ ] 每张图与 Claim 的 task、Dataset、measure、EvidenceRef 完全一致
-- [ ] 数据签名变化必定 requery，纯展示/解释才允许零查询复用
+- [ ] 统计 Claim 的 EvidenceRef 可定位 method ID、source column 与 statistical result hash
+- [ ] scope 或任一 task 的 metric/dimension/grain/statistical method 变化必定 requery
+- [ ] 纯换图零查询但重跑 Agent C Pass 1；解释追问零查询但重跑 Pass 2
 
 ## Result / Presentation
 
-- [ ] month×channel 不丢维度
+- [ ] 每个实际多维/联合粒度结果都不丢维度；不得把 Month×Channel 等示例写成固定形态
 - [ ] Dataset 与旧/权威结果对账
 - [ ] Claim Grounding 100%
 - [ ] 图表不重复、不误导

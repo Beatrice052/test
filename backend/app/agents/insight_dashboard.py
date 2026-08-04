@@ -125,7 +125,9 @@ class InsightDashboardAgent:
             ],
             "dashboard_budget": {"max_blocks": analysis_plan.budget.max_blocks},
             "selector_grammar": (
-                "first | argmax:<column> | argmin:<column> | where:<column>=<value>"
+                "first | argmax:<column> | argmin:<column> | where:<column>=<value> | "
+                "statistic:<method_id>@<source_column> with "
+                "binding.column=<scalar value path>"
             ),
         }
 
@@ -136,6 +138,7 @@ class InsightDashboardAgent:
         errors: tuple[str, ...],
         analysis_plan: AnalysisPlan,
         bundle: DatasetBundle,
+        feature_summaries: tuple[FeatureSummary, ...],
         visualization_previews: tuple[VisualizationPreview, ...],
         attempt: int,
         correlation_id: str,
@@ -145,6 +148,7 @@ class InsightDashboardAgent:
             draft=draft,
             errors=errors,
             bundle=bundle,
+            feature_summaries=feature_summaries,
             immutable_analysis_plan_hash=analysis_plan.content_hash,
             required_task_ids=tuple(
                 item.task_id for item in analysis_plan.tasks if item.priority == "required"

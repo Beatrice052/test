@@ -16,6 +16,7 @@ from app.agents.base import AgentRuntime
 from app.agents.insight_dashboard import InsightDashboardAgent
 from app.agents.logical_query_planner import LogicalQueryPlannerAgent
 from app.analytics.pipeline import AnalyticsPipeline
+from app.contracts.analysis import AnalysisBudget
 from app.gateway.base import OpenSearchGateway
 from app.gateway.bindings import GatewayBindings
 from app.gateway.executor import GatewayExecutor
@@ -114,6 +115,11 @@ async def build_container(settings: AppSettings) -> ApplicationContainer:
     await checkpointer.setup()
     audit = SafeAuditLogger()
     raw_llm = _build_llm(settings)
+    maximum_analysis_budget = AnalysisBudget(
+        max_queries=settings.chatbi_max_queries_per_turn,
+        max_buckets=settings.chatbi_max_total_buckets,
+        max_blocks=8,
+    )
     llm = AuditedLLMClient(
         raw_llm,
         adapter_name=settings.chatbi_llm_mode,
@@ -132,9 +138,13 @@ async def build_container(settings: AppSettings) -> ApplicationContainer:
                 llm=llm,
                 system_prompt=ANALYST_PROMPT.read_text(encoding="utf-8"),
                 timeout_seconds=settings.chatbi_llm_timeout_seconds,
-            )
+            ),
+            visualization_definitions=package.visualizations(),
+            maximum_budget=maximum_analysis_budget,
         ),
-        validator=AnalysisPlanValidator(),
+        validator=AnalysisPlanValidator(
+            package.visualizations(), maximum_budget=maximum_analysis_budget
+        ),
         resolver=AnalysisPlanResolver(package),
         semantic_package_version=package.manifest.package_version,
     )
@@ -180,6 +190,7 @@ async def build_container(settings: AppSettings) -> ApplicationContainer:
         analytics=AnalyticsPipeline(
             metric_definitions=package.metrics(),
             value_dictionaries=package.values(),
+            method_definitions=package.methods(),
             fields=package.fields(),
         ),
         semantic_package_version=package.manifest.package_version,

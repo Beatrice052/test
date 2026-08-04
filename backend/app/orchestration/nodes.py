@@ -162,6 +162,12 @@ class Phase2Nodes:
                 state, plan, decision.analytical_base_answer_id
             ):
                 decision = self.router.require_requery(decision)
+            elif decision.execution_mode == "reuse":
+                plan = self._canonical_reuse_plan(
+                    state,
+                    plan,
+                    decision.analytical_base_answer_id,
+                )
         except (AnalysisPlanValidationError, ValueError) as error:
             error_code = (
                 error.code
@@ -207,9 +213,70 @@ class Phase2Nodes:
         if base_answer_id is None:
             return True
         base = self.answers.get_answer(state["identity"].subject_id, base_answer_id)
-        if base.analysis_plan is None:
+        if (
+            base.analysis_plan is None
+            or base.semantic_package_version != self.semantic_package_version
+        ):
             return True
         return self._data_signature(plan) != self._data_signature(base.analysis_plan)
+
+    def _canonical_reuse_plan(
+        self,
+        state: ChatBIState,
+        current: AnalysisPlan,
+        base_answer_id: str | None,
+    ) -> AnalysisPlan:
+        """Keep the validated data tasks immutable while honoring the new turn purpose."""
+
+        if base_answer_id is None:
+            raise ValueError("reuse requires an analytical base answer")
+        base = self.answers.get_answer(state["identity"].subject_id, base_answer_id)
+        if base.analysis_plan is None:
+            raise ValueError("reuse base has no analysis plan")
+        base_plan = base.analysis_plan
+        presentation = (
+            current.presentation_preference
+            if current.turn_relation.value == "PRESENTATION_CHANGE"
+            else base_plan.presentation_preference
+        )
+        analysis_goal = (
+            base_plan.analysis_goal
+            if current.turn_relation.value == "PRESENTATION_CHANGE"
+            else current.analysis_goal
+        )
+        payload = {
+            "analysis_goal": analysis_goal,
+            "question_archetype": base_plan.question_archetype,
+            "turn_relation": current.turn_relation,
+            "scope": base_plan.scope,
+            "metric_decisions": base_plan.metric_decisions,
+            "tasks": base_plan.tasks,
+            "presentation_preference": presentation,
+            "clarification": None,
+            "assumptions": tuple(dict.fromkeys([*base_plan.assumptions, *current.assumptions])),
+            "limitations": tuple(dict.fromkeys([*base_plan.limitations, *current.limitations])),
+            "budget": base_plan.budget,
+        }
+        return AnalysisPlan(
+            object_id=new_id("ap"),
+            created_at=self.now(),
+            content_hash=semantic_hash(payload),
+            provenance=Provenance(
+                producer="orchestration.reuse_plan",
+                source_ids=(base_plan.object_id, current.object_id),
+            ),
+            analysis_goal=analysis_goal,
+            question_archetype=base_plan.question_archetype,
+            turn_relation=current.turn_relation,
+            scope=base_plan.scope,
+            metric_decisions=base_plan.metric_decisions,
+            tasks=base_plan.tasks,
+            presentation_preference=presentation,
+            clarification=None,
+            assumptions=tuple(dict.fromkeys([*base_plan.assumptions, *current.assumptions])),
+            limitations=tuple(dict.fromkeys([*base_plan.limitations, *current.limitations])),
+            budget=base_plan.budget,
+        )
 
     @staticmethod
     def _data_signature(plan: AnalysisPlan) -> str:
@@ -224,16 +291,24 @@ class Phase2Nodes:
         selected_metrics = sorted(
             item.metric_id for item in plan.metric_decisions if item.decision != "rejected"
         )
-        dimensions = sorted({dimension for task in plan.tasks for dimension in task.dimension_ids})
-        grain = sorted({item for task in plan.tasks for item in task.grain})
+        task_shapes = sorted(
+            (
+                tuple(sorted(task.metric_ids)),
+                tuple(sorted(task.dimension_ids)),
+                tuple(task.grain),
+                tuple(sorted(task.statistical_method_ids)),
+            )
+            for task in plan.tasks
+        )
         return semantic_hash(
             {
                 "datasets": sorted(plan.scope.dataset_ids),
                 "time_range": plan.scope.time_range.model_dump(mode="json"),
                 "filters": filters,
                 "metrics": selected_metrics,
-                "dimensions": dimensions,
-                "grain": grain,
+                # Per-task shape is required: separate A and B datasets are not
+                # interchangeable with one joint A-by-B dataset even though their unions match.
+                "task_shapes": task_shapes,
             }
         )
 

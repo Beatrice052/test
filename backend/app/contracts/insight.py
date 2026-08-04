@@ -73,6 +73,8 @@ class EvidenceRef(StrictModel):
     row_id: str
     column: str
     metric_id: Identifier | None = None
+    statistical_method_id: Identifier | None = None
+    statistical_result_hash: str | None = None
 
 
 class ClaimSpec(VersionedModel):

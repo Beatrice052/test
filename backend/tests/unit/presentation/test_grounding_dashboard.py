@@ -1,5 +1,6 @@
 """Claims are fully grounded and dashboards remain declarative and data-driven."""
 
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, cast
 
@@ -7,12 +8,22 @@ import pytest
 
 from app.analytics.bundle import DatasetBundleBuilder
 from app.analytics.derivation import StatusMetricDeriver
+from app.analytics.features import FeatureSummaryBuilder
+from app.analytics.identity import stable_row_id
+from app.contracts.common import Provenance, semantic_hash
 from app.contracts.dashboard import VisualizationCandidate
-from app.contracts.dataset import DataQARecord, DatasetColumn
+from app.contracts.dataset import (
+    DataQARecord,
+    DatasetColumn,
+    DatasetCompleteness,
+    DatasetRow,
+    TabularDataset,
+)
 from app.contracts.insight import (
     ClaimBinding,
     ClaimDraft,
     InsightDashboardDraft,
+    StatisticalResult,
     VisualInsightDraft,
 )
 from app.orchestration.phase5_nodes import Phase5Nodes
@@ -101,6 +112,146 @@ def test_argmax_and_ratio_claims_bind_to_exact_rows_and_metric_evidence() -> Non
     assert result.claims[1].evidence_refs[0].metric_id == "failure_rate"
 
 
+def test_statistical_claims_bind_to_deterministic_method_result_and_source_rows() -> None:
+    bundle = _bundle()
+    dataset = bundle.datasets[0]
+    statistical_result = StatisticalResult(
+        method_id="trend_slope",
+        version="1.0.0",
+        applicability="APPLICABLE",
+        sample_size=len(dataset.rows),
+        values={
+            "column": "message_record_count.v1",
+            "slope_per_period": 12.5,
+            "first_row_id": dataset.rows[0].row_id,
+            "last_row_id": dataset.rows[-1].row_id,
+        },
+    )
+    summary = FeatureSummaryBuilder().build(
+        dataset,
+        statistical_results=(statistical_result,),
+    )
+
+    result = ClaimGrounder().ground(
+        (
+            ClaimDraft(
+                claim_id="claim_trend_slope",
+                claim_type="trend",
+                template="The verified slope is {slope} per period.",
+                importance="primary",
+                bindings=(
+                    ClaimBinding(
+                        name="slope",
+                        dataset_id=dataset.dataset_id,
+                        selector="statistic:trend_slope",
+                        column="slope_per_period",
+                    ),
+                ),
+            ),
+        ),
+        bundle,
+        feature_summaries=(summary,),
+    )
+
+    assert result.failures == ()
+    assert result.claims[0].text == "The verified slope is 12.5 per period."
+    evidence = result.claims[0].evidence_refs
+    assert {item.row_id for item in evidence} == {
+        dataset.rows[0].row_id,
+        dataset.rows[-1].row_id,
+    }
+    assert {item.column for item in evidence} == {"message_record_count.v1"}
+    assert {item.statistical_method_id for item in evidence} == {"trend_slope"}
+    assert {item.statistical_result_hash for item in evidence} == {
+        semantic_hash(statistical_result)
+    }
+
+
+def test_statistical_claim_rejects_unknown_or_non_scalar_value_path() -> None:
+    bundle = _bundle()
+    dataset = bundle.datasets[0]
+    summary = FeatureSummaryBuilder().build(
+        dataset,
+        statistical_results=(
+            StatisticalResult(
+                method_id="trend_slope",
+                version="1.0.0",
+                applicability="APPLICABLE",
+                sample_size=len(dataset.rows),
+                values={
+                    "column": "message_record_count.v1",
+                    "details": {"slope": 2.0},
+                },
+            ),
+        ),
+    )
+    draft = ClaimDraft(
+        claim_id="claim_invalid_stat_path",
+        claim_type="trend",
+        template="Value {value}",
+        bindings=(
+            ClaimBinding(
+                name="value",
+                dataset_id=dataset.dataset_id,
+                selector="statistic:trend_slope",
+                column="details",
+            ),
+        ),
+    )
+
+    result = ClaimGrounder().ground((draft,), bundle, feature_summaries=(summary,))
+
+    assert result.claims == ()
+    assert "not scalar" in result.failures[0].message
+
+
+def test_statistical_selector_disambiguates_same_method_across_metrics() -> None:
+    bundle = _bundle()
+    dataset = bundle.datasets[0]
+    summary = FeatureSummaryBuilder().build(
+        dataset,
+        statistical_results=(
+            StatisticalResult(
+                method_id="rank",
+                version="v1",
+                applicability="APPLICABLE",
+                sample_size=len(dataset.rows),
+                values={"column": "message_record_count.v1", "top": [{"value": 100.0}]},
+            ),
+            StatisticalResult(
+                method_id="rank",
+                version="v1",
+                applicability="APPLICABLE",
+                sample_size=len(dataset.rows),
+                values={"column": "failure_rate.v1", "top": [{"value": 0.25}]},
+            ),
+        ),
+    )
+    draft = ClaimDraft(
+        claim_id="claim_metric_specific_rank",
+        claim_type="ranking",
+        template="Top failure rate is {value}.",
+        bindings=(
+            ClaimBinding(
+                name="value",
+                dataset_id=dataset.dataset_id,
+                selector="statistic:rank@failure_rate.v1",
+                column="top.0.value",
+            ),
+        ),
+    )
+
+    result = ClaimGrounder().ground((draft,), bundle, feature_summaries=(summary,))
+
+    assert result.failures == ()
+    assert result.claims[0].text == "Top failure rate is 25.00%."
+    ambiguous = draft.model_copy(
+        update={"bindings": (draft.bindings[0].model_copy(update={"selector": "statistic:rank"}),)}
+    )
+    rejected = ClaimGrounder().ground((ambiguous,), bundle, feature_summaries=(summary,))
+    assert "ambiguous" in rejected.failures[0].message
+
+
 @pytest.mark.asyncio
 async def test_required_analysis_tasks_need_explicit_grounded_claim_coverage() -> None:
     _, analysis, _, _, _, _ = await _plans("查询2026年7月各Channel失败率")
@@ -167,6 +318,42 @@ def test_ambiguous_causal_and_qa_blocked_claims_are_deleted() -> None:
     result = ClaimGrounder().ground((blocked,), bundle)
     assert result.claims == ()
     assert len(result.failures) == 1
+
+
+def test_claims_without_unique_evidence_bindings_are_rejected() -> None:
+    bundle = _bundle()
+    dataset_id = bundle.datasets[0].dataset_id
+    no_evidence = ClaimDraft(
+        claim_id="claim_without_evidence",
+        claim_type="value",
+        template="This sentence has no evidence.",
+        bindings=(),
+    )
+    duplicate_names = ClaimDraft(
+        claim_id="claim_duplicate_binding_names",
+        claim_type="comparison",
+        template="Values are {value}.",
+        bindings=(
+            ClaimBinding(
+                name="value",
+                dataset_id=dataset_id,
+                selector="where:channel=SMS",
+                column="message_record_count.v1",
+            ),
+            ClaimBinding(
+                name="value",
+                dataset_id=dataset_id,
+                selector="where:channel=EMAIL",
+                column="message_record_count.v1",
+            ),
+        ),
+    )
+
+    result = ClaimGrounder().ground((no_evidence, duplicate_names), bundle)
+
+    assert result.claims == ()
+    assert "at least one evidence binding" in result.failures[0].message
+    assert "binding names are not unique" in result.failures[1].message
 
 
 def test_dashboard_accepts_useful_chart_deduplicates_and_has_no_raw_option() -> None:
@@ -750,3 +937,122 @@ def test_kpis_only_promote_metrics_selected_by_the_analysis_plan() -> None:
     kpi_block = next(item for item in dashboard.blocks if item.type == "kpi_group")
     assert [item.label for item in kpi_block.kpis] == ["失败率"]
     assert not any("排除占比" in item.label for item in kpi_block.kpis)
+
+
+def test_visual_profile_samples_endpoints_and_extrema_from_long_results() -> None:
+    rows = tuple(
+        DatasetRow(
+            row_id=stable_row_id("long_result", ("category",), {"category": f"C{index}"}),
+            values={
+                "category": f"C{index}",
+                "measure": 10_000 if index == 17 else -50 if index == 5 else index,
+            },
+        )
+        for index in range(30)
+    )
+    dataset = TabularDataset(
+        object_id="ds_long_result_deadbeef",
+        created_at=datetime(2026, 8, 1, tzinfo=UTC),
+        content_hash=semantic_hash([item.model_dump(mode="json") for item in rows]),
+        provenance=Provenance(producer="tests.presentation"),
+        dataset_id="long_result",
+        contract_id="dc_long_result",
+        kind="derived",
+        grain=("category",),
+        columns=(
+            DatasetColumn(
+                name="category",
+                data_type="string",
+                semantic_role="dimension",
+            ),
+            DatasetColumn(
+                name="measure",
+                data_type="number",
+                semantic_role="metric",
+            ),
+        ),
+        rows=rows,
+        completeness=DatasetCompleteness.COMPLETE,
+        complete=True,
+        truncated=False,
+    )
+    bundle = DatasetBundleBuilder().build((dataset,))
+    candidate = VisualizationCandidate(
+        candidate_id="candidate_long_result",
+        analytical_question="Which categories differ?",
+        intent="ranked_comparison",
+        preferred_chart_types=("bar",),
+        dataset_id="long_result",
+        task_ids=("task_long_result",),
+        dimension_roles={"category": "category"},
+        measure_roles={"value": "measure"},
+        priority="required",
+        reason="Inspect the full result shape",
+    )
+
+    preview = _preview_bundle((candidate,), bundle)[0]
+    sampled_categories = {row["category"] for row in preview.profile.representative_rows}
+    assert len(preview.profile.representative_rows) <= 12
+    assert {"C0", "C5", "C17", "C29"}.issubset(sampled_categories)
+
+
+@pytest.mark.asyncio
+async def test_visual_explorer_rejects_agent_c_candidates_outside_agent_a_tasks() -> None:
+    package, analysis, _, _, _, _ = await _plans("查询2026年7月各Channel失败率")
+    bundle = _bundle()
+    candidate = VisualizationCandidate(
+        candidate_id="candidate_unknown_task",
+        analytical_question="Unknown task",
+        intent="ranked_comparison",
+        preferred_chart_types=("bar",),
+        dataset_id=bundle.datasets[0].dataset_id,
+        task_ids=("task_not_in_analysis_plan",),
+        dimension_roles={"category": "sub_message.channel"},
+        measure_roles={"value": "message_record_count.v1"},
+        priority="required",
+        reason="Must be rejected",
+    )
+    validator = ChartFeasibilityValidator(package.visualizations())
+
+    preview = GovernedVisualizationExplorer(validator).explore(
+        (candidate,), bundle, analysis_plan=analysis
+    )[0]
+
+    assert preview.decision == "REJECT"
+    assert "unknown tasks" in preview.reason
+
+
+def test_visual_explorer_rejects_duplicate_candidate_ids() -> None:
+    bundle = _bundle()
+    candidate = VisualizationCandidate(
+        candidate_id="candidate_duplicate",
+        analytical_question="Compare values",
+        intent="ranked_comparison",
+        preferred_chart_types=("bar",),
+        dataset_id=bundle.datasets[0].dataset_id,
+        task_ids=("task_rank",),
+        dimension_roles={"category": "channel"},
+        measure_roles={"value": "message_record_count.v1"},
+        priority="required",
+        reason="Candidate identities must be unambiguous",
+    )
+
+    with pytest.raises(ValueError, match="candidate IDs are not unique"):
+        _preview_bundle((candidate, candidate), bundle)
+
+
+def test_agent_c_failure_dashboard_keeps_a_business_result_table() -> None:
+    bundle = _bundle()
+    dashboard = DashboardBuilder().build(
+        title="Fallback",
+        answer_summary="A grounded fallback answer.",
+        previews=(),
+        visual_insights=(),
+        claims=(),
+        bundle=bundle,
+        max_blocks=1,
+        ensure_result_table=True,
+    )
+
+    assert [item.type for item in dashboard.blocks] == ["answer_summary", "data_table"]
+    assert dashboard.blocks[1].dataset_id == bundle.datasets[0].object_id

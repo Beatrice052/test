@@ -34,7 +34,7 @@
 | 15 | 外网完整/内网轻接入 | scripts；semantic-input/internal-template；本手册 | internal_input_scripts；cutover | IMPLEMENTED + INTERNAL-INPUT |
 | 16 | 7 月 Channel Golden | evals/golden；fixtures | G02 等 Golden matrix | IMPLEMENTED |
 | 17 | 5–7 月多维 Golden | evals/golden；fixtures | G05 等；dynamic_dashboard | IMPLEMENTED |
-| 18 | 测试与评估 | backend/tests；frontend/tests/e2e；CI | 275 backend + 19 frontend + 1 E2E | IMPLEMENTED |
+| 18 | 测试与评估 | backend/tests；frontend/tests/e2e；CI | 291 backend + 19 frontend + 1 E2E | IMPLEMENTED |
 | 19 | 分阶段计划 | docs/gates/phase0–7；project_memory | 各阶段 Gate | DOCUMENTED |
 | 20 | 旧工程迁移策略 | 独立 greenfield 目录；ADR | reference_guardrails | IMPLEMENTED |
 | 21 | 上线前 Checklist | docs/internal_checklist.md | 手工签字 + probes/shadow | IMPLEMENTED + INTERNAL-INPUT |
@@ -44,7 +44,7 @@
 | 25 | 技术选型/部署 | pyproject/lockfiles；package.json；Compose | deployment_profiles；CI | IMPLEMENTED；Docker run NOT-CLAIMED |
 | 26 | 逐文件职责 | 模块目录；ADR；本手册 | architecture import guardrails | IMPLEMENTED |
 | 27 | StateGraph 节点/状态所有权 | orchestration/graph.py、state.py、phase nodes | phase2_graph；phase3_graph；Golden | IMPLEMENTED |
-| 28 | Contract 目录/版本兼容 | contracts；docs/schemas；OpenAPI | 41 schema snapshots；55 API schemas | IMPLEMENTED |
+| 28 | Contract 目录/版本兼容 | contracts；docs/schemas；OpenAPI | 41 schema snapshots；57 API schemas | IMPLEMENTED |
 | 29 | Semantic Compiler | semantic/*；scripts/prepare/compile/configure | compile package/conflicts/internal scripts | IMPLEMENTED |
 | 30 | 三 Agent Prompt 协议 | agents/prompts；agents/*.py；llm/client.py | reference_guardrails；cutover；adapter tests | IMPLEMENTED |
 | 31 | Query AST/Compiler/Validator | contracts/query.py；query/* | plan_compile；index_router；security Golden | IMPLEMENTED |
@@ -67,7 +67,7 @@
 | 需求 | 生产责任边界 | 代码/配置 | 自动化证据 |
 |---|---|---|---|
 | 只有三个有界 LLM Node | StructuredLLMClient；无 Tool | agents/*；llm/client.py | test_reference_guardrails；cutover |
-| Mock 不污染生产 | composition root 仅按 profile 选择 | bootstrap.py；settings.py；llm/cutover.py | identity_settings；cutover 12 项 |
+| Mock 不污染生产 | composition root 仅按 profile 选择，正式路径拒绝 Mock/模板/固定任务 bundle | bootstrap.py；settings.py；llm/cutover.py | identity_settings；cutover 15 项 |
 | Agent A 是意图权威 | 真实模型输出 AnalysisPlanDraft | analyst_planner.py；prompt | analyst_planner；planner_validation；Golden |
 | Agent B 不输出 DSL | 只输出 QueryPlanDraft | logical_query_planner.py | plan_compile；compiler_owns_dsl |
 | Agent A/B 使用字段语义 | Candidate/ResolvedFieldDescriptor 含 description、type、capability、compatibility、cardinality；无 physical path | compiler.py；retriever.py；resolver.py；analyst_planner.py；logical_query_planner.py | compile_package；phase2_graph；plan_compile |
@@ -81,7 +81,9 @@
 | 显式图表偏好 | Agent A 结构化；Validator 降级 | AnalysisPlan；phase5；SafeChart | line/heatmap/table tests |
 | 不固定二维模板 | tasks/dimensions/grain 驱动 | rule-independent formal chain | error-dimension、overview、table、Pareto Golden |
 | 高基数安全 | 无虚假前端 Top-N transform | dashboard.py | high-cardinality downgrade test |
-| 复用正确 | 数据签名不变才零查询 | context.py；nodes.py | presentation/explanation + signature-change tests |
+| 复用正确 | scope 与每个 task 的 metric/dimension/grain/method 签名不变才零查询；纯换图重跑 C1，解释重跑 C2 | session.py；nodes.py；phase5_nodes.py | presentation/explanation + per-task signature-change tests |
+| Agent 输出身份唯一 | task、metric decision、Candidate、Claim、VisualInsight ID 不得歧义 | planner_validation.py；exploration.py；phase5_nodes.py | planner_validation；grounding_dashboard |
+| Claim 不可无证据 | 至少一个且名称唯一的 binding，最终 EvidenceRef 非空 | grounding.py | grounding_dashboard |
 | 总分析完整 | required task → claim/limitation | insight prompt；phase5_nodes.py | Agent C repair/coverage tests |
 | Evidence 可检查 | 表/公式/QA/授权 DSL | evidence.py；EvidenceDrawer | evidence backend/frontend/E2E |
 | 主页面无技术明细 | 业务块过滤 | Dashboard.tsx | Dashboard Vitest |

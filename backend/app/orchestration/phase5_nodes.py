@@ -14,7 +14,13 @@ from app.contracts.dashboard import (
     VisualizationPreview,
 )
 from app.contracts.dataset import DatasetBundle, TabularDataset
-from app.contracts.insight import ClaimBinding, ClaimDraft, ClaimSpec, InsightDashboardDraft
+from app.contracts.insight import (
+    ClaimBinding,
+    ClaimDraft,
+    ClaimSpec,
+    InsightDashboardDraft,
+    VisualInsightDraft,
+)
 from app.contracts.metric import MetricDefinition
 from app.contracts.session import ActiveAnalyticalContext, AnswerSnapshot
 from app.orchestration.state import ChatBIState
@@ -58,7 +64,7 @@ class Phase5Nodes:
         self.visualization_definitions = visualization_definitions
         self.semantic_package_version = semantic_package_version
 
-    def reuse_answer(self, state: ChatBIState) -> dict[str, object]:
+    async def reuse_answer(self, state: ChatBIState) -> dict[str, object]:
         """Create a new immutable answer from owned artifacts without executing a query."""
 
         session = state["session_context"]
@@ -68,18 +74,45 @@ class Phase5Nodes:
             raise ValueError("reuse requires an analytical base answer")
         base = self.answers.get_answer(state["identity"].subject_id, base_id)
         dashboard = base.dashboard_spec
+        previews = base.visualization_previews
+        claims = base.claims
+        limitations = base.limitations
         reuse_warnings: tuple[str, ...] = ()
-        if decision.turn_kind == TurnKind.PRESENTATION_CHANGE and dashboard is not None:
-            dashboard, reuse_warnings = self._presentation_dashboard(
-                dashboard, self._chart_preference(state), base.dataset_bundle
+        if (
+            decision.turn_kind == TurnKind.PRESENTATION_CHANGE
+            and dashboard is not None
+            and base.dataset_bundle is not None
+        ):
+            dashboard, previews, reuse_warnings = await self._replan_presentation(state, base)
+        elif (
+            decision.turn_kind == TurnKind.EXPLANATION
+            and dashboard is not None
+            and base.dataset_bundle is not None
+        ):
+            dashboard, claims, limitations, reuse_warnings = await self._explain_reused_data(
+                state, base
             )
         answer_id = new_id("ans")
         warnings = tuple(dict.fromkeys([*base.warnings, *reuse_warnings]))
+        status = (
+            AnswerStatus.PARTIAL
+            if any(
+                marker in warning.casefold()
+                for warning in reuse_warnings
+                for marker in ("failed", "unavailable")
+            )
+            else base.status
+        )
         payload = {
             "session_id": session.object_id,
             "turn_kind": decision.turn_kind,
             "base_answer_id": base.object_id,
+            "analysis_plan_hash": state["analysis_plan"].content_hash,
             "dashboard_hash": None if dashboard is None else dashboard.content_hash,
+            "visualization_preview_hashes": [item.content_hash for item in previews],
+            "claim_hashes": [item.content_hash for item in claims],
+            "limitations": limitations,
+            "status": status,
             "warnings": warnings,
         }
         snapshot = AnswerSnapshot(
@@ -94,17 +127,18 @@ class Phase5Nodes:
             chronological_parent_answer_id=session.latest_answer_id,
             analytical_base_answer_id=base.object_id,
             turn_kind=decision.turn_kind,
-            status=base.status,
+            status=status,
             semantic_package_version=base.semantic_package_version,
             metric_versions=base.metric_versions,
-            analysis_plan=base.analysis_plan,
+            analysis_plan=state["analysis_plan"],
             query_plan=base.query_plan,
             dataset_bundle=base.dataset_bundle,
+            feature_summaries=base.feature_summaries,
             dashboard_spec=dashboard,
-            visualization_previews=base.visualization_previews,
-            claims=base.claims,
+            visualization_previews=previews,
+            claims=claims,
             evidence_package=base.evidence_package,
-            limitations=base.limitations,
+            limitations=limitations,
             warnings=warnings,
         )
         self.answers.persist_answer(
@@ -124,6 +158,274 @@ class Phase5Nodes:
             },
         )
         return {"answer_snapshot": snapshot, "terminal_status": "COMPLETED"}
+
+    async def _explain_reused_data(
+        self,
+        state: ChatBIState,
+        base: AnswerSnapshot,
+    ) -> tuple[DashboardSpec, tuple[ClaimSpec, ...], tuple[str, ...], tuple[str, ...]]:
+        """Answer an explanation follow-up from immutable data without another query."""
+
+        assert base.dashboard_spec is not None
+        assert base.dataset_bundle is not None
+        if not base.feature_summaries:
+            return (
+                base.dashboard_spec,
+                base.claims,
+                base.limitations,
+                ("explanation synthesis unavailable for a legacy answer",),
+            )
+        try:
+            draft = await self.agent.plan(
+                analysis_plan=state["analysis_plan"],
+                bundle=base.dataset_bundle,
+                feature_summaries=base.feature_summaries,
+                metric_definitions=self.metric_definitions,
+                visualization_definitions=self.visualization_definitions,
+                visualization_previews=base.visualization_previews,
+                correlation_id=state["correlation_id"],
+                fixture_id=state.get("fixture_id"),
+            )
+            grounding = self.grounder.ground(
+                draft.claims,
+                base.dataset_bundle,
+                feature_summaries=base.feature_summaries,
+            )
+            validation_state = dict(state)
+            validation_state["dataset_bundle"] = base.dataset_bundle
+            completeness = self._claim_completeness_errors(
+                validation_state,  # type: ignore[arg-type]
+                draft,
+                grounding,
+                base.visualization_previews,
+            )
+            for attempt in range(1, 3):
+                if not grounding.failures and not completeness:
+                    break
+                errors = tuple(
+                    [
+                        *(
+                            f"{item.claim_index}:{item.code}:{item.message}"
+                            for item in grounding.failures
+                        ),
+                        *completeness,
+                    ]
+                )
+                draft = await self.agent.repair(
+                    draft=draft,
+                    errors=errors,
+                    analysis_plan=state["analysis_plan"],
+                    bundle=base.dataset_bundle,
+                    feature_summaries=base.feature_summaries,
+                    visualization_previews=base.visualization_previews,
+                    attempt=attempt,
+                    correlation_id=state["correlation_id"],
+                    fixture_id=state.get("fixture_id"),
+                )
+                grounding = self.grounder.ground(
+                    draft.claims,
+                    base.dataset_bundle,
+                    feature_summaries=base.feature_summaries,
+                )
+                completeness = self._claim_completeness_errors(
+                    validation_state,  # type: ignore[arg-type]
+                    draft,
+                    grounding,
+                    base.visualization_previews,
+                )
+            if not grounding.claims:
+                raise ValueError("explanation produced no grounded claims")
+            visual_insights = draft.visual_insights or self._reuse_visual_insights(
+                base.visualization_previews,
+                grounding.claims,
+            )
+            limitations = tuple(dict.fromkeys([*base.limitations, *draft.limitations]))
+            dashboard = self.dashboard_builder.build(
+                title=state["analysis_plan"].analysis_goal[:160],
+                answer_summary=self._summary_from_claims(
+                    grounding.claims,
+                    fallback=draft.answer_summary,
+                ),
+                previews=base.visualization_previews,
+                visual_insights=visual_insights,
+                claims=grounding.claims,
+                bundle=base.dataset_bundle,
+                max_blocks=state["analysis_plan"].budget.max_blocks,
+                kpi_metric_ids=tuple(
+                    item.metric_id
+                    for item in state["analysis_plan"].metric_decisions
+                    if item.decision in {"required", "recommended"}
+                ),
+                limitations=limitations,
+                follow_up_suggestions=draft.follow_up_suggestions,
+                ensure_result_table=bool(grounding.failures or completeness),
+            )
+            warnings = tuple(
+                [
+                    *(item.message for item in grounding.failures),
+                    *completeness,
+                ]
+            )
+            return dashboard, grounding.claims, limitations, warnings
+        except Exception:
+            return (
+                base.dashboard_spec,
+                base.claims,
+                base.limitations,
+                ("explanation synthesis adapter failed; previous verified answer retained",),
+            )
+
+    async def _replan_presentation(
+        self,
+        state: ChatBIState,
+        base: AnswerSnapshot,
+    ) -> tuple[DashboardSpec, tuple[VisualizationPreview, ...], tuple[str, ...]]:
+        """Re-run only Agent C visual exploration over immutable reused data."""
+
+        assert base.dashboard_spec is not None
+        assert base.dataset_bundle is not None
+        preference = self._chart_preference(state)
+        warnings: list[str] = []
+        if preference.unsupported:
+            warnings.append(
+                f"requested chart type {preference.user_label} is outside the safe chart catalog"
+            )
+        if not base.feature_summaries:
+            dashboard, fallback_warnings = self._presentation_dashboard(
+                base.dashboard_spec,
+                preference,
+                base.dataset_bundle,
+            )
+            return (
+                dashboard,
+                base.visualization_previews,
+                (
+                    *warnings,
+                    "presentation replanning unavailable for a legacy answer",
+                    *fallback_warnings,
+                ),
+            )
+        try:
+            exploration = await self.agent.explore(
+                analysis_plan=state["analysis_plan"],
+                bundle=base.dataset_bundle,
+                feature_summaries=base.feature_summaries,
+                metric_definitions=self.metric_definitions,
+                visualization_definitions=self.visualization_definitions,
+                correlation_id=state["correlation_id"],
+                fixture_id=state.get("fixture_id"),
+            )
+            preferred_candidates, preference_notes = apply_candidate_preference(
+                exploration.candidates,
+                self.visualization_definitions,
+                preference,
+            )
+            previews = self.visualization_explorer.explore(
+                preferred_candidates,
+                base.dataset_bundle,
+                analysis_plan=state["analysis_plan"],
+            )
+            visual_insights = self._reuse_visual_insights(previews, base.claims)
+            follow_ups = tuple(
+                suggestion
+                for block in base.dashboard_spec.blocks
+                if block.type == "follow_up_suggestions"
+                for suggestion in block.suggestions
+            )
+            dashboard = self.dashboard_builder.build(
+                title=state["analysis_plan"].analysis_goal[:160],
+                answer_summary=self._summary_from_claims(
+                    base.claims,
+                    fallback=self._dashboard_summary(base.dashboard_spec),
+                ),
+                previews=previews,
+                visual_insights=visual_insights,
+                claims=base.claims,
+                bundle=base.dataset_bundle,
+                max_blocks=state["analysis_plan"].budget.max_blocks,
+                kpi_metric_ids=tuple(
+                    item.metric_id
+                    for item in state["analysis_plan"].metric_decisions
+                    if item.decision in {"required", "recommended"}
+                ),
+                limitations=tuple(
+                    dict.fromkeys(
+                        [
+                            *base.limitations,
+                            *exploration.limitations,
+                        ]
+                    )
+                ),
+                follow_up_suggestions=follow_ups,
+                ensure_result_table=True,
+            )
+            warnings.extend(preference_notes)
+            if not previews:
+                warnings.append("presentation exploration returned no feasible preview")
+            return dashboard, previews, tuple(warnings)
+        except Exception:
+            dashboard, fallback_warnings = self._presentation_dashboard(
+                base.dashboard_spec,
+                preference,
+                base.dataset_bundle,
+            )
+            return (
+                dashboard,
+                base.visualization_previews,
+                (*warnings, "presentation exploration adapter failed", *fallback_warnings),
+            )
+
+    @staticmethod
+    def _reuse_visual_insights(
+        previews: tuple[VisualizationPreview, ...],
+        claims: tuple[ClaimSpec, ...],
+    ) -> tuple[VisualInsightDraft, ...]:
+        """Bind reused claims only by exact task, Dataset, and measure identities."""
+
+        insights: list[VisualInsightDraft] = []
+        for index, preview in enumerate(previews, start=1):
+            measure_columns = {
+                item
+                for item in (
+                    None if preview.encoding is None else preview.encoding.value,
+                    None if preview.encoding is None else preview.encoding.y,
+                )
+                if item is not None
+            }
+            claim_ids = tuple(
+                claim.source_claim_id
+                for claim in claims
+                if claim.source_claim_id is not None
+                and set(preview.task_ids).intersection(claim.task_ids)
+                and claim.evidence_refs
+                and all(
+                    evidence.dataset_id == preview.dataset_id for evidence in claim.evidence_refs
+                )
+                and (
+                    not measure_columns
+                    or any(evidence.column in measure_columns for evidence in claim.evidence_refs)
+                )
+            )
+            if not claim_ids:
+                continue
+            insights.append(
+                VisualInsightDraft(
+                    insight_id=f"reuse_insight_{index}",
+                    preview_id=preview.object_id,
+                    claim_ids=claim_ids,
+                    purpose=preview.purpose,
+                    caveats=(preview.reason,)
+                    if preview.decision in {"DOWNGRADE_TO_TABLE", "REJECT"}
+                    else (),
+                )
+            )
+        return tuple(insights)
+
+    @staticmethod
+    def _dashboard_summary(dashboard: DashboardSpec) -> str:
+        summary = next((item for item in dashboard.blocks if item.type == "answer_summary"), None)
+        value = None if summary is None else summary.content.get("text")
+        return str(value) if isinstance(value, str) else "已复用上轮验证结果。"
 
     @staticmethod
     def _presentation_dashboard(
@@ -248,7 +550,9 @@ class Phase5Nodes:
                 self._chart_preference(state),
             )
             previews = self.visualization_explorer.explore(
-                preferred_candidates, state["dataset_bundle"]
+                preferred_candidates,
+                state["dataset_bundle"],
+                analysis_plan=state["analysis_plan"],
             )
         except Exception:
             exploration_failed = True
@@ -272,7 +576,11 @@ class Phase5Nodes:
                 fallback_requested=True,
                 limitations=("Insight planning adapter failed",),
             )
-        grounding = self.grounder.ground(draft.claims, state["dataset_bundle"])
+        grounding = self.grounder.ground(
+            draft.claims,
+            state["dataset_bundle"],
+            feature_summaries=state["feature_summaries"],
+        )
         completeness_errors = self._claim_completeness_errors(state, draft, grounding, previews)
         if (grounding.failures or completeness_errors) and not draft.fallback_requested:
             draft, grounding, completeness_errors = await self._repair_grounding(
@@ -280,7 +588,11 @@ class Phase5Nodes:
             )
         if draft.fallback_requested or not grounding.claims:
             fallback_drafts = self._fallback_claims(state)
-            fallback_grounding = self.grounder.ground(fallback_drafts, state["dataset_bundle"])
+            fallback_grounding = self.grounder.ground(
+                fallback_drafts,
+                state["dataset_bundle"],
+                feature_summaries=state["feature_summaries"],
+            )
             claims = fallback_grounding.claims
             grounding_failures = (*grounding.failures, *fallback_grounding.failures)
             answer_summary = self._summary_from_claims(
@@ -290,14 +602,11 @@ class Phase5Nodes:
             claims = grounding.claims
             grounding_failures = grounding.failures
             answer_summary = self._summary_from_claims(claims, fallback=draft.answer_summary)
-        limitations = tuple(
+        analytical_limitations = tuple(
             dict.fromkeys(
                 [
                     *state["analysis_plan"].limitations,
-                    *draft.limitations,
-                    *(("visualization exploration adapter failed",) if exploration_failed else ()),
-                    *preference_notes,
-                    *completeness_errors,
+                    *((*draft.limitations,) if not agent_failed else ()),
                 ]
             )
         )
@@ -314,8 +623,9 @@ class Phase5Nodes:
                 for item in state["analysis_plan"].metric_decisions
                 if item.decision in {"required", "recommended"}
             ),
-            limitations=limitations,
+            limitations=analytical_limitations,
             follow_up_suggestions=draft.follow_up_suggestions,
+            ensure_result_table=(agent_failed or exploration_failed or draft.fallback_requested),
         )
         evidence = self.evidence_builder.build(
             analysis_plan=state["analysis_plan"],
@@ -340,6 +650,7 @@ class Phase5Nodes:
                 [*state["dataset_bundle"].warnings]
                 + [item.message for item in grounding_failures]
                 + list(completeness_errors)
+                + list(preference_notes)
                 + (["deterministic insight fallback used"] if agent_failed else [])
                 + (["visualization exploration unavailable"] if exploration_failed else [])
             )
@@ -384,11 +695,12 @@ class Phase5Nodes:
             analysis_plan=state["analysis_plan"],
             query_plan=state["query_plan"],
             dataset_bundle=state["dataset_bundle"],
+            feature_summaries=state["feature_summaries"],
             dashboard_spec=dashboard,
             visualization_previews=previews,
             claims=claims,
             evidence_package=evidence,
-            limitations=limitations,
+            limitations=analytical_limitations,
             warnings=warnings,
         )
         active_context = self._active_context(state, answer_id)
@@ -438,6 +750,7 @@ class Phase5Nodes:
                     errors=errors,
                     analysis_plan=state["analysis_plan"],
                     bundle=state["dataset_bundle"],
+                    feature_summaries=state["feature_summaries"],
                     visualization_previews=previews,
                     attempt=attempt,
                     correlation_id=state["correlation_id"],
@@ -446,7 +759,11 @@ class Phase5Nodes:
             except Exception:
                 break
             current_draft = candidate
-            current_grounding = self.grounder.ground(current_draft.claims, state["dataset_bundle"])
+            current_grounding = self.grounder.ground(
+                current_draft.claims,
+                state["dataset_bundle"],
+                feature_summaries=state["feature_summaries"],
+            )
             current_completeness = self._claim_completeness_errors(
                 state, current_draft, current_grounding, previews
             )
@@ -665,6 +982,7 @@ class Phase5Nodes:
                 )
             ),
             grain=tuple(dict.fromkeys(item for task in analysis.tasks for item in task.grain)),
+            tasks=analysis.tasks,
             filter_summary=tuple(
                 f"{item.field_id}:{item.operator}:{','.join(map(str, item.values))}"
                 for item in analysis.scope.filters

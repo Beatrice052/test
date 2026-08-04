@@ -4,6 +4,8 @@
 
 本文是 `docs/baseline/` 唯一需求基线在当前代码中的可视化实施说明。若历史 Gate Report、旧审计或旧提示词仍写着“Agent C 一次输出 Claim 和候选图”，以本文、`AGENTS.md`、`INTERNAL_AI_START_HERE.md` 和当前 Contract 为准；历史报告只用于追溯，不能指导新开发。
 
+跨 Agent 的统一决策边界见 [三 Agent 全流程决策权与验收矩阵](decision_authority_matrix.md)。
+
 ## 1. 结论
 
 合理顺序不是“先固定生成几张图，再找一句结论匹配”，也不是“让 LLM 自由调用 Plotly/ECharts 并执行代码”。当前正式链路采用有界双阶段：
@@ -51,7 +53,7 @@ Agent C 拿到的“图”是 `VisualizationPreview` 的受控结构化预览：
 
 Adapter 对每个 Candidate 执行确定性检查并生成 `VisualizationPreview`：
 
-- Dataset/intent/column 是否存在且唯一；
+- Candidate ID、Dataset、intent、column 是否存在且唯一；
 - DataQA 是否阻断；
 - measure 是否有变化；
 - 时间点、类别基数、series 和完整性是否符合注册约束；
@@ -82,7 +84,7 @@ Adapter 不产生业务结论，不调用 LLM，不执行模型代码。
 3. Candidate task 与 Claim task 有交集，且没有未知 task；
 4. Claim 的全部 EvidenceRef 与 Preview 使用同一个逻辑 Dataset；
 5. Claim 至少绑定 Preview 最终 encoding 的 measure 列；
-6. Claim 已由 ClaimGrounder 落到真实 row/column；
+6. Claim 至少有一个且名称唯一的 binding，并已由 ClaimGrounder 落到真实 row/column 或唯一 statistical result；
 7. 图必须至少有一条 material finding；
 8. required task 必须由 grounded claim 覆盖或明确 limitation；
 9. 不允许把相关性写成因果，不允许使用 QA 阻断数据；
@@ -105,14 +107,14 @@ Adapter 不产生业务结论，不调用 LLM，不执行模型代码。
 
 Agent A 是多轮和展示偏好的唯一正式语义权威：
 
-- “把上一个结果改成柱状图”且数据签名不变：`PRESENTATION_CHANGE + reuse`，零 OpenSearch 查询；复用 Dataset、Evidence、Preview 和 grounded findings，只重新校验兼容性并生成新不可变 AnswerSnapshot；
+- “把上一个结果改成柱状图”且逐任务数据签名不变：`PRESENTATION_CHANGE + reuse`，零 OpenSearch 查询；复用 Dataset、Evidence、FeatureSummary 和 grounded findings，重新执行 Agent C Pass 1，并由 Adapter 生成新的 Preview；
 - 指定图型兼容：采用该安全类型并更新读图说明；
 - 指定图型不兼容：降级为业务结果表，说明原因，清除不再适用的 ChartAnalysis；
 - “按地区重新分析并改成热力图”：维度导致数据签名变化，必须 requery，不能当作纯换图；
-- “为什么这个峰值最高”：`EXPLANATION + reuse`，不改变数据；
+- “为什么这个峰值最高”：`EXPLANATION + reuse`，零 OpenSearch 查询，但重新执行 Agent C Pass 2 并再次 Grounding，不是复制旧回答；
 - 图型不在安全目录：记录 unsupported preference，按真实数据关系选安全图，不让 LLM 注入新 renderer。
 
-Presentation reuse 不会重新生成业务结论，因为数据、任务和 grounded claim 都没有改变；若用户同时要求新的比较、下钻或解释内容，Agent A 必须分类为新分析/维度/过滤/时间变化并走相应链路。
+Presentation reuse 不会生成新的业务结论，因为数据、任务和 grounded claim 都没有改变；它只用 Pass 1 重做展示探索并按 task/Dataset/measure 精确绑定既有 Claim。Explanation reuse 会用 Pass 2 基于已持久化的完整 FeatureSummary 生成新的解释。若用户要求新的比较、下钻、统计方法、指标或粒度，逐任务签名守卫必须强制 requery，不能把它伪装成换图/解释。
 
 ## 7. 安全图表目录不是固定业务模板
 
@@ -153,6 +155,6 @@ Presentation reuse 不会重新生成业务结论，因为数据、任务和 gro
 - [ ] 图与 Claim 的 task/dataset/measure/evidence 校验全部通过；
 - [ ] 普通问题没有固定图数或固定维度；
 - [ ] 每张图都有 purpose/findings/reading guide，必要时有 caveat；
-- [ ] 纯换图零查询且保留证据，新分析请求一定 requery；
+- [ ] 纯换图零查询且重跑 Pass 1；解释追问零查询且重跑 Pass 2；新分析请求一定 requery；
 - [ ] readiness 不是 rule_based/fixture/recorded；
 - [ ] 真实 Shadow 和业务 Owner verdict 已通过。

@@ -226,12 +226,15 @@ Linux/macOS：
 - MCP Gateway；
 - 非 Mock Semantic Package；
 - 非 Mock Semantic Input；
-- 正式 Agent/编排没有 import Mock/recorded class；
+- 非 `internal-template` Semantic Input/Package；
+- 正式 Agent/Prompt/编排/Query/Analytics/Presentation 没有 import Mock/recorded class；
 - 编排没有自然语言规则解析器；
-- Agent A/B/C 三个真实 operation 均存在；
+- 正式 Agent/Prompt/编排/Query/Analytics/Presentation 没有固定趋势/排名/构成 task bundle；
+- Agent A/B/C 四个主 operation 均存在；
+- Agent A 与 Plan Validator 使用当前 Semantic Package 的可视化目录；
 - Agent B 不拥有 DSL，Compiler 仍拥有 DSL。
 
-当前实现固定为 12 项检查；报告必须 12/12 PASSED。少于 12 项通常表示使用了旧脚本或旧分支，禁止继续切换。
+当前实现固定为 15 项检查；报告必须 15/15 PASSED。少于 15 项通常表示使用了旧脚本或旧分支，禁止继续切换。
 
 OpenAI-compatible Adapter 的 response schema name 使用 operation + 输出 Contract，例如 `json_repair_AnalysisPlanDraft`、`json_repair_QueryPlanDraft` 和 `json_repair_InsightDashboardDraft`，避免三个修复调用共享同一个 `json_repair` 名称。
 
@@ -302,12 +305,12 @@ schema_validation=passed|failed
 - 每个新分析至少出现 Agent A operation；
 - 需要新查询时出现 Agent B operation；
 - 有验证数据且进入回答阶段时依次出现 Agent C 两个 operation；即使最终是 0 张图，探索 operation 也必须返回合法空 Candidate 集；
-- 展示复用场景可不执行 Agent B/OpenSearch，但必须有 Agent A 的结构化 turn decision；
+- 展示复用场景不执行 Agent B/OpenSearch，但必须有 Agent A 的结构化 turn decision，并执行 Agent C Pass 1；解释复用必须执行 Agent C Pass 2；
 - DSL 的 provenance/producer 指向 deterministic compiler，不指向 LLM；
 - 指标结果可从 Evidence 中按公式、分子/分母和 Dataset 行重算；
 - 真实 LLM 调用失败时返回失败/受控降级，不调用 `RuleBasedMockLLMClient`。
 
-多轮 Shadow 还必须验证数据签名守卫：dataset、time range、filters、metric、dimension 或 grain 任一变化都必须 requery；只有签名不变的纯展示/解释可复用。总轮次超过 `CHATBI_TURN_TIMEOUT_SECONDS` 必须记录 retryable `TURN_TIMEOUT`，不能继续持锁。Composite 查询的每一页 ExecutionRecord 都必须进入 QA，后续页 shard failure 也必须阻断完整答案。
+多轮 Shadow 还必须验证逐任务数据签名守卫：dataset、time range、filters 或任一 task 的 metric、dimension、grain、statistical method 变化都必须 requery；只有签名不变的纯展示/解释可复用。总轮次超过 `CHATBI_TURN_TIMEOUT_SECONDS` 必须记录 retryable `TURN_TIMEOUT`，不能继续持锁。Composite 查询的每一页 ExecutionRecord 都必须进入 QA，后续页 shard failure 也必须阻断完整答案。
 
 ## 6. Shadow 与 Golden 校准
 

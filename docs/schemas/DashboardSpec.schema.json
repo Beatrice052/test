@@ -191,25 +191,13 @@
         "chart_type": {
           "anyOf": [
             {
-              "enum": [
-                "bar",
-                "line",
-                "heatmap",
-                "stacked_bar",
-                "donut",
-                "dot",
-                "pareto",
-                "table",
-                "pivot"
-              ],
-              "type": "string"
+              "$ref": "#/$defs/GovernedChartType"
             },
             {
               "type": "null"
             }
           ],
-          "default": null,
-          "title": "Chart Type"
+          "default": null
         },
         "content": {
           "additionalProperties": {
@@ -352,6 +340,20 @@
       ],
       "title": "DashboardBlock",
       "type": "object"
+    },
+    "GovernedChartType": {
+      "enum": [
+        "bar",
+        "line",
+        "heatmap",
+        "stacked_bar",
+        "donut",
+        "dot",
+        "pareto",
+        "table",
+        "pivot"
+      ],
+      "type": "string"
     },
     "JsonScalar": {
       "anyOf": [

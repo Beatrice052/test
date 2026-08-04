@@ -18,6 +18,7 @@ from app.contracts.semantic import CanonicalField
 from app.persistence.ids import new_id
 from app.query.ast import BucketNode, FilterNode, MeasureNode, QueryAst
 from app.query.fingerprint import query_fingerprint
+from app.query.time_grain import TimeGrainError, resolve_calendar_interval
 
 
 class QueryCompilationError(ValueError):
@@ -144,7 +145,10 @@ class DslCompiler:
             field = self._field(field_id)
             leaf = field_id.rsplit(".", 1)[-1]
             if field_id == step.time_field_id:
-                interval = "month" if "month" in step.grain else "day"
+                try:
+                    interval = resolve_calendar_interval(step.grain)
+                except TimeGrainError as error:
+                    raise QueryCompilationError(str(error)) from error
                 buckets.append(
                     BucketNode(
                         name=f"dim_{index:02d}_{interval}",

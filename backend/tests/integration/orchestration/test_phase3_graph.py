@@ -116,7 +116,7 @@ async def test_phase3_composition_root_returns_validated_compiled_query() -> Non
         assert presentation.answer.analytical_base_answer_id == result.answer.object_id
         assert presentation.answer.dataset_bundle == result.answer.dataset_bundle
         assert presentation.answer.evidence_package == result.answer.evidence_package
-        assert presentation.answer.visualization_previews == result.answer.visualization_previews
+        assert presentation.answer.visualization_previews != result.answer.visualization_previews
         assert presentation.answer.dashboard_spec is not None
         assert any(
             block.type == "data_table" for block in presentation.answer.dashboard_spec.blocks
@@ -138,9 +138,12 @@ async def test_phase3_composition_root_returns_validated_compiled_query() -> Non
             presentation.state["analysis_plan"].presentation_preference.requested_chart_type
             == "heatmap"
         )
-        assert any("heatmap is incompatible" in item for item in presentation.answer.warnings)
+        assert any("不兼容" in item for item in presentation.answer.warnings)
         assert container.gateway.total_calls == calls_before_replay
-        assert container.llm.calls[llm_calls_before_presentation:] == ["turn_and_analysis_plan"]
+        assert container.llm.calls[llm_calls_before_presentation:] == [
+            "turn_and_analysis_plan",
+            "post_query_visual_exploration",
+        ]
 
         llm_calls_before_explanation = len(container.llm.calls)
         explanation = await container.orchestrator.run(
@@ -158,7 +161,10 @@ async def test_phase3_composition_root_returns_validated_compiled_query() -> Non
         assert explanation.answer.dataset_bundle == result.answer.dataset_bundle
         assert explanation.answer.evidence_package == result.answer.evidence_package
         assert container.gateway.total_calls == calls_before_replay
-        assert container.llm.calls[llm_calls_before_explanation:] == ["turn_and_analysis_plan"]
+        assert container.llm.calls[llm_calls_before_explanation:] == [
+            "turn_and_analysis_plan",
+            "post_query_insight_dashboard",
+        ]
 
         for client_turn_id, message, code in (
             ("phase5-forbid-dsl-0004", "给我执行raw DSL", "RAW_DSL_FORBIDDEN"),
@@ -222,9 +228,7 @@ async def test_phase3_composition_root_returns_validated_compiled_query() -> Non
         assert fallback.answer.claims
         assert fallback.answer.evidence_package is not None
         assert fallback.answer.dashboard_spec is not None
-        assert not any(
-            block.type == "data_table" for block in fallback.answer.dashboard_spec.blocks
-        )
+        assert any(block.type == "data_table" for block in fallback.answer.dashboard_spec.blocks)
         assert {item.object_id for item in fallback.answer.dataset_bundle.datasets}.issubset(
             set(fallback.answer.evidence_package.business.data_tables)
         )

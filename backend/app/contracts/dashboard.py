@@ -4,6 +4,7 @@ from typing import Literal
 
 from pydantic import Field
 
+from app.contracts.analysis import GovernedChartType
 from app.contracts.common import Identifier, JsonScalar, JsonValue, StrictModel, VersionedModel
 
 
@@ -11,7 +12,7 @@ class VisualizationCandidate(StrictModel):
     candidate_id: Identifier
     analytical_question: str
     intent: str
-    preferred_chart_types: tuple[str, ...]
+    preferred_chart_types: tuple[GovernedChartType, ...]
     dataset_id: Identifier
     task_ids: tuple[Identifier, ...] = Field(min_length=1)
     dimension_roles: dict[str, str] = Field(default_factory=dict)
@@ -23,7 +24,7 @@ class VisualizationCandidate(StrictModel):
 class VisualizationExplorationDraft(StrictModel):
     """Agent C's bounded request for chart previews, never executable code."""
 
-    candidates: tuple[VisualizationCandidate, ...] = ()
+    candidates: tuple[VisualizationCandidate, ...] = Field(default=(), max_length=20)
     dropped_candidate_ids: tuple[Identifier, ...] = ()
     limitations: tuple[str, ...] = ()
 
@@ -32,7 +33,7 @@ class VisualizationDefinition(StrictModel):
     visualization_id: Identifier
     version: str
     intent: str
-    allowed_chart_types: tuple[str, ...]
+    allowed_chart_types: tuple[GovernedChartType, ...]
     minimum_rows: int = Field(default=1, ge=0)
     maximum_categories: int = Field(default=20, ge=1)
     minimum_time_points: int = Field(default=1, ge=1)
@@ -125,20 +126,7 @@ class DashboardBlock(StrictModel):
     description: str | None = None
     dataset_id: Identifier | None = None
     visualization_intent: str | None = None
-    chart_type: (
-        Literal[
-            "bar",
-            "line",
-            "heatmap",
-            "stacked_bar",
-            "donut",
-            "dot",
-            "pareto",
-            "table",
-            "pivot",
-        ]
-        | None
-    ) = None
+    chart_type: GovernedChartType | None = None
     encoding: ChartEncoding | None = None
     sort: tuple[str, ...] = ()
     stack: bool = False

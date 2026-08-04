@@ -10,32 +10,34 @@
 |---|---|
 | Ruff lint | PASS |
 | Ruff format | PASS |
-| mypy strict | PASS，130 source files |
-| Backend pytest | PASS，275 tests |
+| mypy strict | PASS，132 source files |
+| Backend pytest | PASS，291 tests |
 | G01–G25 | PASS，包含在后端全量 |
 | JSON Schema snapshots | PASS，41 models |
-| OpenAPI/TypeScript schemas | PASS，55 schemas |
+| OpenAPI/TypeScript schemas | PASS，57 schemas |
 | Frontend ESLint | PASS |
 | Frontend TypeScript | PASS |
 | Frontend Vitest | PASS，7 files / 19 tests |
 | Vite production build | PASS |
 | Chromium Playwright | PASS，1 end-to-end journey |
 | Semantic compile repeatability | PASS，12 files 内容 hash 完全一致 |
-| Mock package version | sp_d59d2225dd6b8317 |
-| Real LLM cutover static gate | PASS，12/12 |
+| Mock package version | sp_5f523f5d403098ae |
+| Real LLM cutover static gate | PASS，15/15 |
 
-后端全量命令在 backend 目录执行，结果为 275 passed、0 failed、0 skipped。pytest 不再依赖仓库内固定 basetemp/cache，避免 Windows 并发或残留句柄造成 setup 级假失败。
+后端全量命令在 backend 目录执行，结果为 291 passed、0 failed、0 skipped。pytest 不再依赖仓库内固定 basetemp/cache，避免 Windows 并发或残留句柄造成 setup 级假失败。
 
 ## 2. 重点业务流程覆盖
 
 - 新问题：Agent A → Resolver → Agent B → Compiler → Gateway → Analytics/QA → Agent C Pass 1 → Visualization Explorer → Agent C Pass 2 → Grounding → Dashboard/Evidence。
-- 纯换图/解释：数据签名不变时复用、零 Gateway。
+- 纯换图：逐任务数据签名不变时零 Gateway，但重跑 Agent C Pass 1 和可视化 Adapter；解释追问零 Gateway，但重跑 Agent C Pass 2 与 Grounding。
 - 混合“实质新问题 + 图表要求”：不会误复用；强制新查询。
-- 时间、过滤、维度、grain、指标变化：数据签名变化即 requery。
+- 时间、过滤或任一 task 的指标、维度、联合 grain、统计方法变化：数据签名变化即 requery。
 - 单值、排名、趋势、二维、构成、Pareto、异常、明细、空结果、高基数。
 - 用户显式 line、heatmap、table；兼容采用，不兼容安全降级。
 - KPI 数量和图表数量动态；普通问题不固定四卡/四图。
 - required task 对应 Grounded Claim 或 limitation；Agent C 有界 repair。
+- AnalysisPlan 拒绝重复 task/metric decision ID，以及 task 引用未选中或已拒绝的指标。
+- Claim 必须至少有一个且名称唯一的 Evidence binding；可视化 Candidate ID 必须唯一。
 - Preview 与 Claim 的 task/Dataset/measure/Evidence 一致；错指标结论不能挂到图上。
 - 同 Dataset/同 intent 的不同受治理 measure 不会被错误去重。
 - 主页面总分析优先；技术聚合、指标口径、QA 进入 Evidence。
@@ -83,18 +85,19 @@
 同一个 semantic-input/mock 编译到两个独立目录：
 
 ~~~text
-package_version = sp_d59d2225dd6b8317
+package_version = sp_5f523f5d403098ae
 field_count = 12
 artifact_file_count = 12
 file_names = identical
 sha256_per_file = identical
+manifest_sha256 = 41f9c55352d0e42d2879ccc3338a6162cd6408d2808f9caadf85a23265b22390
 ~~~
 
 Compiler 的 FTS、manifest、Import Report 和内容产物可重复。
 
 ## 7. 正式 LLM 切换门禁
 
-使用无真实 Secret 的合规形式配置执行静态 cutover，以下 12 项全部通过：
+使用无真实 Secret 的合规形式配置执行静态 cutover，以下 15 项全部通过：
 
 1. live_environment
 2. live_llm_adapter
@@ -104,10 +107,13 @@ Compiler 的 FTS、manifest、Import Report 和内容产物可重复。
 6. mcp_gateway
 7. non_mock_semantic_package
 8. non_mock_semantic_input
-9. mock_adapter_isolation
-10. no_formal_text_intent_parser
-11. three_live_agent_operations
-12. compiler_owns_dsl
+9. non_template_semantic_sources
+10. mock_adapter_isolation
+11. no_formal_text_intent_parser
+12. no_fixed_analysis_task_bundle
+13. three_live_agent_operations
+14. semantic_visualization_catalog_wired
+15. compiler_owns_dsl
 
 该结果只证明代码边界和配置形态正确；真实 endpoint 仍须 probe-llm 和 Shadow。
 
@@ -115,7 +121,8 @@ Compiler 的 FTS、manifest、Import Report 和内容产物可重复。
 
 - 当前 Node.js 为 24.14.1；发布锁定版本是 22.17.0。分层 lint/type/unit/build/E2E 全部通过，GitHub CI 固定 22.17.0，完整 verify-package 在 Node 22 主机重跑。
 - 当前主机没有 Docker，因此未执行真实 Docker image build/profile run；Compose 与 profile 由 YAML/架构测试验证。
-- npm audit 因网络 sandbox 无法访问 npm registry audit endpoint，不能声称本机审计通过；CI 已增加 npm audit --audit-level=high。
+- `uv sync --all-groups --locked` 与 `npm ci` 均通过；npm audit 返回 0 vulnerabilities。
+- 总封装脚本 `verify-package.ps1` 在入口按设计拒绝 Node 24，因此本机不能声称“Node 22 封装门禁”通过；其后各分层项已独立通过。
 - 无真实 LLM/MCP/Excel/Mapping/Secret/业务口径，因此不声称真实 probe、真实指标对账或生产 Shadow 通过。
 
 ## 9. 非阻塞 warning
@@ -125,4 +132,4 @@ Compiler 的 FTS、manifest、Import Report 和内容产物可重复。
 
 ## 10. 上线前必须补齐
 
-按照 docs/integration/INTERNAL_AI_START_HERE.md 完成 Node 22/Docker 门禁、真实 Semantic、12/12 cutover、LLM/MCP probe、只读 smoke、G01–G25 真实 Shadow、指标重算、Evidence ACL、Ingress SSE 和业务 Owner verdict。
+按照 docs/integration/INTERNAL_AI_START_HERE.md 完成 Node 22/Docker 门禁、真实 Semantic、15/15 cutover、LLM/MCP probe、只读 smoke、G01–G25 真实 Shadow、指标重算、Evidence ACL、Ingress SSE 和业务 Owner verdict。

@@ -21,7 +21,7 @@ from app.contracts.dataset import (
 )
 from app.contracts.execution import ExecutionRecord, RawSearchResult
 from app.contracts.insight import FeatureSummary, StatisticalResult
-from app.contracts.metric import MetricDefinition, ValueDictionary
+from app.contracts.metric import MethodDefinition, MetricDefinition, ValueDictionary
 from app.contracts.query import CompiledQuery
 from app.contracts.semantic import CanonicalField
 
@@ -39,9 +39,11 @@ class AnalyticsPipeline:
         *,
         metric_definitions: tuple[MetricDefinition, ...],
         value_dictionaries: tuple[ValueDictionary, ...],
+        method_definitions: tuple[MethodDefinition, ...] = (),
         fields: tuple[CanonicalField, ...] = (),
     ) -> None:
         self.metrics = {item.versioned_id: item for item in metric_definitions}
+        self.methods = {item.method_id: item for item in method_definitions}
         self.value_dictionaries = value_dictionaries
         self.parser = RawResultParser()
         self.contract_factory = DatasetContractFactory(fields)
@@ -241,17 +243,41 @@ class AnalyticsPipeline:
     def _statistics_for(
         self, dataset: TabularDataset, method_ids: tuple[str, ...]
     ) -> tuple[StatisticalResult, ...]:
-        measure = self._preferred_measure(dataset)
         time_column = next(
             (item.name for item in dataset.columns if item.data_type == "datetime"), None
         )
-        params: dict[str, JsonValue] = {"column": measure, "n": 5}
-        if time_column is not None:
-            params["time_column"] = time_column
-        return tuple(
-            self.statistics.compute(method_id, dataset, params)
-            for method_id in dict.fromkeys(method_ids)
-        )
+        results: list[StatisticalResult] = []
+        for method_id in dict.fromkeys(method_ids):
+            definition = self.methods.get(method_id)
+            base_params: dict[str, JsonValue] = (
+                dict(definition.default_params) if definition is not None else {}
+            )
+            base_params.setdefault("n", 5)
+            if time_column is not None:
+                base_params.setdefault("time_column", time_column)
+            for measure in self._analysis_measures(dataset):
+                params = {**base_params, "column": measure}
+                result = self.statistics.compute(method_id, dataset, params)
+                if (
+                    definition is not None
+                    and result.applicability == "APPLICABLE"
+                    and result.sample_size < definition.minimum_rows
+                ):
+                    result = result.model_copy(
+                        update={
+                            "applicability": "NOT_APPLICABLE",
+                            "warnings": tuple(
+                                dict.fromkeys(
+                                    [
+                                        *result.warnings,
+                                        "registered minimum_rows was not satisfied",
+                                    ]
+                                )
+                            ),
+                        }
+                    )
+                results.append(result)
+        return tuple(results)
 
     @staticmethod
     def _empty_dictionary() -> ValueDictionary:
@@ -265,9 +291,14 @@ class AnalyticsPipeline:
         )
 
     @staticmethod
-    def _preferred_measure(dataset: TabularDataset) -> str:
-        metric = next(
-            (item.name for item in dataset.columns if item.semantic_role == "metric"),
-            None,
+    def _analysis_measures(dataset: TabularDataset) -> tuple[str, ...]:
+        numeric = tuple(
+            item.name
+            for item in dataset.columns
+            if item.semantic_role in {"metric", "measure"}
+            and item.data_type in {"integer", "number", "metric"}
         )
-        return metric or "record_count"
+        governed_metrics = tuple(
+            item.name for item in dataset.columns if item.semantic_role == "metric"
+        )
+        return governed_metrics or numeric or ("record_count",)

@@ -23,7 +23,7 @@ docs/gates/internal-*.md
 ./scripts/verify-package.ps1
 ```
 
-必须通过 lockfile 安装、Mock Semantic compile、当前分支 275 个 backend tests、G01–G25、frontend type/lint/19 unit/build、Playwright G02/G15/G25、Mock readiness。失败即外网交付问题，不进入真实接入。
+必须通过 lockfile 安装、Mock Semantic compile、当前分支 291 个 backend tests、G01–G25、frontend type/lint/19 unit/build、Playwright G02/G15/G25、Mock readiness。失败即外网交付问题，不进入真实接入。
 
 ## 2. Adapter 探测
 
@@ -36,7 +36,7 @@ docs/gates/internal-*.md
 
 MCP probe 只探测 Tool/schema/health，不执行业务 DSL。LLM probe 不发送业务数据。
 
-真实 LLM 的四个主 operation（Agent C 含两个固定 Pass）、A/B/C 各自 repair schema、严禁迁移的 Mock 函数、日志字段、12 项切换门禁、Shadow 断言和失败回滚详见 [真实 LLM 切换手册](real_llm_cutover_runbook.md) 与 [双阶段可视化架构](visualization_agent_architecture.md)。正式 LLM 失败不得静默回退到 `rule_based`。
+真实 LLM 的四个主 operation（Agent C 含两个固定 Pass）、A/B/C 各自 repair schema、严禁迁移的 Mock 函数、日志字段、15 项切换门禁、Shadow 断言和失败回滚详见 [真实 LLM 切换手册](real_llm_cutover_runbook.md)、[三 Agent 决策权矩阵](decision_authority_matrix.md) 与 [双阶段可视化架构](visualization_agent_architecture.md)。正式 LLM 失败不得静默回退到 `rule_based`。
 
 ## 3. Mapping 与 Semantic
 
@@ -48,7 +48,7 @@ MCP probe 只探测 Tool/schema/health，不执行业务 DSL。LLM probe 不发�
 
 ## 5. 真实只读 Smoke
 
-执行 `smoke-mcp`。只在 Health/list/mapping 通过后依次运行 narrow count、channel、channel×status、multi-month；检查 timeout、Shard、bucket、timezone 和 total。禁止一开始运行复杂 Dashboard。
+执行 `smoke-mcp`。只在 Health/list/mapping 通过后，按已审核真实语义依次运行窄范围总量、一个类别拆分、一个必要的交叉维度和一个跨期问题；示例字段不是正式固定任务。检查 timeout、Shard、bucket、timezone 和 total，禁止一开始运行复杂 Dashboard。
 
 ## 6. Shadow 双跑
 

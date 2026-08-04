@@ -190,6 +190,54 @@ async def test_finalizer_promotes_agent_bucket_underestimate_within_budget() -> 
 
 
 @pytest.mark.asyncio
+async def test_finalizer_enforces_agent_a_query_count_budget() -> None:
+    package, analysis, resolved, draft, _, _ = await _plans("查询2026年7月各Channel失败率")
+    first = draft.steps[0]
+    optional = first.model_copy(
+        update={
+            "step_id": "q2_optional_status",
+            "purpose_task_ids": (),
+            "dimensions": ("sub_message.status",),
+            "grain": ("sub_message.status",),
+            "result_contract_id": "dc_optional_status",
+            "required": False,
+        }
+    )
+    constrained = analysis.model_copy(
+        update={"budget": analysis.budget.model_copy(update={"max_queries": 1})}
+    )
+    finalizer = QueryPlanFinalizer(
+        index_router=IndexRouter(
+            datasets=package.datasets(), policies=package.policies(), fields=package.fields()
+        ),
+        budget=QueryBudget(),
+    )
+
+    with pytest.raises(QueryPlanFinalizationError, match="AnalysisPlan budget"):
+        finalizer.finalize(
+            draft.model_copy(update={"steps": (first, optional)}),
+            constrained,
+            resolved,
+        )
+
+
+@pytest.mark.asyncio
+async def test_compiler_preserves_weekly_time_grain_in_date_histogram() -> None:
+    package, _, _, _, plan, _ = await _plans("7月每天的消息趋势")
+    base_step = plan.steps[0]
+    weekly_step = base_step.model_copy(update={"grain": ("week",)})
+    weekly_plan = plan.model_copy(
+        update={"steps": (weekly_step,), "total_estimated_buckets": weekly_step.estimated_buckets}
+    )
+
+    compiled = DslCompiler(fields=package.fields(), metrics=package.metrics()).compile(
+        weekly_plan, weekly_step.step_id
+    )
+
+    assert '"calendar_interval":"week"' in compiled.model_dump_json()
+
+
+@pytest.mark.asyncio
 async def test_composite_page_keeps_base_fingerprint_and_uses_server_after_key() -> None:
     package, _, _, _, plan, _ = await _plans("查询2026年7月各Channel失败率")
     large_step = plan.steps[0].model_copy(update={"estimated_buckets": 5000})

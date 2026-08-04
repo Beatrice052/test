@@ -183,7 +183,7 @@ async def test_compound_question_decomposes_goals_and_binds_each_chart_to_its_ta
     assert changed.query_plan == answer.query_plan
     assert changed.dataset_bundle == answer.dataset_bundle
     assert changed.evidence_package == answer.evidence_package
-    assert changed.visualization_previews == answer.visualization_previews
+    assert changed.visualization_previews != answer.visualization_previews
     assert gateway.total_calls == calls_before_presentation_change
     assert any(
         item.type == "chart" and item.chart_type == "dot" for item in changed.dashboard_spec.blocks

@@ -8,11 +8,12 @@
 任何历史项目、旧提示词、口头约定或既有 RuleBased 逻辑与该基线冲突时，以该文件为准。开始工作前必须完整阅读：
 
 1. `docs/integration/INTERNAL_AI_START_HERE.md`
-2. `docs/requirements_traceability.md`
-3. `docs/integration/real_llm_cutover_runbook.md`
-4. `docs/integration/multi_agent_orchestration.md`
-5. `docs/integration/visualization_agent_architecture.md`
-6. `docs/internal_checklist.md`
+2. `docs/integration/decision_authority_matrix.md`
+3. `docs/requirements_traceability.md`
+4. `docs/integration/real_llm_cutover_runbook.md`
+5. `docs/integration/multi_agent_orchestration.md`
+6. `docs/integration/visualization_agent_architecture.md`
+7. `docs/internal_checklist.md`
 
 ## 不可破坏的架构边界
 
@@ -26,12 +27,13 @@
 
 ## Mock 隔离红线
 
-`backend/app/llm/rule_based.py`、`fixture.py`、`recorded.py` 仅服务无凭证测试。严禁：
+`backend/app/llm/rule_based.py`、`mock_chart_preferences.py`、`fixture.py`、`recorded.py` 仅服务无凭证测试。严禁：
 
 - 把其中的关键词、意图、指标、维度、时间、图表或 Claim 规则复制到正式 Agent、编排、Query、Analytics 或 Presentation 路径；
 - 真实 LLM 失败后静默切换到 RuleBased/Fixture/Recorded；
 - 用新增规则让 Mock 看起来像真实开放式分析模型；
 - 在 `mcp/prod/production` 中使用 Mock Identity、Mock Semantic Package/Input 或非 MCP Gateway。
+- 在 `mcp/prod/production` 中直接使用 `semantic-input/internal-template`，或把模板 Recipe 当成默认任务清单。
 
 正式路径只依赖 `StructuredLLMClient`。若真实端点的 strict JSON Schema 不兼容，只能修改 Adapter 兼容层或端点配置，不能放宽 Contract 或改成自由文本。
 

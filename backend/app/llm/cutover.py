@@ -31,25 +31,33 @@ def evaluate_real_llm_cutover(
     environment = settings.app_env.casefold()
     semantic_parts = {part.casefold() for part in settings.chatbi_semantic_package_dir.parts}
     semantic_input_parts = {part.casefold() for part in settings.chatbi_semantic_input_dir.parts}
-    formal_files = tuple((app_source_root / "agents").glob("*.py")) + tuple(
-        (app_source_root / "orchestration").glob("*.py")
+    formal_python_roots = (
+        "agents",
+        "orchestration",
+        "query",
+        "analytics",
+        "presentation",
     )
+    formal_files = tuple(
+        path for root in formal_python_roots for path in (app_source_root / root).rglob("*.py")
+    ) + tuple((app_source_root / "agents" / "prompts").rglob("*.md"))
     forbidden_imports = (
         "app.llm.rule_based",
         "app.llm.fixture",
         "app.llm.recorded",
+        "app.llm.mock_chart_preferences",
         "RuleBasedMockLLMClient",
         "FixtureLLMClient",
         "RecordedLLMClient",
+        "parse_chart_preference",
     )
     polluted_files = [
-        path.name
+        path.relative_to(app_source_root).as_posix()
         for path in formal_files
         if any(token in path.read_text(encoding="utf-8") for token in forbidden_imports)
     ]
-    orchestration_uses_text_parser = any(
-        "parse_chart_preference" in path.read_text(encoding="utf-8")
-        for path in (app_source_root / "orchestration").glob("*.py")
+    formal_path_uses_text_parser = any(
+        "parse_chart_preference" in path.read_text(encoding="utf-8") for path in formal_files
     )
 
     agent_sources = "\n".join(
@@ -65,6 +73,14 @@ def evaluate_real_llm_cutover(
         encoding="utf-8"
     )
     phase3 = (app_source_root / "orchestration" / "phase3_nodes.py").read_text(encoding="utf-8")
+    bootstrap_source = (app_source_root / "bootstrap.py").read_text(encoding="utf-8")
+    fixed_task_bundle_tokens = (
+        "task_time_trend",
+        "task_ranked_comparison",
+        "task_composition",
+        'requested_intents.extend(("time_trend", "ranked_comparison", "composition"))',
+    )
+    formal_source = "\n".join(path.read_text(encoding="utf-8") for path in formal_files)
 
     raw_checks = (
         (
@@ -108,19 +124,40 @@ def evaluate_real_llm_cutover(
             "The formal profile must compile only the reviewed non-Mock semantic input.",
         ),
         (
+            "non_template_semantic_sources",
+            not any(part.endswith("template") for part in semantic_parts | semantic_input_parts),
+            "Formal runtime must use reviewed internal semantic input/package, never "
+            "internal-template directly.",
+        ),
+        (
             "mock_adapter_isolation",
             not polluted_files,
-            "Formal Agent/orchestration modules must not import concrete Mock/recorded adapters.",
+            "Formal Agent, prompt, orchestration, query, analytics, and presentation modules "
+            "must not import concrete Mock/recorded adapters.",
         ),
         (
             "no_formal_text_intent_parser",
-            not orchestration_uses_text_parser,
-            "Formal orchestration must consume Agent A contracts, not text-rule parsers.",
+            not formal_path_uses_text_parser,
+            "The formal decision path must consume Agent contracts, not text-rule parsers.",
+        ),
+        (
+            "no_fixed_analysis_task_bundle",
+            not any(token in formal_source for token in fixed_task_bundle_tokens),
+            "Formal Agent, prompt, orchestration, query, analytics, and presentation code must "
+            "not hard-code the Mock trend/rank/composition task bundle.",
         ),
         (
             "three_live_agent_operations",
             all(operation in agent_sources for operation in required_operations),
             "Agent A/B and both bounded Agent C passes must call StructuredLLMClient.generate().",
+        ),
+        (
+            "semantic_visualization_catalog_wired",
+            "visualization_definitions=package.visualizations()" in bootstrap_source
+            and "validator=AnalysisPlanValidator(" in bootstrap_source
+            and "maximum_budget=maximum_analysis_budget" in bootstrap_source,
+            "Agent A and its validator must consume the deployed Semantic Package's "
+            "visualization catalog and server analysis budget.",
         ),
         (
             "compiler_owns_dsl",

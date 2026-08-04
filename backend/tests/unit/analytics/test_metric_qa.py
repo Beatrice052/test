@@ -8,6 +8,7 @@ import pytest
 from app.analytics.derivation import DerivationResult, StatusMetricDeriver
 from app.analytics.features import FeatureSummaryBlocked, FeatureSummaryBuilder
 from app.analytics.identity import stable_row_id
+from app.analytics.pipeline import AnalyticsPipeline
 from app.analytics.qa import DataQAEngine
 from app.analytics.statistics import StatisticEngine
 from app.contracts.common import Provenance, semantic_hash
@@ -287,3 +288,21 @@ def test_statistic_methods_return_not_applicable_instead_of_system_failure() -> 
     assert mad.applicability == "NOT_APPLICABLE"
     unknown = engine.compute("invented_method", derived.dataset, {})
     assert unknown.applicability == "NOT_APPLICABLE"
+
+
+def test_pipeline_runs_each_selected_method_for_every_governed_metric_column() -> None:
+    package = CompiledSemanticPackage(PACKAGE_DIR)
+    dataset = _derive().dataset
+    pipeline = AnalyticsPipeline(
+        metric_definitions=package.metrics(),
+        value_dictionaries=package.values(),
+        method_definitions=package.methods(),
+    )
+
+    results = pipeline._statistics_for(dataset, ("rank",))
+
+    applicable_columns = {
+        item.values.get("column") for item in results if item.applicability == "APPLICABLE"
+    }
+    assert applicable_columns == {"message_record_count.v1", "failure_rate.v1"}
+    assert all(len(item.values["top"]) <= 5 for item in results)

@@ -94,6 +94,13 @@ class AppSettings(BaseSettings):
         semantic_input_parts = {part.casefold() for part in self.chatbi_semantic_input_dir.parts}
         if environment in formal_environments and "mock" in semantic_input_parts:
             raise ValueError("mcp/production cannot compile the Mock semantic input")
+        if environment in formal_environments and any(
+            part.endswith("template") for part in semantic_parts | semantic_input_parts
+        ):
+            raise ValueError(
+                "mcp/production cannot use internal-template directly; prepare and review "
+                "semantic-input/internal first"
+            )
         return self
 
 

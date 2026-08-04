@@ -167,6 +167,9 @@ def _retrieval_documents(
                 "item_type": "dataset",
                 "display_name": dataset.display_name,
                 "description": dataset.description or "",
+                "primary_time_field_id": dataset.primary_time_field_id,
+                "default_timezone": dataset.default_timezone,
+                "missing_index_policy": dataset.missing_index_policy,
             }
         )
     for metric in metrics.definitions:
@@ -178,6 +181,14 @@ def _retrieval_documents(
                     "display_name": metric.display_name,
                     "description": metric.business_definition,
                     "capabilities": metric.dimensions,
+                    "level": metric.level,
+                    "unit": metric.unit,
+                    "minimum_denominator": metric.minimum_denominator,
+                    "time_semantics": (
+                        None
+                        if metric.time_semantics is None
+                        else metric.time_semantics.model_dump(mode="json")
+                    ),
                 }
             )
     for recipe in recipes.definitions:
@@ -188,6 +199,10 @@ def _retrieval_documents(
                 "display_name": recipe.question_archetype,
                 "description": " ".join(recipe.minimum_capabilities),
                 "capabilities": recipe.minimum_capabilities,
+                "metric_ids": recipe.metric_ids,
+                "method_ids": recipe.method_ids,
+                "dimension_roles": recipe.dimension_roles,
+                "visualization_intents": recipe.visualization_intents,
             }
         )
     for method in methods.definitions:
@@ -198,6 +213,9 @@ def _retrieval_documents(
                 "display_name": method.display_name,
                 "description": "exploratory statistical method",
                 "capabilities": method.required_semantic_types,
+                "minimum_rows": method.minimum_rows,
+                "exploratory_label_required": method.exploratory_label_required,
+                "default_params": method.default_params,
             }
         )
     for dictionary in values.definitions:

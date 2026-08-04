@@ -2,6 +2,8 @@
 
 状态：当前权威实现说明（2026-08-04 / MI-NEW）。若历史文档描述“自由 Supervisor、多 Agent 互聊、Agent 直接调用 MCP/绘图库”或“Agent C 一次生成图和结论”，以本文、当前代码和唯一基线为准。
 
+逐节点输入、输出、AI/程序决策权、失败策略和正式验收以 [三 Agent 全流程决策权与验收矩阵](decision_authority_matrix.md) 为统一索引。
+
 ## 1. 结论
 
 本系统采用“一个确定性主编排器 + 三个有界专业 Agent + 确定性执行/治理节点”，不是自由多 Agent 网络：
@@ -23,14 +25,15 @@ flowchart TD
     RET --> A["Agent A：意图 + AnalysisPlan"]
     A --> AR["Plan Validator + Semantic Resolver"]
     AR -->|"澄清/拒绝"| END["终态 AnswerSnapshot"]
-    AR -->|"只改展示/解释且数据签名不变"| REUSE["复用 DatasetBundle 与 Evidence"]
+    AR -->|"只改展示/解释且逐任务数据签名不变"| REUSE["复用 DatasetBundle、Evidence 与 FeatureSummary"]
     AR -->|"需要查询"| B["Agent B：逻辑 QueryPlanDraft"]
     B --> QV["Consolidator + Finalizer + Index Router"]
     QV --> DSL["DSL Compiler + Validator"]
     DSL --> MCP["只读 MCP Gateway"]
     MCP --> DATA["Normalize + Metric + Statistics + QA"]
     DATA --> C1["Agent C Pass 1：探索意图 0/1/N"]
-    REUSE --> C1
+    REUSE -->|"PRESENTATION_CHANGE"| C1
+    REUSE -->|"EXPLANATION"| C2
     C1 --> VX["Visualization Explorer + Feasibility + Preview"]
     VX --> C2["Agent C Pass 2：总分析 + Claim + 每图解释"]
     C2 --> GR["Grounding + Coverage + 去重"]
@@ -52,6 +55,8 @@ flowchart TD
 - 字段候选的业务 description、aliases、business_domain、semantic_type、mapping_type、capabilities、maturity、compatibility 和可选 cardinality 画像；
 - Policy 的候选 ID 边界、查询/桶/Dashboard 预算；
 - 允许的展示类型目录。
+
+展示类型与 visualization intent 由当前已编译 Semantic Package 动态注入 Agent A 和 Plan Validator，不允许在正式 Agent 中维护问题到图表的固定映射。Recipe 候选同时携带受治理的 metric/method/dimension-role/visualization-intent 建议，但 Recipe 不是自动展开的任务模板。
 
 Agent A 不接收完整 Mapping、物理路径、索引名、MCP Tool 列表、凭证、raw document、raw DSL 或其他 Agent 的自由推理。
 
@@ -89,7 +94,7 @@ cardinality_estimate / cardinality_approximate
 
 1. 逐一覆盖 required analytical tasks；
 2. 根据任务指标、维度、方法和字段画像设计最小充分结果粒度；
-3. 一次查询能够安全派生趋势、排名、构成和统计时进行合并；
+3. 多个真实任务能够从同一最小充分 Dataset 安全派生时进行合并；具体派生类型由本轮 AnalysisPlan 决定；
 4. 只有 Top N 依赖等确有必要时才建立 dependent query；
 5. 显式声明 QueryStep、purpose_task_ids、grain、result contract、预算估计和依赖来源；
 6. 能力或兼容性不足时不发明字段、不偷偷缩小问题，交给确定性 Validator 拒绝或进入澄清/部分回答。
@@ -115,7 +120,7 @@ Agent C 同时看到经 QA 的全部分析特征和最终 Preview，生成：
 - 每张 Preview 的 purpose、findings、reading guide、caveat；
 - KPI 建议、限制和推荐追问。
 
-图与结论通过 task/dataset/measure/claim ID 显式绑定，不能先画固定图再按自然语言相似度匹配结论。Grounding 会删除无证据、重复、跨粒度或绑定不一致的内容。
+图与结论通过 task/dataset/measure/claim ID 显式绑定，不能先画固定图再按自然语言相似度匹配结论。Candidate ID 必须唯一；每条 Claim 必须有至少一个且名称唯一的 evidence binding。Grounding 会删除无证据、重复、跨粒度或绑定不一致的内容。
 
 ## 6. OpenSearch MCP 元数据流程
 
@@ -166,5 +171,5 @@ Semantic Package 有 package_version。一次用户轮次固定使用一个版�
 - 验证 Index Router 对所选月份逐字段检查 observed mapping；
 - 验证 profile query 固定 `size:0` 且只覆盖政策允许字段；
 - 验证 Agent C 的 0/1/N 图表选择、每图解释和图文同源绑定；
-- 验证纯换图复用 DatasetBundle，新增比较/下钻才重新规划和查询；
+- 验证纯换图复用 DatasetBundle 且重跑 Pass 1，解释追问重跑 Pass 2；新增比较/下钻/统计方法/联合粒度必须重新规划和查询；
 - 用真实 Shadow 人工检查“总分析是否完整回答用户问题”，不能只检查 JSON Schema 通过。

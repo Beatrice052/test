@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import UTC, datetime, timedelta
-from math import ceil
+from datetime import UTC, datetime
 
 from app.contracts.analysis import AnalysisPlan, ResolvedAnalysis
 from app.contracts.common import Provenance, semantic_hash
@@ -12,6 +11,7 @@ from app.persistence.ids import new_id
 from app.query.consolidator import QueryConsolidator
 from app.query.cost import QueryBudget
 from app.query.index_router import IndexRouter
+from app.query.time_grain import TimeGrainError, resolve_calendar_interval, time_bucket_count
 
 
 class QueryPlanFinalizationError(ValueError):
@@ -61,6 +61,8 @@ class QueryPlanFinalizer:
             finalized.append(finalized_step)
             notes.extend(route_notes)
         total_buckets = sum(step.estimated_buckets for step in finalized)
+        if len(finalized) > analysis.budget.max_queries:
+            raise QueryPlanFinalizationError("query count exceeds the AnalysisPlan budget")
         effective_bucket_limit = min(self.budget.max_total_buckets, analysis.budget.max_buckets)
         if total_buckets > effective_bucket_limit:
             raise QueryPlanFinalizationError("total estimated buckets exceed effective budget")
@@ -254,18 +256,11 @@ class QueryPlanFinalizer:
 
     @staticmethod
     def _time_bucket_count(step: QueryStep) -> int | None:
-        grain = next((item for item in step.grain if item in {"day", "week", "month"}), None)
-        if grain is None:
-            return None
-        start = step.time_range.from_inclusive
-        end = step.time_range.to_exclusive
-        seconds = (end - start).total_seconds()
-        if grain == "day":
-            return max(1, ceil(seconds / 86_400))
-        if grain == "week":
-            return max(1, ceil(seconds / (7 * 86_400)))
-        last = end - timedelta(microseconds=1)
-        return max(1, (last.year - start.year) * 12 + last.month - start.month + 1)
+        try:
+            interval = resolve_calendar_interval(step.grain)
+        except TimeGrainError as error:
+            raise QueryPlanFinalizationError(str(error)) from error
+        return time_bucket_count(step.time_range, interval)
 
     def _validate_dependencies(self, steps: tuple[QueryStep, ...]) -> None:
         known: dict[str, QueryStep] = {}

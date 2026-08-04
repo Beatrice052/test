@@ -4,12 +4,12 @@ from datetime import datetime
 
 from pydantic import Field
 
-from app.contracts.analysis import AnalysisPlan, AnswerStatus, TurnKind
+from app.contracts.analysis import AnalysisPlan, AnalyticalTask, AnswerStatus, TurnKind
 from app.contracts.common import Identifier, StrictModel, VersionedModel
 from app.contracts.dashboard import DashboardSpec, VisualizationPreview
 from app.contracts.dataset import DatasetBundle
 from app.contracts.evidence import EvidencePackage
-from app.contracts.insight import ClaimSpec
+from app.contracts.insight import ClaimSpec, FeatureSummary
 from app.contracts.query import QueryPlan
 
 
@@ -19,6 +19,7 @@ class ActiveAnalyticalContext(StrictModel):
     metric_ids: tuple[Identifier, ...] = ()
     dimension_ids: tuple[Identifier, ...] = ()
     grain: tuple[str, ...] = ()
+    tasks: tuple[AnalyticalTask, ...] = ()
     filter_summary: tuple[str, ...] = ()
     time_summary: str | None = None
 
@@ -44,6 +45,7 @@ class AnswerSnapshot(VersionedModel):
     analysis_plan: AnalysisPlan | None = None
     query_plan: QueryPlan | None = None
     dataset_bundle: DatasetBundle | None = None
+    feature_summaries: tuple[FeatureSummary, ...] = ()
     dashboard_spec: DashboardSpec | None = None
     visualization_previews: tuple[VisualizationPreview, ...] = ()
     claims: tuple[ClaimSpec, ...] = ()

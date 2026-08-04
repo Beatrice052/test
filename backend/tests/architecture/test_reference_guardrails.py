@@ -94,6 +94,7 @@ def test_agents_depend_on_the_llm_protocol_not_a_concrete_mock_or_endpoint() -> 
         "app.llm.openai_compatible",
         "app.llm.recorded",
         "app.llm.rule_based",
+        "app.llm.mock_chart_preferences",
     }
     violations: list[str] = []
     for path in (APP_ROOT / "agents").rglob("*.py"):
@@ -108,7 +109,7 @@ def test_agents_depend_on_the_llm_protocol_not_a_concrete_mock_or_endpoint() -> 
 def test_natural_language_chart_alias_parser_is_not_an_orchestration_decision_node() -> None:
     allowed = {
         APP_ROOT / "llm" / "rule_based.py",
-        APP_ROOT / "presentation" / "chart_preferences.py",
+        APP_ROOT / "llm" / "mock_chart_preferences.py",
     }
     violations: list[str] = []
     for path, tree in _application_trees():

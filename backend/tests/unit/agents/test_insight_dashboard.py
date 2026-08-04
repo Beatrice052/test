@@ -109,7 +109,7 @@ async def test_checked_in_agent_c_fixture_interpolates_list_paths() -> None:
 
 @pytest.mark.asyncio
 async def test_agent_c_directed_repair_is_bounded_to_schema_ids_without_rows() -> None:
-    _, analysis, bundle, _ = await _inputs()
+    _, analysis, bundle, features = await _inputs()
     client = CaptureInsightClient()
     agent = InsightDashboardAgent(
         AgentRuntime(llm=client, system_prompt=PROMPT.read_text(encoding="utf-8"))
@@ -137,6 +137,7 @@ async def test_agent_c_directed_repair_is_bounded_to_schema_ids_without_rows() -
         errors=("0:GROUNDING_REJECTED:column is missing",),
         analysis_plan=analysis,
         bundle=bundle,
+        feature_summaries=features,
         visualization_previews=(),
         attempt=1,
         correlation_id="cor_agent_c_repair",

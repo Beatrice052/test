@@ -5,7 +5,13 @@ from __future__ import annotations
 from datetime import datetime
 
 from app.agents.base import AgentRuntime
-from app.contracts.analysis import AnalysisPlanDraft, TurnDecision
+from app.contracts.analysis import (
+    GOVERNED_CHART_TYPES,
+    AnalysisBudget,
+    AnalysisPlanDraft,
+    TurnDecision,
+)
+from app.contracts.dashboard import VisualizationDefinition
 from app.contracts.request import ChatRequest
 from app.contracts.semantic import CandidateItem, SemanticCandidateSet
 from app.contracts.session import ActiveAnalyticalContext
@@ -14,8 +20,15 @@ from app.llm.repair import build_analysis_plan_repair_payload
 
 
 class DataAnalystPlannerAgent:
-    def __init__(self, runtime: AgentRuntime) -> None:
+    def __init__(
+        self,
+        runtime: AgentRuntime,
+        visualization_definitions: tuple[VisualizationDefinition, ...] = (),
+        maximum_budget: AnalysisBudget | None = None,
+    ) -> None:
         self.runtime = runtime
+        self.visualization_definitions = visualization_definitions
+        self.maximum_budget = maximum_budget or AnalysisBudget()
 
     async def plan(
         self,
@@ -48,21 +61,7 @@ class DataAnalystPlannerAgent:
                     "NEW_TOPIC",
                 ],
             },
-            "presentation_catalog": {
-                "agent_must_interpret_explicit_user_preference": True,
-                "allowed_chart_types": [
-                    "bar",
-                    "line",
-                    "heatmap",
-                    "stacked_bar",
-                    "donut",
-                    "dot",
-                    "pareto",
-                    "table",
-                    "pivot",
-                ],
-                "unknown_requested_type_goes_to": "unsupported_chart_label",
-            },
+            "presentation_catalog": self._presentation_catalog(),
             "candidate_datasets": self._summaries(candidates.dataset_candidates),
             "candidate_metrics": self._summaries(candidates.metric_candidates),
             "candidate_fields": self._summaries(candidates.field_candidates),
@@ -70,7 +69,7 @@ class DataAnalystPlannerAgent:
             "candidate_methods": self._summaries(candidates.method_candidates),
             "candidate_values": self._summaries(candidates.value_candidates),
             "policy_summary": {"candidate_ids_only": True},
-            "budgets": {"max_queries": 3, "max_buckets": 5000, "max_blocks": 8},
+            "budgets": self.maximum_budget.model_dump(mode="json"),
         }
         if fixture_id is not None:
             payload["fixture_id"] = fixture_id
@@ -104,6 +103,8 @@ class DataAnalystPlannerAgent:
             attempt=attempt,
             fixture_id=fixture_id,
         )
+        payload["presentation_catalog"] = self._presentation_catalog()
+        payload["budgets"] = self.maximum_budget.model_dump(mode="json")
         return await self.runtime.llm.generate(
             operation="json_repair",
             system_prompt=self.runtime.system_prompt,
@@ -126,3 +127,42 @@ class DataAnalystPlannerAgent:
             }
             for item in items
         ]
+
+    def _presentation_catalog(self) -> dict[str, object]:
+        """Expose the deployed governed catalog, never a question-shaped chart template."""
+
+        definitions = self.visualization_definitions
+        allowed_chart_types = tuple(
+            dict.fromkeys(
+                (
+                    *(
+                        chart_type
+                        for definition in definitions
+                        for chart_type in definition.allowed_chart_types
+                    ),
+                    "table",
+                    "pivot",
+                )
+            )
+        )
+        if not definitions:
+            # Isolated Agent unit tests may omit a Semantic Package. Formal bootstrap always
+            # injects its reviewed definitions and the cutover gate verifies that wiring.
+            allowed_chart_types = GOVERNED_CHART_TYPES
+        return {
+            "agent_must_interpret_explicit_user_preference": True,
+            "allowed_chart_types": list(allowed_chart_types),
+            "visualization_intents": [
+                {
+                    "intent": item.intent,
+                    "allowed_chart_types": list(item.allowed_chart_types),
+                    "minimum_rows": item.minimum_rows,
+                    "maximum_categories": item.maximum_categories,
+                    "minimum_time_points": item.minimum_time_points,
+                    "requires_complete_distribution": item.requires_complete_distribution,
+                }
+                for item in definitions
+            ],
+            "unknown_requested_type_goes_to": "unsupported_chart_label",
+            "selection_rule": "choose zero, one, or several intents from the actual question",
+        }

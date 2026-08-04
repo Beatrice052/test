@@ -76,3 +76,26 @@ def test_internal_mcp_profile_rejects_mock_semantic_input() -> None:
             chatbi_semantic_package_dir="../compiled-semantic/internal",
             chatbi_semantic_input_dir="../semantic-input/mock",
         )
+
+
+@pytest.mark.parametrize(
+    ("package_dir", "input_dir"),
+    (
+        ("../compiled-semantic/internal", "../semantic-input/internal-template"),
+        ("../compiled-semantic/internal-template", "../semantic-input/internal"),
+    ),
+)
+def test_internal_mcp_profile_rejects_unreviewed_template_paths(
+    package_dir: str, input_dir: str
+) -> None:
+    with pytest.raises(ValueError, match="cannot use internal-template directly"):
+        AppSettings(
+            app_env="mcp",
+            chatbi_identity_mode="trusted_headers",
+            chatbi_llm_mode="openai_compatible",
+            chatbi_llm_base_url="https://llm.internal/v1",
+            chatbi_llm_model="approved-model",
+            chatbi_gateway_mode="mcp",
+            chatbi_semantic_package_dir=package_dir,
+            chatbi_semantic_input_dir=input_dir,
+        )

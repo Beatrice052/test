@@ -19,16 +19,17 @@
 
 1. 仓库根目录 AGENTS.md：禁止事项和修改门禁。
 2. 本文：全流程、真实接入和故障处理。
-3. docs/requirements_traceability.md：需求到代码、测试和证据的映射。
-4. docs/integration/real_llm_cutover_runbook.md：真实 LLM、Mock 隔离和 Shadow 质量要求。
-5. docs/integration/multi_agent_orchestration.md：主编排器、Agent A/B/C、字段元数据和充分性门禁。
-6. docs/integration/visualization_agent_architecture.md：Agent C 双阶段图表/结论架构。
-7. docs/integration/mcp_adapter_guide.md：官方只读 OpenSearch MCP、索引发现和字段画像。
-8. docs/integration/semantic_schema_guide.md：真实 Excel/Mapping/Profile 到 Semantic Package。
-9. docs/integration/streaming_progress_design.md：SSE/Ingress。
-10. docs/internal_checklist.md：上线签字清单。
+3. docs/integration/decision_authority_matrix.md：逐节点 AI/程序决策权、失败行为和验收证据。
+4. docs/requirements_traceability.md：需求到代码、测试和证据的映射。
+5. docs/integration/real_llm_cutover_runbook.md：真实 LLM、Mock 隔离和 Shadow 质量要求。
+6. docs/integration/multi_agent_orchestration.md：主编排器、Agent A/B/C、字段元数据和充分性门禁。
+7. docs/integration/visualization_agent_architecture.md：Agent C 双阶段图表/结论架构。
+8. docs/integration/mcp_adapter_guide.md：官方只读 OpenSearch MCP、索引发现和字段画像。
+9. docs/integration/semantic_schema_guide.md：真实 Excel/Mapping/Profile 到 Semantic Package。
+10. docs/integration/streaming_progress_design.md：SSE/Ingress。
+11. docs/internal_checklist.md：上线签字清单。
 
-`docs/gates/`、早期 phase 审计和旧测试报告是历史证据，不是当前开发指令。若其中的 operation、Contract、图表流程或测试数字与本文不同，以本文和当前代码为准。
+`docs/gates/`、早期 phase 审计和旧测试报告是历史证据，不是当前开发指令。若其中的 operation、Contract、图表流程或测试数字与本文不同，以本文、`decision_authority_matrix.md` 和当前代码为准。
 
 不要先改代码。先运行第 3 节离线门禁，并把失败归类为环境问题、真实输入问题或实现缺陷。
 
@@ -40,7 +41,7 @@ flowchart TD
     API --> A["Agent A：turn_and_analysis_plan"]
     A --> R["确定性 Resolver / Validator"]
     R -->|需要澄清或不可回答| T["终态 AnswerSnapshot"]
-    R -->|复用且数据签名一致| REUSE["复用不可变 Dataset/Answer"]
+    R -->|复用且逐任务数据签名一致| REUSE["复用不可变 Dataset/Evidence/FeatureSummary"]
     R -->|需要新查询| B["Agent B：logical_query_plan"]
     B --> F["确定性 Finalizer / Consolidator"]
     F --> CDSL["确定性 DSL Compiler / Validator / Index Router"]
@@ -55,7 +56,8 @@ flowchart TD
     G --> E["Business / Advanced Evidence"]
     D --> SNAP["不可变 AnswerSnapshot"]
     E --> SNAP
-    REUSE --> SNAP
+    REUSE -->|纯换图| C1
+    REUSE -->|解释追问| C2
 ~~~
 
 以下对象层是审计边界，禁止为了“简化”而合并：
@@ -135,10 +137,11 @@ Agent A 负责判断 NEW_ANALYSIS、NEW_TOPIC、CLARIFICATION、FILTER_CHANGE、
 复用不是仅看 turn label。Validator 会比较新旧数据签名：
 
 ~~~text
-dataset_ids + time_range + filters + metric_ids + dimension_ids + grain
+dataset_ids + time_range + filters
++ 每个 task 的 metric_ids + dimension_ids + grain + statistical_method_ids
 ~~~
 
-只有签名不变的纯展示/解释才允许零查询复用；任何指标、维度、粒度、过滤或时间变化都会强制 requery。这条守卫防止“问题里同时说了新分析和热力图”时错误复用旧数据。
+只有签名不变的纯展示/解释才允许零查询复用；纯换图仍须重跑 Agent C Pass 1 与可视化 Adapter，解释追问须重跑 Agent C Pass 2 与 Grounding。任何指标、维度、联合粒度、统计方法、过滤或时间变化都会强制 requery。这条逐任务守卫既防止“问题里同时说了新分析和热力图”错误复用，也能区分“分别按 A/B”与“按 A×B 联合分析”。
 
 ### 4.3 Semantic Retrieval 与 Agent A
 
@@ -207,7 +210,7 @@ Agent C 是同一个受限 Node 内的两个结构化 Pass。Pass 1 的 operatio
 - 每张图回答不同问题，且 Claim 与图必须同 task、同 Dataset、同最终 measure；
 - 给出必要且可追溯的后续建议。
 
-ClaimGrounder 将 selector 解析为真实 Dataset 行列，绑定 EvidenceRef，拒绝未绑定数字、未知 task、未知列、错误 selector 和重复结论。Completeness Validator 再拒绝未知/重复 Preview、task 不相交、Dataset 不一致或 measure 未绑定的图结论。总分析只由已 Grounding Claim 组成，不相信模型自由文案中的数字。required task 缺失会触发 Agent C 有界修复；仍失败则 PARTIAL 并带限制。
+ClaimGrounder 要求每条 Claim 至少有一个且名称唯一的 binding，将 selector 解析为真实 Dataset 行列或唯一统计结果并绑定 EvidenceRef，拒绝无证据文案、未知 task/列、错误 selector 和重复结论。Completeness Validator 再拒绝重复 Candidate/Claim/Preview 身份、task 不相交、Dataset 不一致或 measure 未绑定的图结论。总分析只由已 Grounding Claim 组成，不相信模型自由文案中的数字。required task 缺失会触发 Agent C 有界修复；仍失败则 PARTIAL 并带限制。
 
 Dashboard Builder 的规则：
 
@@ -284,7 +287,7 @@ Adapter 发送 chat-completions 兼容请求，使用 strict JSON Schema respons
 ./scripts/probe-llm.ps1 -Output ./reports/llm-probe.json
 ~~~
 
-cutover-check 有 12 项：正式环境、live adapter、endpoint、model、可信身份、MCP gateway、非 Mock semantic package、非 Mock semantic input、Mock import 隔离、无正式文本意图解析器、三 Agent operation、Compiler 独占 DSL。任一失败禁止 Shadow。
+cutover-check 有 15 项：正式环境、live adapter、endpoint、model、可信身份、MCP gateway、非 Mock semantic package、非 Mock semantic input、非 template semantic source、Mock import 隔离、无正式文本意图解析器、无固定分析 task bundle、三 Agent operation、Semantic Package 可视化目录已注入 Agent A/Validator、Compiler 独占 DSL。任一失败禁止 Shadow。
 
 probe-llm 只发无业务数据的最小 strict-schema 探针；它证明端点、鉴权、模型和 Schema 能工作，但不能代替业务 Shadow。
 
@@ -455,7 +458,7 @@ error_type
 这是完整清单，不允许扩张为“重写核心系统”：
 
 1. 在 Node 22.17.0、Python 3.12、Docker 环境运行完整离线门禁。
-2. 注入获准 LLM/MCP/身份/证书/Secret，运行 12 项 cutover、LLM probe、MCP probe。
+2. 注入获准 LLM/MCP/身份/证书/Secret，运行 15 项 cutover、LLM probe、MCP probe。
 3. 导入真实字段说明和 Mapping；确认敏感字段、时区、粒度、索引覆盖。
 4. 由业务 Owner 确认 failure/status 与所有真实指标口径并版本化。
 5. 重复编译并审核真实 Semantic Package。
@@ -491,7 +494,7 @@ error_type
 | 唯一基线未漂移 | 基线 SHA-256 与本文一致 |
 | 离线工程完整 | verify-package 通过 |
 | Semantic 可复现 | 两次版本、清单、hash 一致 |
-| 正式路径无 Mock | 12/12 cutover PASSED |
+| 正式路径无 Mock/模板规则 | 15/15 cutover PASSED |
 | LLM 真可用 | probe-llm PASSED，三 Agent 审计 operation 可见 |
 | MCP 真可用且只读 | probe-mcp 与 smoke PASSED |
 | 指标可信 | Owner 口径 + 分子分母重算 + QA |

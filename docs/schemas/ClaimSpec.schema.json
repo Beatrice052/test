@@ -28,6 +28,31 @@
         "row_id": {
           "title": "Row Id",
           "type": "string"
+        },
+        "statistical_method_id": {
+          "anyOf": [
+            {
+              "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Statistical Method Id"
+        },
+        "statistical_result_hash": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Statistical Result Hash"
         }
       },
       "required": [

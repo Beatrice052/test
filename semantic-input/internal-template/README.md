@@ -1,7 +1,9 @@
-# Internal Semantic Input Template
+# internal-template 使用边界
 
-该目录是结构模板，不含真实 Schema、样例值或业务口径。请使用 `scripts/prepare-internal-input.ps1` 或 `.sh` 生成 `semantic-input/internal/`，不要手工复制核心代码。
+本目录只是创建真实内网语义输入的结构模板，不是可直接运行或审批的正式语义输入。
 
-默认只启用 `message_record_count.v1`，业务名称固定为“消息记录数”，不会称为“发送量”。`failure_rate.v1` 在 success/failure/pending/unknown/null、分子、分母、最小分母和 Owner 全部确认前不存在于可运行 Registry 中。
+必须通过 `scripts/prepare-internal-input.*` 复制到新的 `semantic-input/internal`，注入真实字段 description 与真实 Mapping，检查并替换 Dataset、Policy、Metric、Value、Recipe、Method 和 Visualization 定义，再完成 staging compile、Policy-safe `size:0` FieldProfile、final compile 与业务 Owner 审核。
 
-口径确认后运行 `scripts/configure-failure-rate.ps1` 或 `.sh`；脚本会生成 Value Dictionary、正式 Metric Definition，并更新 Recipe。随后重新编译候选 Semantic Package 和执行 Shadow 对账。
+`recipes/channel_overview.v1.yaml` 只是消息域候选 Recipe 示例。Recipe 只向 Agent A 提供受治理建议，不能自动展开为固定“趋势+排名+构成”任务；若真实业务不适用，必须修改或删除。`visualizations/` 是可扩展安全目录，不是默认出图清单。
+
+正式 `mcp/prod/production` 配置会拒绝路径中含 `internal-template` 的 Semantic Input 或 Package。禁止将本目录直接配置为 `CHATBI_SEMANTIC_INPUT_DIR`，也禁止把 Mock/模板规则复制到正式 Agent、编排、Query、Analytics 或 Presentation。

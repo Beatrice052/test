@@ -81,6 +81,36 @@ def test_fts_query_syntax_is_data_not_sqlite_instruction(
     assert follow_up.field_candidates[0].item_id == "sub_message.channel"
 
 
+def test_agent_a_candidates_include_governed_recipe_and_metric_decision_facts(
+    compiled_package: tuple[CompileResult, Path],
+) -> None:
+    _, output_dir = compiled_package
+    candidates = SemanticRetriever(output_dir).retrieve("Channel operational overview")
+
+    recipe = next(
+        item
+        for item in candidates.recipe_candidates
+        if item.item_id == "channel_operational_overview"
+    )
+    assert recipe.metadata["metric_ids"] == [
+        "message_record_count.v1",
+        "failure_rate.v1",
+    ]
+    assert recipe.metadata["method_ids"] == ["rank", "contribution"]
+    assert recipe.metadata["dimension_roles"] == ["channel", "time", "status_group"]
+    assert recipe.metadata["visualization_intents"] == [
+        "ranked_comparison",
+        "time_trend",
+        "composition",
+    ]
+    metric = next(
+        item for item in candidates.metric_candidates if item.item_id == "failure_rate.v1"
+    )
+    assert metric.metadata["unit"] == "ratio"
+    assert metric.metadata["minimum_denominator"] == 30
+    assert metric.metadata["level"] == "CERTIFIED"
+
+
 def test_compile_accepts_cli_normalized_mapping_snapshot(tmp_path: Path) -> None:
     raw = json.loads((INPUT / "mapping_snapshot.json").read_text(encoding="utf-8"))
     snapshot = flatten_mapping_snapshot(raw, dataset_id="sub_message")

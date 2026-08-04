@@ -82,7 +82,26 @@ class ChartFeasibilityValidator:
         self,
         candidate: VisualizationCandidate,
         bundle: DatasetBundle,
+        *,
+        task_visualization_intents: dict[str, set[str]] | None = None,
     ) -> FeasibilityResult:
+        if task_visualization_intents is not None:
+            unknown_task_ids = set(candidate.task_ids) - set(task_visualization_intents)
+            if unknown_task_ids:
+                return FeasibilityResult(
+                    candidate,
+                    FeasibilityDecision.REJECT,
+                    reason=f"candidate references unknown tasks: {sorted(unknown_task_ids)}",
+                )
+            if not any(
+                candidate.intent in task_visualization_intents[task_id]
+                for task_id in candidate.task_ids
+            ):
+                return FeasibilityResult(
+                    candidate,
+                    FeasibilityDecision.REJECT,
+                    reason="candidate intent was not requested by any referenced analytical task",
+                )
         dataset = next(
             (item for item in bundle.datasets if item.dataset_id == candidate.dataset_id),
             None,
@@ -321,6 +340,7 @@ class DashboardBuilder:
         kpi_metric_ids: tuple[str, ...] = (),
         limitations: tuple[str, ...] = (),
         follow_up_suggestions: tuple[str, ...] = (),
+        ensure_result_table: bool = False,
     ) -> DashboardSpec:
         blocks: list[DashboardBlock] = [
             DashboardBlock(
@@ -461,6 +481,34 @@ class DashboardBuilder:
                     },
                 )
             )
+        if ensure_result_table and not any(
+            item.type in {"chart", "data_table", "pivot_table"} for item in blocks
+        ):
+            fallback_dataset = next(
+                (
+                    item
+                    for item in reversed(bundle.datasets)
+                    if item.kind == "derived" and item.rows
+                ),
+                next((item for item in bundle.datasets if item.rows), None),
+            )
+            if fallback_dataset is not None:
+                blocks.insert(
+                    1,
+                    DashboardBlock(
+                        block_id="block_fallback_business_result",
+                        type="data_table",
+                        title="已验证业务结果",
+                        description=(
+                            "智能洞察或可视化阶段已安全降级; 这里保留可核查的业务结果, "
+                            "技术聚合、指标计算和 DSL 仍只在查看证据中展示。"
+                        ),
+                        dataset_id=fallback_dataset.object_id,
+                        chart_type="table",
+                        evidence_refs=tuple(item.row_id for item in fallback_dataset.rows[:100]),
+                        content={"fallback_reason": "agent_or_visualization_unavailable"},
+                    ),
+                )
         if limitations:
             blocks.append(
                 DashboardBlock(
@@ -490,7 +538,8 @@ class DashboardBuilder:
                     content={"text": "所选时间与过滤范围内没有匹配的聚合记录。"},
                 ),
             ]
-        blocks = blocks[:max_blocks]
+        effective_max_blocks = max(max_blocks, 2) if ensure_result_table else max_blocks
+        blocks = blocks[:effective_max_blocks]
         payload = {
             "title": title,
             "layout": "auto_grid",

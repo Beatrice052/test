@@ -20,6 +20,18 @@ type GovernedChartType = Literal[
     "pivot",
 ]
 
+GOVERNED_CHART_TYPES: tuple[GovernedChartType, ...] = (
+    "bar",
+    "line",
+    "heatmap",
+    "stacked_bar",
+    "donut",
+    "dot",
+    "pareto",
+    "table",
+    "pivot",
+)
+
 
 class TurnKind(StrEnum):
     NEW_ANALYSIS = "NEW_ANALYSIS"

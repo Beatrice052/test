@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
+from app.contracts.analysis import AnalysisPlan
 from app.contracts.common import JsonScalar, JsonValue, Provenance, semantic_hash
 from app.contracts.dashboard import (
     ChartEncoding,
@@ -11,7 +12,7 @@ from app.contracts.dashboard import (
     VisualizationPreview,
     VisualProfile,
 )
-from app.contracts.dataset import DatasetBundle, TabularDataset
+from app.contracts.dataset import DatasetBundle, DatasetRow, TabularDataset
 from app.persistence.ids import new_id
 from app.presentation.dashboard import ChartFeasibilityValidator, FeasibilityDecision
 
@@ -26,14 +27,33 @@ class GovernedVisualizationExplorer:
         self,
         candidates: tuple[VisualizationCandidate, ...],
         bundle: DatasetBundle,
+        *,
+        analysis_plan: AnalysisPlan | None = None,
     ) -> tuple[VisualizationPreview, ...]:
+        candidate_ids = tuple(item.candidate_id for item in candidates)
+        if len(set(candidate_ids)) != len(candidate_ids):
+            raise ValueError("visualization candidate IDs are not unique")
         previews: list[VisualizationPreview] = []
-        for candidate in candidates:
+        task_visualization_intents = (
+            None
+            if analysis_plan is None
+            else {item.task_id: set(item.visualization_intents) for item in analysis_plan.tasks}
+        )
+        candidate_budget = (
+            len(candidates)
+            if analysis_plan is None
+            else min(len(candidates), analysis_plan.budget.max_blocks)
+        )
+        for candidate in candidates[:candidate_budget]:
             dataset = next(
                 (item for item in bundle.datasets if item.dataset_id == candidate.dataset_id),
                 None,
             )
-            result = self.validator.validate(candidate, bundle)
+            result = self.validator.validate(
+                candidate,
+                bundle,
+                task_visualization_intents=task_visualization_intents,
+            )
             encoding = result.encoding
             profile = self._profile(dataset, candidate, encoding)
             payload = {
@@ -142,7 +162,7 @@ class GovernedVisualizationExplorer:
                 ranges[f"{column}.min"] = min(values)
                 ranges[f"{column}.max"] = max(values)
         representative_rows: list[dict[str, JsonValue]] = []
-        for row in dataset.rows[:12]:
+        for row in GovernedVisualizationExplorer._representative_rows(dataset, value_columns):
             representative_rows.append(
                 {
                     "row_id": row.row_id,
@@ -158,6 +178,40 @@ class GovernedVisualizationExplorer:
             value_range=ranges,
             representative_rows=tuple(representative_rows),
         )
+
+    @staticmethod
+    def _representative_rows(
+        dataset: TabularDataset,
+        value_columns: tuple[str, ...],
+        *,
+        limit: int = 12,
+    ) -> tuple[DatasetRow, ...]:
+        """Sample endpoints, extrema, and interior rows from the full validated shape."""
+
+        rows = dataset.rows
+        if len(rows) <= limit:
+            return tuple(rows)
+        selected: list[int] = []
+
+        def add(index: int) -> None:
+            if 0 <= index < len(rows) and index not in selected and len(selected) < limit:
+                selected.append(index)
+
+        for index in (0, 1, len(rows) - 2, len(rows) - 1):
+            add(index)
+        for column in value_columns:
+            numeric = [
+                (index, value)
+                for index, row in enumerate(rows)
+                if isinstance((value := row.values.get(column)), int | float)
+                and not isinstance(value, bool)
+            ]
+            if numeric:
+                add(min(numeric, key=lambda item: (item[1], item[0]))[0])
+                add(max(numeric, key=lambda item: (item[1], -item[0]))[0])
+        for slot in range(1, limit + 1):
+            add(round(slot * (len(rows) - 1) / (limit + 1)))
+        return tuple(rows[index] for index in sorted(selected[:limit]))
 
     @staticmethod
     def _distinct(dataset: TabularDataset, column: str | None) -> int:

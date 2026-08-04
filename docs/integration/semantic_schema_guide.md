@@ -2,7 +2,7 @@
 
 ## 输入与产物
 
-真实输入为字段 description Excel/CSV、MCP 导出的 Mapping Snapshot，以及可选但推荐的受控 FieldProfileSnapshot。其余 Dataset/Metric/Value/Recipe/Method/Visualization/Policy 都由 `semantic-input/internal-template/` 提供受版本控制的结构模板。Excel description 是业务语义来源；Mapping 是技术字段与跨索引兼容性来源；Profile 只提供基数、缺失、范围和经 Policy 筛选后的聚合样例值，三者不能相互替代。
+真实输入为字段 description Excel/CSV、MCP 导出的 Mapping Snapshot，以及可选但推荐的受控 FieldProfileSnapshot。`semantic-input/internal-template/` 只提供需要复制到新 `semantic-input/internal/` 目录后逐项审核、删除或改写的结构示例；正式配置会拒绝直接使用模板目录。Dataset/Metric/Value/Recipe/Method/Visualization/Policy 必须成为真实业务已审核输入，不能把模板 Recipe 当作默认任务清单。Excel description 是业务语义来源；Mapping 是技术字段与跨索引兼容性来源；Profile 只提供基数、缺失、范围和经 Policy 筛选后的聚合样例值，三者不能相互替代。
 
 ```powershell
 ./scripts/prepare-internal-input.ps1 `

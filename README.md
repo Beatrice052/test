@@ -65,9 +65,11 @@ powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/verify-package.ps1
 ./scripts/verify-package.sh
 ```
 
-验包使用 lockfile，执行 ruff/format/mypy、全部 backend 与 G01–G25、41 个 Schema snapshot、55 个 OpenAPI 类型、Mock Semantic compile、frontend type/lint/unit/build、Playwright G02/G15/G25，并实际启动/probe Mock readiness 与 UI。
+验包使用 lockfile，执行 ruff/format/mypy、全部 backend 与 G01–G25、41 个 Schema snapshot、57 个 OpenAPI 类型、Mock Semantic compile、frontend type/lint/unit/build、Playwright G02/G15/G25，并实际启动/probe Mock readiness 与 UI。
 
 Dashboard 不是固定的 `Channel × Status × Month` 模板。Agent A 根据当前问题和 Semantic Package 中字段的语义角色、能力、别名、成熟度与受治理值动态选择指标、时间和分类维度；确定性 Analytics 再按实际选中的维度派生 rollup、排名、趋势和构成数据。Agent C 先提出 0/1/N 个探索请求，受控 Adapter 返回最终编码与数据剖面后，Agent C 再把每张图与同任务、同 Dataset、同 measure 的 Grounded Claim 一起生成。前端统一呈现去重后的总分析、KPI、每图结论/读法、边界与追问建议；OpenSearch 聚合结果表、指标计算、质量对账和高级 DSL 统一收纳在证据抽屉。详见 [Agent C 双阶段可视化架构](docs/integration/visualization_agent_architecture.md)。
+
+完整的逐节点“AI 判断 / 程序判断 / 输入 / 输出 / 失败策略 / 验收证据”见 [三 Agent 全流程决策权与验收矩阵](docs/integration/decision_authority_matrix.md)。其中明确：`RuleBasedMockLLMClient` 的关键词和固定示例任务只用于本地回归，正式 Agent A/B/C 必须由真实结构化 LLM 按本轮问题和真实数据动态决策；正式切换门禁会拒绝 Mock、固定任务 bundle 以及直接使用 `internal-template`。
 
 主流程是一个确定性 LangGraph 编排器与三个有界专业 Agent，不是自由 Supervisor/Swarm。Agent A 的候选和 Agent B 的 `ResolvedFieldDescriptor` 都能使用真实 Excel description、字段语义类型、能力、跨月兼容性与可选 cardinality 画像；两者都看不到 physical path 或 raw documents。MCP 的索引发现、Mapping 与 `size:0` 字段画像只在 Bootstrap/Refresh 阶段执行。详见 [受控多 Agent 编排](docs/integration/multi_agent_orchestration.md) 和 [MCP Adapter 指南](docs/integration/mcp_adapter_guide.md)。
 

@@ -3,9 +3,9 @@
 import pytest
 
 from app.contracts.dashboard import VisualizationCandidate, VisualizationDefinition
+from app.llm.mock_chart_preferences import parse_chart_preference
 from app.presentation.chart_preferences import (
     apply_candidate_preference,
-    parse_chart_preference,
 )
 
 
@@ -26,7 +26,7 @@ def test_chart_type_aliases_are_recognized(message: str, expected: str) -> None:
     assert parse_chart_preference(message).chart_type == expected
 
 
-def test_explicit_type_keeps_only_compatible_analytical_relationships() -> None:
+def test_explicit_type_keeps_all_tasks_and_downgrades_incompatible_relationships() -> None:
     candidates = (
         VisualizationCandidate(
             candidate_id="trend",
@@ -74,9 +74,10 @@ def test_explicit_type_keeps_only_compatible_analytical_relationships() -> None:
         parse_chart_preference("请只用折线图展示"),
     )
 
-    assert [item.candidate_id for item in selected] == ["trend"]
+    assert [item.candidate_id for item in selected] == ["trend", "rank"]
     assert selected[0].preferred_chart_types[0] == "line"
-    assert notes == ()
+    assert selected[1].preferred_chart_types == ("line",)
+    assert any("不兼容" in item for item in notes)
 
 
 def test_unsupported_type_is_recorded_without_inventing_a_renderer() -> None:

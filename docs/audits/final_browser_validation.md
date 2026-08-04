@@ -22,4 +22,4 @@
 
 ## Mock 边界
 
-本轮本地运行使用 `RuleBasedMockLLMClient` 与 Mock OpenSearch Gateway，只用于无凭证的确定性回归。正式内网 profile 必须切换到 `openai_compatible` LLM Adapter 和 MCP Gateway，并通过 12/12 cutover gate；不得把 Mock rule 扩写成生产意图、QueryPlan、DSL 或洞察逻辑。
+本轮本地运行使用 `RuleBasedMockLLMClient` 与 Mock OpenSearch Gateway，只用于无凭证的确定性回归。正式内网 profile 必须切换到 `openai_compatible` LLM Adapter 和 MCP Gateway，并通过 15/15 cutover gate；不得把 Mock rule 扩写成生产意图、QueryPlan、DSL 或洞察逻辑。

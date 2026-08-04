@@ -58,6 +58,14 @@
             "title": "Metric Ids",
             "type": "array"
           },
+          "tasks": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/AnalyticalTask"
+            },
+            "title": "Tasks",
+            "type": "array"
+          },
           "time_summary": {
             "anyOf": [
               {
@@ -456,6 +464,14 @@
                 "type": "null"
               }
             ]
+          },
+          "feature_summaries": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/FeatureSummary"
+            },
+            "title": "Feature Summaries",
+            "type": "array"
           },
           "limitations": {
             "default": [],
@@ -996,24 +1012,12 @@
           "chart_type": {
             "anyOf": [
               {
-                "enum": [
-                  "bar",
-                  "line",
-                  "heatmap",
-                  "stacked_bar",
-                  "donut",
-                  "dot",
-                  "pareto",
-                  "table",
-                  "pivot"
-                ],
-                "type": "string"
+                "$ref": "#/components/schemas/GovernedChartType"
               },
               {
                 "type": "null"
               }
-            ],
-            "title": "Chart Type"
+            ]
           },
           "content": {
             "additionalProperties": {
@@ -1717,6 +1721,29 @@
           "row_id": {
             "title": "Row Id",
             "type": "string"
+          },
+          "statistical_method_id": {
+            "anyOf": [
+              {
+                "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Statistical Method Id"
+          },
+          "statistical_result_hash": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Statistical Result Hash"
           }
         },
         "required": [
@@ -1757,6 +1784,132 @@
           "redaction"
         ],
         "title": "EvidenceView",
+        "type": "object"
+      },
+      "FeatureSummary": {
+        "additionalProperties": false,
+        "properties": {
+          "bottom_rows": {
+            "default": [],
+            "items": {
+              "additionalProperties": {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              "type": "object"
+            },
+            "title": "Bottom Rows",
+            "type": "array"
+          },
+          "columns": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Columns",
+            "type": "array"
+          },
+          "content_hash": {
+            "pattern": "^sha256:[0-9a-f]{64}$",
+            "title": "Content Hash",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "dataset_id": {
+            "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+            "title": "Dataset Id",
+            "type": "string"
+          },
+          "object_id": {
+            "pattern": "^[a-z][a-z0-9_-]{2,127}$",
+            "title": "Object Id",
+            "type": "string"
+          },
+          "provenance": {
+            "$ref": "#/components/schemas/Provenance"
+          },
+          "qa_summary": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Qa Summary",
+            "type": "object"
+          },
+          "ranges": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "title": "Ranges",
+            "type": "object"
+          },
+          "row_count": {
+            "minimum": 0.0,
+            "title": "Row Count",
+            "type": "integer"
+          },
+          "sample_rows": {
+            "default": [],
+            "items": {
+              "additionalProperties": {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              "type": "object"
+            },
+            "title": "Sample Rows",
+            "type": "array"
+          },
+          "schema_version": {
+            "default": "1.0",
+            "pattern": "^[1-9][0-9]*\\.[0-9]+$",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "statistical_results": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/StatisticalResult"
+            },
+            "title": "Statistical Results",
+            "type": "array"
+          },
+          "time_features": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "title": "Time Features",
+            "type": "object"
+          },
+          "top_rows": {
+            "default": [],
+            "items": {
+              "additionalProperties": {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              "type": "object"
+            },
+            "title": "Top Rows",
+            "type": "array"
+          },
+          "totals": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "title": "Totals",
+            "type": "object"
+          }
+        },
+        "required": [
+          "object_id",
+          "created_at",
+          "content_hash",
+          "provenance",
+          "dataset_id",
+          "row_count",
+          "columns"
+        ],
+        "title": "FeatureSummary",
         "type": "object"
       },
       "FilterIntent": {
@@ -2626,6 +2779,61 @@
           "expected_version"
         ],
         "title": "SessionPatchRequest",
+        "type": "object"
+      },
+      "StatisticalResult": {
+        "additionalProperties": false,
+        "properties": {
+          "applicability": {
+            "enum": [
+              "APPLICABLE",
+              "NOT_APPLICABLE"
+            ],
+            "title": "Applicability",
+            "type": "string"
+          },
+          "exploratory": {
+            "default": true,
+            "title": "Exploratory",
+            "type": "boolean"
+          },
+          "method_id": {
+            "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+            "title": "Method Id",
+            "type": "string"
+          },
+          "sample_size": {
+            "minimum": 0.0,
+            "title": "Sample Size",
+            "type": "integer"
+          },
+          "values": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "title": "Values",
+            "type": "object"
+          },
+          "version": {
+            "title": "Version",
+            "type": "string"
+          },
+          "warnings": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "method_id",
+          "version",
+          "applicability",
+          "sample_size"
+        ],
+        "title": "StatisticalResult",
         "type": "object"
       },
       "TabularDataset": {

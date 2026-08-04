@@ -29,7 +29,7 @@ from app.contracts.insight import (
 )
 from app.contracts.query import ParameterBinding, QueryFilter, QueryPlanDraft, QueryStep
 from app.llm.client import ALLOWED_OPERATIONS, OutputModel
-from app.presentation.chart_preferences import parse_chart_preference
+from app.llm.mock_chart_preferences import parse_chart_preference
 
 
 class RuleBasedMockLLMClient:
@@ -1286,27 +1286,46 @@ class RuleBasedMockLLMClient:
                 )
             tasks = tuple(task_items)
             if relation in reuse_relations:
-                # Presentation/explanation turns do not need to reconstruct the base
-                # task decomposition from a short follow-up. Preserve the inherited
-                # data signature so the deterministic router can safely reuse the
-                # immutable DatasetBundle, QueryPlan and evidence package.
-                tasks = (
-                    AnalyticalTask(
-                        task_id="task_reuse_context",
-                        analytical_question=message,
-                        analysis_type=(
-                            "presentation_change"
-                            if relation == TurnKind.PRESENTATION_CHANGE
-                            else "explanation"
-                        ),
-                        priority="required",
-                        metric_ids=tuple(selected_metrics),
-                        dimension_ids=selected_dimensions,
-                        grain=inherited_grain,
-                        business_value="复用既有验证数据回答连续追问",
-                    ),
+                raw_active_tasks = (
+                    active_context.get("tasks", ()) if isinstance(active_context, dict) else ()
                 )
+                inherited_tasks = (
+                    tuple(
+                        AnalyticalTask.model_validate(item, strict=False)
+                        for item in raw_active_tasks
+                        if isinstance(item, dict)
+                    )
+                    if isinstance(raw_active_tasks, list)
+                    else ()
+                )
+                if inherited_tasks:
+                    tasks = inherited_tasks
+                else:
+                    # Compatibility for legacy persisted sessions. The formal reuse guard
+                    # will requery if this union-shaped fallback cannot prove equivalence.
+                    tasks = (
+                        AnalyticalTask(
+                            task_id="task_reuse_context",
+                            analytical_question=message,
+                            analysis_type=(
+                                "presentation_change"
+                                if relation == TurnKind.PRESENTATION_CHANGE
+                                else "explanation"
+                            ),
+                            priority="required",
+                            metric_ids=tuple(selected_metrics),
+                            dimension_ids=selected_dimensions,
+                            grain=inherited_grain,
+                            business_value="复用既有验证数据回答连续追问",
+                        ),
+                    )
 
+        raw_budget = payload.get("budgets")
+        budget = (
+            AnalysisBudget.model_validate(raw_budget, strict=False)
+            if isinstance(raw_budget, dict)
+            else AnalysisBudget()
+        )
         return AnalysisPlanDraft(
             analysis_goal=message,
             question_archetype=(
@@ -1337,7 +1356,7 @@ class RuleBasedMockLLMClient:
             ),
             clarification=clarification,
             limitations=() if clarification is None else ("仅可使用当前语义候选",),
-            budget=AnalysisBudget(max_queries=3, max_buckets=5000, max_blocks=12),
+            budget=budget,
         )
 
     @staticmethod

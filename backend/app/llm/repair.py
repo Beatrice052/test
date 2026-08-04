@@ -3,7 +3,7 @@
 from app.contracts.analysis import AnalysisPlanDraft, ResolvedAnalysis, TurnDecision
 from app.contracts.common import semantic_hash
 from app.contracts.dataset import DatasetBundle
-from app.contracts.insight import InsightDashboardDraft
+from app.contracts.insight import FeatureSummary, InsightDashboardDraft, StatisticalResult
 from app.contracts.query import QueryPlanDraft
 from app.contracts.semantic import SemanticCandidateSet
 
@@ -73,6 +73,7 @@ def build_insight_dashboard_repair_payload(
     draft: InsightDashboardDraft,
     errors: tuple[str, ...],
     bundle: DatasetBundle,
+    feature_summaries: tuple[FeatureSummary, ...],
     immutable_analysis_plan_hash: str,
     required_task_ids: tuple[str, ...],
     preview_ids: tuple[str, ...],
@@ -92,6 +93,14 @@ def build_insight_dashboard_repair_payload(
             "visualization_dataset": [item.dataset_id for item in bundle.datasets],
             "required_task": list(required_task_ids),
             "visualization_preview": list(preview_ids),
+            "statistical_value_paths": {
+                item.dataset_id: {
+                    _statistical_result_key(result): sorted(_scalar_paths(result.values))
+                    for result in item.statistical_results
+                    if result.applicability == "APPLICABLE"
+                }
+                for item in feature_summaries
+            },
         },
         "immutable_analysis_plan_hash": immutable_analysis_plan_hash,
         "immutable_dataset_bundle_hash": bundle.content_hash,
@@ -101,3 +110,30 @@ def build_insight_dashboard_repair_payload(
     if fixture_id is not None:
         payload["fixture_id"] = fixture_id
     return payload
+
+
+def _scalar_paths(value: object, prefix: str = "") -> set[str]:
+    """List bounded scalar JSON paths that Agent C may bind during repair."""
+
+    if isinstance(value, dict):
+        return {
+            path
+            for key, child in value.items()
+            for path in _scalar_paths(child, f"{prefix}.{key}" if prefix else str(key))
+        }
+    if isinstance(value, list):
+        return {
+            path
+            for index, child in enumerate(value[:20])
+            for path in _scalar_paths(child, f"{prefix}.{index}" if prefix else str(index))
+        }
+    return {prefix} if prefix else set()
+
+
+def _statistical_result_key(result: StatisticalResult) -> str:
+    source_column = result.values.get("column")
+    return (
+        f"{result.method_id}@{source_column}"
+        if isinstance(source_column, str)
+        else result.method_id
+    )

@@ -7,6 +7,7 @@ export type ActiveAnalyticalContext = {
   metric_ids?: Array<string>;
   dimension_ids?: Array<string>;
   grain?: Array<string>;
+  tasks?: Array<AnalyticalTask>;
   filter_summary?: Array<string>;
   time_summary?: string | null;
 };
@@ -87,6 +88,7 @@ export type AnswerSnapshot = {
   analysis_plan?: AnalysisPlan | null;
   query_plan?: QueryPlan | null;
   dataset_bundle?: DatasetBundle | null;
+  feature_summaries?: Array<FeatureSummary>;
   dashboard_spec?: DashboardSpec | null;
   visualization_previews?: Array<VisualizationPreview>;
   claims?: Array<ClaimSpec>;
@@ -179,7 +181,7 @@ export type DashboardBlock = {
   description?: string | null;
   dataset_id?: string | null;
   visualization_intent?: string | null;
-  chart_type?: "bar" | "line" | "heatmap" | "stacked_bar" | "donut" | "dot" | "pareto" | "table" | "pivot" | null;
+  chart_type?: GovernedChartType | null;
   encoding?: ChartEncoding | null;
   sort?: Array<string>;
   stack?: boolean;
@@ -295,6 +297,8 @@ export type EvidenceRef = {
   row_id: string;
   column: string;
   metric_id?: string | null;
+  statistical_method_id?: string | null;
+  statistical_result_hash?: string | null;
 };
 
 export type EvidenceView = {
@@ -302,6 +306,39 @@ export type EvidenceView = {
   business: BusinessEvidence;
   advanced?: AdvancedEvidence | null;
   redaction: EvidenceRedaction;
+};
+
+export type FeatureSummary = {
+  schema_version?: string;
+  object_id: string;
+  created_at: string;
+  content_hash: string;
+  provenance: Provenance;
+  dataset_id: string;
+  row_count: number;
+  columns: Array<string>;
+  top_rows?: Array<{
+  [key: string]: JsonValue;
+}>;
+  bottom_rows?: Array<{
+  [key: string]: JsonValue;
+}>;
+  totals?: {
+  [key: string]: JsonValue;
+};
+  ranges?: {
+  [key: string]: JsonValue;
+};
+  time_features?: {
+  [key: string]: JsonValue;
+};
+  statistical_results?: Array<StatisticalResult>;
+  qa_summary?: {
+  [key: string]: number;
+};
+  sample_rows?: Array<{
+  [key: string]: JsonValue;
+}>;
 };
 
 export type FilterIntent = {
@@ -454,6 +491,18 @@ export type SessionDetailResponse = {
 export type SessionPatchRequest = {
   title: string;
   expected_version: number;
+};
+
+export type StatisticalResult = {
+  method_id: string;
+  version: string;
+  applicability: "APPLICABLE" | "NOT_APPLICABLE";
+  sample_size: number;
+  values?: {
+  [key: string]: JsonValue;
+};
+  warnings?: Array<string>;
+  exploratory?: boolean;
 };
 
 export type TabularDataset = {

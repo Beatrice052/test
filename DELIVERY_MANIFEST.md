@@ -18,12 +18,13 @@
 
 1. AGENTS.md
 2. docs/integration/INTERNAL_AI_START_HERE.md
-3. docs/requirements_traceability.md
-4. docs/integration/real_llm_cutover_runbook.md
-5. docs/integration/multi_agent_orchestration.md
-6. docs/integration/mcp_adapter_guide.md
-7. docs/integration/visualization_agent_architecture.md
-8. docs/internal_checklist.md
+3. docs/integration/decision_authority_matrix.md
+4. docs/requirements_traceability.md
+5. docs/integration/real_llm_cutover_runbook.md
+6. docs/integration/multi_agent_orchestration.md
+7. docs/integration/mcp_adapter_guide.md
+8. docs/integration/visualization_agent_architecture.md
+9. docs/internal_checklist.md
 
 `docs/gates/` 和早期 phase 审计只保留为历史证据，不能作为当前实现说明；其中旧的单阶段 Agent C 描述已被上述入口文档取代。
 
@@ -32,7 +33,7 @@
 - backend：FastAPI、确定性 LangGraph 主编排器、三个有界 Agents、字段语义 Descriptor、Query、MCP index/mapping/profile Gateway、Analytics、Agent C 双阶段 Visualization Explorer、Presentation、Persistence、Security、CLI、Alembic；
 - frontend：React/TypeScript/Vite/ECharts 安全工作区、Session、Dashboard、Evidence、SSE；
 - semantic-input/mock：可运行 Mock 输入；
-- semantic-input/internal-template：真实输入模板，不含真实业务数据；
+- semantic-input/internal-template：真实输入结构模板，不含真实业务数据且禁止被正式配置直接使用；
 - compiled-semantic/mock：已签入可运行 Mock Semantic Package；
 - fixtures/evals：Mock fixtures 和 G01–G25；
 - scripts：Windows/Linux verify、probe、snapshot、prepare、compile、configure、smoke、shadow；
@@ -52,19 +53,21 @@
 
 | 项目 | 结果 |
 |---|---|
-| Backend pytest | 275 passed |
+| Backend pytest | 291 passed |
 | Ruff / format | passed |
-| mypy | 130 sources passed |
+| mypy | 132 sources passed |
 | Schema snapshots | 41 matched |
-| OpenAPI/TS | 55 matched |
+| OpenAPI/TS | 57 matched |
 | Frontend tests | 19 passed |
 | Production build | passed |
 | Chromium E2E | 1 passed |
 | Semantic repeatability | 12 files, identical hashes |
-| Mock semantic version | sp_d59d2225dd6b8317 |
-| Real cutover static gate | 12/12 passed |
+| Mock semantic version | sp_5f523f5d403098ae |
+| Real cutover static gate | 15/15 passed |
 
-边界：当前主机 Node 24.14.1、无 Docker、npm audit endpoint 被网络 sandbox 阻断；完整 Node 22/Docker/audit 和所有真实接入项由 CI/内网按手册执行。本交付不虚报真实 LLM/MCP/业务 Shadow。
+补充门禁：`uv sync --all-groups --locked`、`npm ci`、`npm audit --audit-level=high`（0 vulnerabilities）和 Mock readiness 均通过。
+
+边界：当前主机 Node 24.14.1，不满足封装脚本锁定的 Node 22.17.0，因此 `verify-package.ps1` 在版本入口按设计停止；本机无 Docker。完整 Node 22/Docker 和所有真实接入项由 CI/内网按手册执行。本交付不虚报真实 LLM/MCP/业务 Shadow。
 
 ## 分支完整性验证
 

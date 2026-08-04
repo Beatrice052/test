@@ -95,4 +95,4 @@ uv run --project backend python -m app.cli semantic compile `
   -Output ./reports/mcp-smoke.json
 ```
 
-顺序固定为 Health → explicit index list → Mapping → narrow count → channel → channel×status → multi-month。字段和 index 参数有安全语法校验，index wildcard 被拒绝；查询固定 `size=0`、10s、`[from,to)` 和显式 timezone。报告保存 DSL、response hash、took、Shard、total、bucket count，不保存 raw 文档或凭证。
+连接级顺序固定为 Health → explicit index list → Mapping；业务 smoke 则按已审核真实语义选择“窄范围总量 → 一个类别拆分 → 一个必要的交叉维度 → 一个跨期问题”，不能把模板字段当成正式任务。字段和 index 参数有安全语法校验，index wildcard 被拒绝；查询固定 `size=0`、10s、`[from,to)` 和显式 timezone。报告保存 DSL、response hash、took、Shard、total、bucket count，不保存 raw 文档或凭证。
