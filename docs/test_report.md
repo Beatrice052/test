@@ -120,10 +120,10 @@ Compiler 的 FTS、manifest、Import Report 和内容产物可重复。
 
 ## 8. 当前主机未执行项
 
-- 当前 Node.js 为 24.14.1；发布锁定版本是 22.17.0。分层 lint/type/unit/build/E2E 全部通过，GitHub CI 固定 22.17.0，完整 verify-package 在 Node 22 主机重跑。
+- 系统默认 Node.js 为 24.14.1；最终验收显式使用隔离的发布锁定 Node 22.17.0，完整 `verify-package.ps1` 已通过。
 - 当前主机没有 Docker，因此未执行真实 Docker image build/profile run；Compose 与 profile 由 YAML/架构测试验证。
 - `uv sync --all-groups --locked` 与 `npm ci` 均通过；npm audit 返回 0 vulnerabilities。
-- 总封装脚本 `verify-package.ps1` 在入口按设计拒绝 Node 24，因此本机不能声称“Node 22 封装门禁”通过；其后各分层项已独立通过。
+- 总封装脚本 `verify-package.ps1` 使用隔离 Node 22.17.0 完整执行并通过；系统默认 Node 24 未参与发布验收。
 - 无真实 LLM/MCP/Excel/Mapping/Secret/业务口径，因此不声称真实 probe、真实指标对账或生产 Shadow 通过。
 
 ## 9. 非阻塞 warning
@@ -134,3 +134,21 @@ Compiler 的 FTS、manifest、Import Report 和内容产物可重复。
 ## 10. 上线前必须补齐
 
 按照 docs/integration/INTERNAL_AI_START_HERE.md 完成 Node 22/Docker 门禁、真实 Semantic、15/15 cutover、LLM/MCP probe、只读 smoke、G01–G25 真实 Shadow、指标重算、Evidence ACL、Ingress SSE 和业务 Owner verdict。
+
+## 11. 2026-08-05 Generic Analytics / Evidence v2 final verification
+
+Release package: `sp_02fd263e8f9d5a91`，13 fields。官方 Node 22/Python 3.12 一键验包最终结果：
+
+| 命令/门禁 | 结果 | 耗时 |
+|---|---|---:|
+| `scripts/verify-package.ps1` | PASS；318 backend passed，0 failed，0 skipped；Ruff 202 files、mypy 136 sources；44 schema snapshots；71 TypeScript schemas/OpenAPI；Semantic compile PASS；frontend 7 files/20 tests；build 672 modules；Chromium E2E 1 passed；Mock UI/backend readiness PASS | 97.04 s（脚本内 pytest 40.33 s、Vitest 2.71 s、build 3.06 s、E2E 4.9 s） |
+| focused Evidence/analytics/security suite | 77 passed，0 failed，0 skipped | 22.72 s |
+| focused Metric dictionary/query/pipeline/API suite | 30 passed，0 failed，0 skipped | 17.70 s |
+| `npm audit --audit-level=high` | 0 vulnerabilities | 4.7 s（批准 registry access 后） |
+| `check-real-llm-cutover.ps1` with non-secret formal-shape config | 15/15 static checks passed；report 不含凭证 | 2.1 s |
+
+非阻断 warning：Starlette TestClient 1 条上游 deprecation；Vite 主 chunk 886.16 kB（gzip 293.61 kB）大于 advisory threshold。
+
+中间回归如实记录：Evidence artifact 落盘后，一个 orchestration 测试的 teardown 仍假定 artifact 目录为空，第一次全量为 317 passed/1 cleanup failure；修复为只清理由该测试创建的精确临时目录后单测通过。官方验包第一次又发现该测试文件未格式化，格式化并 amend phase commit 后，完整官方验包按上表通过。
+
+未运行：Docker image/profile（主机没有 Docker）；真实 LLM 请求、真实 MCP 请求、真实 Mapping/数据 Shadow/UAT（外网无凭证/真实数据）。这些项目不能由 Mock 代替验收，内网命令和 Gate 见 `docs/internal_handoff/07_TEST_SHADOW_AND_UAT_RUNBOOK.md`。

@@ -133,3 +133,15 @@ docker compose --profile mcp up --build
 - CSV 防公式注入，所有对象读取 subject-scoped；
 - MCP config 只保存 env/Secret reference；Generic API、PPL、Memory 和写 Tool 不绑定；
 - `direct` Gateway 不是当前可用旁路，未来启用必须单独 ADR 和全量回归。
+
+## Generic Analytics / Evidence v2 upgrade
+
+Branch `MI-GENERIC-ANALYTICS` upgrades the V6.1 governed workflow without changing its frozen three-agent architecture:
+
+- Semantic packages now compile governed field capabilities, formal Metrics, field Measures, Methods, Recipes, Visualizations and optional Entities. New fields/measures/entities are onboarded by configuration rather than production business branches.
+- Agent A selects from safe semantic candidates; the Resolver binds policy/capability/member facts; Agent B plans N-dimensional minimum-sufficient logical datasets; the deterministic Compiler owns all OpenSearch DSL.
+- Governed field aggregations include `value_count`, `cardinality`, `sum`, `avg`, `min`, `max`, `stats`, `extended_stats` and `percentiles`. Dataset columns carry type, unit, definition, aggregation and additive-semantics metadata.
+- Agent C remains two-stage. C1 selects registered statistics and visualization candidates from actual validated tables; the Host computes and validates; C2 receives the validated source/calculation tables, statistic results and previews before producing grounded claims.
+- Evidence v2 preserves full aggregation artifacts, paginated/downloadable source and calculation tables, used-only Metric/Measure/Method technical definitions, exact claim row/cell/value-path traces, and material limitations. Per-rule QA pass/fail stays in internal snapshots/audit and is intentionally absent from user Evidence.
+
+Internal deployment starts at [docs/internal_handoff/00_START_HERE.md](docs/internal_handoff/00_START_HERE.md). Release and migration details are in [docs/release_notes_generic_analytics.md](docs/release_notes_generic_analytics.md) and [docs/migration_generic_analytics_v2.md](docs/migration_generic_analytics_v2.md).

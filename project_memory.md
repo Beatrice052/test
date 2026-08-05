@@ -89,7 +89,19 @@
 
 ## 当前主机边界
 
-- 当前 Node 24.14.1，不是发布锁定 Node 22.17.0；分层前端门禁通过，CI 固定 22.17.0。
+- 系统默认 Node 24.14.1；最终验收显式使用隔离的发布锁定 Node 22.17.0，官方完整验包已通过。
 - 当前主机无 Docker，未声称真实镜像/profile 运行通过。
 - `uv sync --locked`、`npm ci` 与 npm audit 已通过；npm audit 为 0 vulnerabilities。
 - 无真实凭证/业务输入，因此不声称真实 LLM/MCP/Shadow 已通过。
+
+## 2026-08-05 Generic Analytics upgrade memory
+
+- Upgrade branch: `MI-GENERIC-ANALYTICS`; reviewed and actual remote baseline were both `dbe31fdc198cbc07975bfcbe20163f647b01aacc` at Phase 0.
+- Frozen architecture remains one FastAPI application, one LangGraph StateGraph, Agent A/B/C with C1→Host→C2, compiler-owned DSL, deterministic computation and grounded claims.
+- Semantic Package now owns field capabilities plus versioned Metric/Measure/Method/Recipe/Visualization/Entity definitions. Formal filtered-count Metrics explicitly bind a versioned ValueDictionary; no success/failure token assumption remains in Resolver selection.
+- Compiler supports all governed field aggregations and emits typed single/multi-value Dataset columns. Terms/composite, budget and dependent-query behavior remain deterministic.
+- Analytics adds task/grain/completeness-aware FeatureSummary, generic additive rollup with non-additive rejection, and registered within-group contribution alongside rank/contribution/period/trend/MAD/CV/HHI/Pareto methods.
+- Evidence schema is v2. Full merged aggregation JSON, exact downloadable CSV hash, source/calculation/statistical lineage, used-only technical definitions and Claim Trace are persisted in the AnswerSnapshot/artifact system. Artifact reads are answer-owner scoped and detail hits are omitted.
+- User Evidence deliberately does not render individual QA pass/fail records. Full QA stays in `AnswerSnapshot.dataset_bundle.data_qa` and internal audit/debug; ERROR/FATAL blocks Agent C/Grounding, while material warnings and reconciliation failures remain visible.
+- Internal handoff authority now starts at `docs/internal_handoff/00_START_HERE.md`; production work is limited to real Mapping/catalog/Policy/Metric/Entity, approved LLM/MCP/identity configuration, real Golden and Owner sign-off.
+- No database migration was required: metadata remains in immutable snapshot JSON and large JSON content uses `APP_ARTIFACT_DIR/evidence` with ID/path/size/hash validation.
