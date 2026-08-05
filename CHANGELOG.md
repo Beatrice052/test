@@ -10,7 +10,7 @@
 - Evidence v2 raw OpenSearch artifacts, source/calculation/statistical tables, used-only technical definitions, exact Claim Trace, owner-scoped artifact download and hash verification.
 - Evidence Drawer pagination, complete CSV/JSON download, calculation/definition/claim views and material-only QA presentation.
 - Config-only generic field/measure/entity fixtures, semantic equivalence and domain-token guardrails.
-- `docs/internal_handoff/00_START_HERE.md` through `10_CONFIGURATION_REFERENCE.md`.
+- `docs/internal_handoff/00_START_HERE.md` through `11_NEW_SESSION_HANDOFF_PROMPT.md`, including a copy-ready prompt for a fresh internal AI session.
 
 ### Changed
 

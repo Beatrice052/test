@@ -1,5 +1,13 @@
 # 内网接手入口
 
+## 新 Session 启动
+
+需要让内网 AI 在一个全新的 Session 中接手时，使用 [11_NEW_SESSION_HANDOFF_PROMPT.md](11_NEW_SESSION_HANDOFF_PROMPT.md)：
+
+1. 获取远端 `MI-GENERIC-ANALYTICS` 最新代码，并把仓库目录设为内网 AI 的工作区。
+2. 将 `11_NEW_SESSION_HANDOFF_PROMPT.md` 中的“可复制提示词”完整粘贴到新 Session，只替换其中的安全路径占位符。
+3. Secret 和真实凭证仅通过环境变量或公司 Secret 管理系统注入；不要粘贴到 Session、文档或 Git。
+
 ## 项目目标与当前状态
 
 本分支把 V6.1 受治理 ChatBI 升级为 Schema/Registry 驱动的通用分析引擎。正式代码不把 Channel、Use Case、Template 或 Source System 当能力白名单；新字段、字段度量、实体、方法、Recipe 和可视化意图应通过 Semantic Input 编译进入既有 A→Resolver→B→Compiler→Gateway→Dataset→C 链路。
@@ -42,4 +50,4 @@
 - 稳定接口后的 MCP transport/bindings；若公司 endpoint 不是既有 OpenAI-compatible 协议，只实现 `StructuredLLMClient` Adapter。
 - 真实 Golden、Shadow 样例和业务 Owner verdict。
 
-继续阅读顺序：`01` 架构与数据流 → `02` 输入清单 → `03` Semantic 构建 → `04` LLM → `05` MCP → `06` Evidence → `07` 测试/UAT → `08` 运维/回滚 → `09` 内网确认事项 → `10` 配置参考。
+继续阅读顺序：`01` 架构与数据流 → `02` 输入清单 → `03` Semantic 构建 → `04` LLM → `05` MCP → `06` Evidence → `07` 测试/UAT → `08` 运维/回滚 → `09` 内网确认事项 → `10` 配置参考 → `11` 新 Session 接手提示词。
