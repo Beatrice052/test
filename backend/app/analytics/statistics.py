@@ -6,7 +6,7 @@ import statistics
 from collections.abc import Mapping
 from typing import Protocol
 
-from app.contracts.common import JsonValue
+from app.contracts.common import JsonValue, semantic_hash
 from app.contracts.dataset import TabularDataset
 from app.contracts.insight import StatisticalResult
 
@@ -93,6 +93,78 @@ class ContributionMethod:
                 "shares": [
                     {"row_id": row_id, "share": round(value / total, 6)} for row_id, value in rows
                 ],
+            },
+        )
+
+
+class WithinGroupContributionMethod:
+    method_id = "within_group_contribution"
+    version = "v1"
+
+    def compute(
+        self, dataset: TabularDataset, params: Mapping[str, JsonValue]
+    ) -> StatisticalResult:
+        column = str(params.get("column", "record_count"))
+        category_column = str(params.get("category_column", ""))
+        raw_partitions = params.get("partition_columns", [])
+        partition_columns = (
+            tuple(str(item) for item in raw_partitions if isinstance(item, str))
+            if isinstance(raw_partitions, list)
+            else ()
+        )
+        if not category_column or not dataset.complete:
+            return StatisticalResult(
+                method_id=self.method_id,
+                version=self.version,
+                applicability="NOT_APPLICABLE",
+                sample_size=len(dataset.rows),
+                warnings=(
+                    "within-group contribution requires a category and complete distribution",
+                ),
+            )
+        groups: dict[tuple[JsonValue, ...], list[tuple[str, JsonValue, float]]] = {}
+        for row in dataset.rows:
+            value = row.values.get(column)
+            if not isinstance(value, int | float) or isinstance(value, bool):
+                continue
+            partition = tuple(row.values.get(item) for item in partition_columns)
+            groups.setdefault(partition, []).append(
+                (row.row_id, row.values.get(category_column), float(value))
+            )
+        output: list[dict[str, JsonValue]] = []
+        for partition, rows in sorted(groups.items(), key=lambda item: semantic_hash(item[0])):
+            total = sum(value for _, _, value in rows)
+            if total == 0:
+                continue
+            partition_values = dict(zip(partition_columns, partition, strict=True))
+            output.extend(
+                {
+                    "partition": partition_values,
+                    "row_id": row_id,
+                    "category": category,
+                    "value": value,
+                    "within_group_share": value / total,
+                }
+                for row_id, category, value in rows
+            )
+        if len(output) < 2:
+            return StatisticalResult(
+                method_id=self.method_id,
+                version=self.version,
+                applicability="NOT_APPLICABLE",
+                sample_size=len(output),
+                warnings=("within-group contribution requires at least two non-zero rows",),
+            )
+        return StatisticalResult(
+            method_id=self.method_id,
+            version=self.version,
+            applicability="APPLICABLE",
+            sample_size=len(output),
+            values={
+                "column": column,
+                "partition_columns": list(partition_columns),
+                "category_column": category_column,
+                "rows": output,
             },
         )
 
@@ -540,6 +612,7 @@ class StatisticEngine:
         methods: tuple[StatisticalMethod, ...] = (
             RankMethod(),
             ContributionMethod(),
+            WithinGroupContributionMethod(),
             MeanMedianMethod(),
             PercentileMethod(),
             StdCvMethod(),

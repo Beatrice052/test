@@ -12,7 +12,7 @@ from datetime import UTC, datetime
 
 from app.analytics.statistics import StatisticEngine
 from app.contracts.analysis import AnalysisPlan
-from app.contracts.common import Provenance, semantic_hash
+from app.contracts.common import JsonValue, Provenance, semantic_hash
 from app.contracts.dataset import DatasetBundle, TabularDataset
 from app.contracts.insight import (
     AnalyticsToolRequest,
@@ -101,6 +101,18 @@ class GovernedAnalyticsTool:
             for item in dataset.columns
         ):
             error = "measure column is missing or is not a governed numeric measure"
+        elif not self._columns_have_role(dataset, request.partition_columns, "dimension"):
+            error = "partition columns are missing or are not governed dimensions"
+        elif request.category_column is not None and not self._columns_have_role(
+            dataset, (request.category_column,), "dimension"
+        ):
+            error = "category column is missing or is not a governed dimension"
+        elif request.time_column is not None and not any(
+            item.name == request.time_column
+            and (item.data_type == "datetime" or item.semantic_type == "time_dimension")
+            for item in dataset.columns
+        ):
+            error = "time column is missing or is not a governed time dimension"
         elif set(request.parameters) - set(definition.default_params):
             error = "request overrides a statistical parameter that is not registered"
 
@@ -124,11 +136,17 @@ class GovernedAnalyticsTool:
 
         assert dataset is not None
         assert definition is not None
-        parameters = {
+        parameters: dict[str, JsonValue] = {
             **definition.default_params,
             **request.parameters,
             "column": request.measure_column,
         }
+        if request.partition_columns:
+            parameters["partition_columns"] = list(request.partition_columns)
+        if request.category_column is not None:
+            parameters["category_column"] = request.category_column
+        if request.time_column is not None:
+            parameters["time_column"] = request.time_column
         time_column = next(
             (
                 item.name
@@ -192,10 +210,17 @@ class GovernedAnalyticsTool:
         reason: str,
         dataset: TabularDataset | None,
     ) -> AnalyticsToolResult:
+        enriched = result.model_copy(
+            update={
+                "result_id": f"stat_{request.request_id}",
+                "value_paths": GovernedAnalyticsTool._value_paths(result.values),
+                "calculation_table_id": f"calc_{request.request_id}",
+            }
+        )
         payload = {
             "request": request.model_dump(mode="json"),
             "decision": decision,
-            "result": result.model_dump(mode="json"),
+            "result": enriched.model_dump(mode="json"),
             "reason": reason,
         }
         return AnalyticsToolResult(
@@ -211,10 +236,33 @@ class GovernedAnalyticsTool:
             dataset_id=request.dataset_id,
             method_id=request.method_id,
             measure_column=request.measure_column,
+            partition_columns=request.partition_columns,
+            category_column=request.category_column,
+            time_column=request.time_column,
             decision=decision,
-            result=result,
+            result=enriched,
             reason=reason,
         )
+
+    @staticmethod
+    def _columns_have_role(dataset: TabularDataset, names: tuple[str, ...], role: str) -> bool:
+        columns = {item.name: item for item in dataset.columns}
+        return all(name in columns and columns[name].semantic_role == role for name in names)
+
+    @classmethod
+    def _value_paths(cls, value: object, prefix: str = "") -> tuple[str, ...]:
+        paths: list[str] = []
+        if isinstance(value, dict):
+            for key, child in value.items():
+                child_prefix = f"{prefix}.{key}" if prefix else str(key)
+                paths.extend(cls._value_paths(child, child_prefix))
+        elif isinstance(value, list):
+            for index, child in enumerate(value):
+                child_prefix = f"{prefix}.{index}" if prefix else str(index)
+                paths.extend(cls._value_paths(child, child_prefix))
+        elif prefix:
+            paths.append(prefix)
+        return tuple(paths)
 
     @staticmethod
     def _merge_feature_summaries(

@@ -115,6 +115,12 @@ class DataQAEngine:
     def has_fatal(records: Sequence[DataQARecord]) -> bool:
         return any(item.severity == "FATAL" and not item.passed for item in records)
 
+    @staticmethod
+    def has_blocking(records: Sequence[DataQARecord]) -> bool:
+        """ERROR/FATAL data is retained for audit but cannot enter Agent C."""
+
+        return any(item.severity in {"ERROR", "FATAL"} and not item.passed for item in records)
+
     def _execution_rules(
         self, dataset: TabularDataset, executions: Sequence[ExecutionRecord]
     ) -> list[DataQARecord]:

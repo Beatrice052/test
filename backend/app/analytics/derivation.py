@@ -56,6 +56,7 @@ class StatusMetricDeriver:
         status_field_id: str | None,
         value_dictionary: ValueDictionary,
         metric_definitions: tuple[MetricDefinition, ...],
+        task_ids: tuple[str, ...] = (),
     ) -> DerivationResult:
         if source.kind != "base":
             raise DerivationError("status metric derivation requires a base dataset")
@@ -98,6 +99,8 @@ class StatusMetricDeriver:
                 nullable=False,
                 semantic_role="measure",
                 unit="count",
+                aggregation="document_count",
+                aggregation_semantics="additive",
             ),
         )
         metric_columns = tuple(
@@ -108,6 +111,8 @@ class StatusMetricDeriver:
                 semantic_role="metric",
                 metric_id=definition.metric_id,
                 unit=definition.unit,
+                aggregation_semantics=definition.aggregation_semantics.value,
+                approximate=definition.approximate,
             )
             for definition in metric_definitions
         )
@@ -165,6 +170,7 @@ class StatusMetricDeriver:
             "output_grain": list(group_by),
             "output_columns": [item.name for item in columns],
             "formula_references": [item.versioned_id for item in metric_definitions],
+            "task_ids": list(task_ids),
             "reconciliation_rules": ["derived_record_count_equals_source_record_count"],
         }
         payload = {

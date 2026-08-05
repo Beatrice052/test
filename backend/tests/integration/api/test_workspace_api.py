@@ -1,5 +1,6 @@
 """Full owner-scoped workspace API restores immutable answer artifacts."""
 
+import hashlib
 import json
 from pathlib import Path
 
@@ -76,8 +77,44 @@ def test_session_chat_answer_dataset_evidence_and_ownership(tmp_path: Path) -> N
         business_evidence = client.get(f"/api/v1/answers/{answer_id}/evidence", headers=owner)
         assert business_evidence.status_code == 200
         assert business_evidence.json()["advanced"] is None
+        business_payload = business_evidence.json()["business"]
+        assert business_payload["quality"] == []
+        assert business_payload["quality_summary"]["status"] in {"VALID", "WARNING"}
+        source_query = business_payload["source_queries"][0]
+        raw_artifact = source_query["raw_result_artifact"]
+        assert raw_artifact["artifact_kind"] == "raw_opensearch_result"
+        raw_download = client.get(raw_artifact["download_url"], headers=owner)
+        assert raw_download.status_code == 200
+        assert raw_download.json()["aggregations"]
+        assert raw_download.json()["detail_hits_omitted"] == 0
+        assert (
+            "sha256:" + hashlib.sha256(raw_download.content).hexdigest()
+            == raw_artifact["content_hash"]
+        )
+        assert "authorization" not in raw_download.text.casefold()
+        source_table = source_query["source_table_artifact"]
+        source_download = client.get(source_table["download_url"], headers=owner)
+        assert source_download.status_code == 200
+        assert (
+            "sha256:" + hashlib.sha256(source_download.content).hexdigest()
+            == source_table["content_hash"]
+        )
+        assert len(source_download.text.strip().splitlines()) - 1 == source_query["row_count"]
+        assert source_query["bucket_count"] == source_query["row_count"]
+        assert client.get(raw_artifact["download_url"], headers=other).status_code == 404
         advanced_evidence = client.get(f"/api/v1/answers/{answer_id}/evidence", headers=analyst)
         assert advanced_evidence.json()["advanced"]["compiled_queries"]
+        execution = advanced_evidence.json()["advanced"]["execution_summaries"][0]
+        assert execution["raw_artifact_id"] == raw_artifact["artifact_id"]
+        assert execution["row_count"] == source_query["row_count"]
+        technical_ids = {
+            item["definition_id"] for item in business_payload["technical_definitions"]
+        }
+        assert "generic_quality_score.v1" not in technical_ids
+        for trace in business_payload["claim_trace"]:
+            assert trace["evidence_refs"]
+            assert all(item["table_id"] and item["value_path"] for item in trace["evidence_refs"])
+            assert all(item.get("artifact_id") for item in trace["evidence_refs"])
 
         dataset = answer["dataset_bundle"]["datasets"][-1]
         dataset_object_id = dataset["object_id"]
@@ -92,6 +129,13 @@ def test_session_chat_answer_dataset_evidence_and_ownership(tmp_path: Path) -> N
         assert exported.status_code == 200
         assert exported.text.startswith("row_id,")
         assert "attachment" in exported.headers["content-disposition"]
+
+        recovered = client.get(f"/api/v1/answers/{answer_id}", headers=owner)
+        assert recovered.status_code == 200
+        assert (
+            recovered.json()["evidence_package"]["content_hash"]
+            == answer["evidence_package"]["content_hash"]
+        )
 
         assert client.get(f"/api/v1/sessions/{session_id}", headers=other).status_code == 404
         assert client.get(f"/api/v1/answers/{answer_id}", headers=other).status_code == 404

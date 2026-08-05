@@ -87,6 +87,9 @@ def test_fts_retrieval_returns_channel_top_one_and_excludes_blocked(
     assert all(
         candidate.item_id != "sub_message.recipient_id" for candidate in candidates.field_candidates
     )
+    assert all(
+        candidate.item_id != "sub_message.message_id" for candidate in candidates.field_candidates
+    )
     channel = candidates.field_candidates[0]
     assert channel.summary
     assert channel.metadata["semantic_type"] == "categorical_dimension"

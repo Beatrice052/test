@@ -142,14 +142,15 @@ def _mcp_probe(args: argparse.Namespace) -> int:
 def _build_smoke_queries(
     *,
     time_field: str,
-    channel_field: str,
-    status_field: str,
+    dimension_fields: tuple[str, ...],
     from_inclusive: str,
     to_exclusive: str,
     timezone: str,
 ) -> dict[str, dict[str, object]]:
     safe_field = re.compile(r"^[A-Za-z][A-Za-z0-9_.-]{0,255}$")
-    for field in (time_field, channel_field, status_field):
+    if not 1 <= len(dimension_fields) <= 3:
+        raise ValueError("smoke requires between one and three dimension fields")
+    for field in (time_field, *dimension_fields):
         if not safe_field.fullmatch(field):
             raise ValueError("smoke field names must be safe physical paths")
     start = datetime.fromisoformat(from_inclusive.replace("Z", "+00:00"))
@@ -165,32 +166,36 @@ def _build_smoke_queries(
         "timeout": "10s",
         "query": time_filter,
     }
+    nested: dict[str, object] = {}
+    current = nested
+    for index, field in enumerate(dimension_fields):
+        child_aggregations: dict[str, object] = {}
+        body: dict[str, object] = {
+            "terms": {"field": field, "size": 50},
+            "aggs": child_aggregations,
+        }
+        current[f"by_dimension_{index + 1}"] = body
+        current = child_aggregations
     return {
         "count_narrow_range": dict(base),
-        "channel_aggregation": {
+        "dimension_aggregation": {
             **base,
-            "aggs": {"by_channel": {"terms": {"field": channel_field, "size": 50}}},
+            "aggs": {"by_dimension_1": {"terms": {"field": dimension_fields[0], "size": 50}}},
         },
-        "channel_status_aggregation": {
+        "multi_dimension_aggregation": {**base, "aggs": nested},
+        "time_dimension_aggregation": {
             **base,
             "aggs": {
-                "by_channel": {
-                    "terms": {"field": channel_field, "size": 50},
-                    "aggs": {"by_status": {"terms": {"field": status_field, "size": 50}}},
-                }
-            },
-        },
-        "multi_month_aggregation": {
-            **base,
-            "aggs": {
-                "by_month": {
+                "by_period": {
                     "date_histogram": {
                         "field": time_field,
                         "calendar_interval": "month",
                         "time_zone": timezone,
                         "min_doc_count": 0,
                     },
-                    "aggs": {"by_channel": {"terms": {"field": channel_field, "size": 50}}},
+                    "aggs": {
+                        "by_dimension_1": {"terms": {"field": dimension_fields[0], "size": 50}}
+                    },
                 }
             },
         },
@@ -251,8 +256,7 @@ async def _mcp_smoke_async(args: argparse.Namespace) -> int:
         raise ValueError("smoke requires explicit safe index names; wildcards are forbidden")
     queries = _build_smoke_queries(
         time_field=args.time_field,
-        channel_field=args.channel_field,
-        status_field=args.status_field,
+        dimension_fields=tuple(args.dimension_field),
         from_inclusive=args.from_inclusive,
         to_exclusive=args.to_exclusive,
         timezone=args.timezone,
@@ -622,8 +626,7 @@ def build_parser() -> argparse.ArgumentParser:
     smoke_parser.add_argument("--dataset", required=True)
     smoke_parser.add_argument("--index", action="append", required=True)
     smoke_parser.add_argument("--time-field", required=True)
-    smoke_parser.add_argument("--channel-field", required=True)
-    smoke_parser.add_argument("--status-field", required=True)
+    smoke_parser.add_argument("--dimension-field", action="append", required=True)
     smoke_parser.add_argument("--from", dest="from_inclusive", required=True)
     smoke_parser.add_argument("--to", dest="to_exclusive", required=True)
     smoke_parser.add_argument("--timezone", default="Asia/Hong_Kong")

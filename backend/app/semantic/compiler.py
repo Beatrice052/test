@@ -143,7 +143,7 @@ def _retrieval_documents(
 ) -> list[dict[str, Any]]:
     documents: list[dict[str, Any]] = []
     for field in fields:
-        if field.maturity == FieldMaturity.BLOCKED:
+        if field.maturity == FieldMaturity.BLOCKED or not field.security.model_visible:
             continue
         documents.append(
             {
@@ -195,8 +195,11 @@ def _retrieval_documents(
                     ),
                 }
             )
+    model_visible_field_ids = {item.field_id for item in fields if item.security.model_visible}
     for measure in measures.definitions:
-        if measure.enabled:
+        if measure.enabled and (
+            measure.source_field_id is None or measure.source_field_id in model_visible_field_ids
+        ):
             documents.append(
                 {
                     "item_id": measure.versioned_id,

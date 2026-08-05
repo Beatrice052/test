@@ -40,6 +40,30 @@
     "version": "v1"
   },
   {
+    "default_params": {},
+    "display_name": "组内贡献度",
+    "exploratory_label_required": true,
+    "interpretation_limitations": [
+      "不适用于被截断的 Top N 分布",
+      "分组总量为零时不计算"
+    ],
+    "method_id": "within_group_contribution",
+    "minimum_rows": 2,
+    "parameter_limits": {},
+    "purpose": "计算每个分组内部各类别对完整度量总量的贡献占比",
+    "required_semantic_types": [
+      "categorical_dimension",
+      "numeric_measure"
+    ],
+    "requires_category": true,
+    "requires_time": false,
+    "supported_partition_roles": [
+      "dimension"
+    ],
+    "technical_description": "对每个 partition 分别计算 category value / partition total；要求完整分布且分组总量非零。",
+    "version": "v1"
+  },
+  {
     "default_params": {
       "threshold": 3.5
     },

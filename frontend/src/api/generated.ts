@@ -25,6 +25,7 @@ export type AdvancedEvidence = {
   result_contracts?: Array<{
   [key: string]: JsonValue;
 }>;
+  artifacts?: Array<EvidenceArtifactRef>;
 };
 
 export type AggregationKind = "document_count" | "value_count" | "cardinality" | "sum" | "avg" | "min" | "max" | "stats" | "extended_stats" | "percentiles";
@@ -149,6 +150,12 @@ export type BusinessEvidence = {
   scope: {
   [key: string]: JsonValue;
 };
+  source_queries?: Array<SourceQueryEvidence>;
+  source_results?: Array<EvidenceArtifactRef>;
+  calculated_tables?: Array<CalculationTableEvidence>;
+  technical_definitions?: Array<TechnicalDefinitionEvidence>;
+  claim_trace?: Array<ClaimTraceEvidence>;
+  quality_summary?: EvidenceQualitySummary | null;
   metric_definitions?: Array<{
   [key: string]: JsonValue;
 }>;
@@ -163,6 +170,25 @@ export type BusinessEvidence = {
   [key: string]: JsonValue;
 }>;
   downloads?: Array<string>;
+};
+
+export type CalculationTableEvidence = {
+  calculation_id: string;
+  table_id: string;
+  source_table_ids: Array<string>;
+  task_ids?: Array<string>;
+  grain: Array<string>;
+  input_columns: Array<string>;
+  output_columns: Array<string>;
+  definition_ids?: Array<string>;
+  parameters?: {
+  [key: string]: JsonValue;
+};
+  row_ids?: Array<string>;
+  content_hash: string;
+  complete: boolean;
+  approximate?: boolean;
+  artifact: EvidenceArtifactRef;
 };
 
 export type ChartAnalysis = {
@@ -215,6 +241,16 @@ export type ClaimSpec = {
   importance: "primary" | "secondary" | "supporting";
   task_ids?: Array<string>;
   evidence_refs: Array<EvidenceRef>;
+};
+
+export type ClaimTraceEvidence = {
+  claim_id: string;
+  task_ids?: Array<string>;
+  text: string;
+  evidence_refs: Array<{
+  [key: string]: JsonValue;
+}>;
+  definition_ids?: Array<string>;
 };
 
 export type Clarification = {
@@ -341,6 +377,21 @@ export type EntityReference = {
   resolved_member_id?: string | null;
 };
 
+export type EvidenceArtifactRef = {
+  artifact_id: string;
+  artifact_kind: "raw_opensearch_result" | "source_result_table" | "calculation_table" | "statistical_result" | "chart_data" | "internal_qa";
+  media_type: "application/json" | "text/csv";
+  content_hash: string;
+  byte_size: number;
+  row_count?: number | null;
+  complete?: boolean;
+  approximate?: boolean;
+  source_ids?: Array<string>;
+  task_ids?: Array<string>;
+  preview?: JsonValue;
+  download_url: string;
+};
+
 export type EvidencePackage = {
   schema_version?: string;
   object_id: string;
@@ -353,6 +404,17 @@ export type EvidencePackage = {
   redaction?: EvidenceRedaction;
 };
 
+export type EvidenceQualitySummary = {
+  status: "VALID" | "WARNING" | "BLOCKED";
+  material_warnings?: Array<string>;
+  blocked_reasons?: Array<string>;
+  completeness?: Array<string>;
+  reconciliation_summary?: Array<{
+  [key: string]: JsonValue;
+}>;
+  internal_qa_artifact?: EvidenceArtifactRef | null;
+};
+
 export type EvidenceRedaction = {
   removed_fields?: Array<string>;
   masked_fields?: Array<string>;
@@ -363,6 +425,10 @@ export type EvidenceRef = {
   dataset_id: string;
   row_id: string;
   column: string;
+  table_id?: string | null;
+  artifact_id?: string | null;
+  value_path?: string | null;
+  definition_ids?: Array<string>;
   metric_id?: string | null;
   statistical_method_id?: string | null;
   statistical_result_hash?: string | null;
@@ -581,6 +647,40 @@ export type SessionPatchRequest = {
   expected_version: number;
 };
 
+export type SourceQueryEvidence = {
+  query_id: string;
+  query_plan_id: string;
+  query_step_id: string;
+  dataset_id: string;
+  indices: Array<string>;
+  time_range: {
+  [key: string]: JsonValue;
+};
+  timezone: string;
+  filters?: Array<{
+  [key: string]: JsonValue;
+}>;
+  dimensions?: Array<string>;
+  grain?: Array<string>;
+  metrics?: Array<string>;
+  measures?: Array<{
+  [key: string]: JsonValue;
+}>;
+  query_fingerprint: string;
+  safe_query_summary: {
+  [key: string]: JsonValue;
+};
+  execution_ids: Array<string>;
+  took_ms: number;
+  page_count: number;
+  bucket_count: number;
+  row_count: number;
+  complete: boolean;
+  partial: boolean;
+  raw_result_artifact?: EvidenceArtifactRef | null;
+  source_table_artifact: EvidenceArtifactRef;
+};
+
 export type StatisticalResult = {
   result_id?: string | null;
   method_id: string;
@@ -614,6 +714,18 @@ export type TabularDataset = {
   source_dataset_ids?: Array<string>;
   derivation_id?: string | null;
   warnings?: Array<string>;
+};
+
+export type TechnicalDefinitionEvidence = {
+  definition_id: string;
+  definition_type: "metric" | "measure" | "method";
+  version: string;
+  display_name: string;
+  purpose_or_business_definition: string;
+  technical_expression: string;
+  details?: {
+  [key: string]: JsonValue;
+};
 };
 
 export type TimeRange = {

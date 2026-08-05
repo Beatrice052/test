@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from app.analytics.bundle import DatasetBundleBuilder
 from app.analytics.composite import CompositeResultMerger
 from app.analytics.pipeline import AnalyticsPipeline
-from app.contracts.common import JsonValue
+from app.contracts.common import JsonValue, semantic_hash
 from app.contracts.dataset import DataQARecord, ReconciliationRecord, TabularDataset
 from app.contracts.error import ErrorDetail, StructuredError
 from app.contracts.execution import ExecutionRecord, RawSearchResult
@@ -61,6 +61,7 @@ class Phase4Nodes:
                 compiled_by_step[step.step_id] = query
             execution = await self.executor.execute(query)
             executions.append(execution.record)
+            primary_execution_index = len(executions) - 1
             step_executions = [execution.record]
             result = execution.result
             failure_record = execution.record
@@ -107,6 +108,30 @@ class Phase4Nodes:
                 query,
                 result,
                 tuple(step_executions),
+                method_ids=tuple(
+                    dict.fromkeys(
+                        method_id
+                        for task in state["analysis_plan"].tasks
+                        if task.task_id in step.purpose_task_ids
+                        for method_id in task.statistical_method_ids
+                    )
+                ),
+                task_ids=step.purpose_task_ids,
+            )
+            source_rows = len(analyzed.bundle.datasets[0].rows)
+            primary = executions[primary_execution_index]
+            updated = primary.model_copy(
+                update={
+                    "raw_result_hash": semantic_hash(result),
+                    "page_count": len(step_executions),
+                    "bucket_count": source_rows,
+                    "row_count": source_rows,
+                    "complete": analyzed.bundle.datasets[0].complete,
+                    "partial": not analyzed.bundle.datasets[0].complete,
+                }
+            )
+            executions[primary_execution_index] = updated.model_copy(
+                update={"content_hash": semantic_hash(updated.model_dump(mode="json"))}
             )
             datasets.extend(analyzed.bundle.datasets)
             qa_records.extend(analyzed.bundle.data_qa)
@@ -174,8 +199,10 @@ class Phase4Nodes:
         if after_key is None:
             return _CompositeCompletion(result=first_page)
         pages = [first_page]
+        after_keys: list[dict[str, JsonValue]] = []
         records: list[ExecutionRecord] = []
         while after_key is not None and len(pages) < self.max_composite_pages:
+            after_keys.append(after_key)
             page_query = self.compiler.compile_composite_page(query, after_key=after_key)
             execution = await self.executor.execute(page_query)
             records.append(execution.record)
@@ -200,8 +227,17 @@ class Phase4Nodes:
                 execution_records=tuple(records),
                 error_code="GW_COMPOSITE_PAGE_LIMIT",
             )
+        merged = self.composite_merger.merge(tuple(pages))
+        merged = merged.model_copy(
+            update={
+                "gateway_metadata": {
+                    **merged.gateway_metadata,
+                    "composite_after_keys": after_keys,
+                }
+            }
+        )
         return _CompositeCompletion(
-            result=self.composite_merger.merge(tuple(pages)),
+            result=merged,
             execution_records=tuple(records),
         )
 

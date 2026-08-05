@@ -1,6 +1,7 @@
 """Guard against unsafe patterns copied from the demo opensearch-agent architecture."""
 
 import ast
+import re
 from pathlib import Path
 
 import yaml
@@ -22,6 +23,21 @@ FORBIDDEN_STRING_LITERALS = {
     "GenericOpenSearchApiTool",
     "PPLQueryTool",
 }
+DECISION_ROOTS = (
+    "agents",
+    "analytics",
+    "orchestration",
+    "presentation",
+    "query",
+    "registries",
+    "semantic",
+)
+DOMAIN_DECISION_NAME = re.compile(
+    r"(?:channel|use_?case|source_?system).*(?:task_?bundle|planner|compiler|parser|analyzer|builder)"
+    r"|(?:task_?bundle|planner|compiler|parser|analyzer|builder).*(?:channel|use_?case|source_?system)"
+    r"|template_?query_?builder",
+    re.IGNORECASE,
+)
 
 
 def _application_trees() -> list[tuple[Path, ast.AST]]:
@@ -174,3 +190,17 @@ def test_dashboard_contract_has_no_executable_or_raw_rendering_fields() -> None:
         "html",
     }
     assert property_names(schema).isdisjoint(forbidden)
+
+
+def test_formal_decision_modules_have_no_domain_specific_implementation_names() -> None:
+    """Representative Golden vocabulary must not become a production decision class."""
+
+    violations: list[str] = []
+    for root_name in DECISION_ROOTS:
+        for path in (APP_ROOT / root_name).rglob("*.py"):
+            tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+            for node in ast.walk(tree):
+                name = getattr(node, "name", None)
+                if isinstance(name, str) and DOMAIN_DECISION_NAME.search(name):
+                    violations.append(f"{path}:{node.lineno}:{name}")
+    assert violations == []

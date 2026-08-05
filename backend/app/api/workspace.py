@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 from collections.abc import AsyncIterator
 from contextlib import suppress
 from typing import Annotated
@@ -36,6 +37,7 @@ from app.persistence.answer_repository import AnswerRepository
 from app.persistence.ids import new_id
 from app.persistence.serialization import load_json, load_time
 from app.persistence.session_repository import SessionRepository
+from app.presentation.artifacts import EvidenceArtifactError, EvidenceArtifactStore
 from app.presentation.evidence import EvidenceAccessPolicy, EvidenceExporter
 from app.security.authorization import AuthorizationError, require_role
 from app.semantic.compiler import compile_semantic_package
@@ -242,6 +244,33 @@ def get_debug(answer_id: str, subject: Identity, app: Container) -> dict[str, ob
     }
 
 
+@router.get("/answers/{answer_id}/artifacts/{artifact_id}")
+def get_evidence_artifact(
+    answer_id: str,
+    artifact_id: str,
+    subject: Identity,
+    app: Container,
+) -> Response:
+    reference = _answers(app).get_artifact_reference(subject.subject_id, answer_id, artifact_id)
+    if reference.media_type != "application/json":
+        raise HTTPException(status_code=404, detail="artifact uses its dataset download endpoint")
+    try:
+        content = EvidenceArtifactStore(
+            app.settings.app_artifact_dir,
+            maximum_bytes=app.settings.chatbi_max_raw_response_bytes,
+        ).read_json(artifact_id, expected_hash=reference.content_hash)
+    except EvidenceArtifactError as error:
+        raise HTTPException(status_code=409, detail=str(error)) from error
+    return Response(
+        content,
+        media_type="application/json",
+        headers={
+            "Content-Disposition": f'attachment; filename="{artifact_id}.json"',
+            "ETag": f'"{reference.content_hash.removeprefix("sha256:")}"',
+        },
+    )
+
+
 @router.get("/datasets/{dataset_id}/rows", response_model=DatasetRowsResponse)
 def get_dataset_rows(
     dataset_id: str,
@@ -272,11 +301,15 @@ def get_dataset_csv(dataset_id: str, subject: Identity, app: Container) -> Respo
     if not EvidenceAccessPolicy().allow_csv(subject, dataset):
         raise AuthorizationError("dataset classification does not permit CSV export")
     csv_text = EvidenceExporter().dataset_csv(dataset)
+    csv_hash = hashlib.sha256(csv_text.encode("utf-8")).hexdigest()
     safe_name = "".join(item for item in dataset.dataset_id if item.isalnum() or item in {"-", "_"})
     return Response(
         csv_text,
         media_type="text/csv; charset=utf-8",
-        headers={"Content-Disposition": f'attachment; filename="{safe_name}.csv"'},
+        headers={
+            "Content-Disposition": f'attachment; filename="{safe_name}.csv"',
+            "ETag": f'"{csv_hash}"',
+        },
     )
 
 

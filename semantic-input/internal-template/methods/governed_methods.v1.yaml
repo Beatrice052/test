@@ -14,6 +14,18 @@ methods:
     required_semantic_types: [categorical_dimension, numeric_measure]
     exploratory_label_required: true
     default_params: {}
+  - method_id: within_group_contribution
+    version: v1
+    display_name: 组内贡献度
+    purpose: 计算每个分组内部各类别对完整度量总量的贡献占比
+    technical_description: 对每个 partition 分别计算 category value / partition total；要求完整分布且分组总量非零。
+    minimum_rows: 2
+    required_semantic_types: [categorical_dimension, numeric_measure]
+    exploratory_label_required: true
+    default_params: {}
+    supported_partition_roles: [dimension]
+    requires_category: true
+    interpretation_limitations: [不适用于被截断的 Top N 分布, 分组总量为零时不计算]
   - method_id: mad_robust_zscore
     version: v1
     display_name: MAD Robust Z-score

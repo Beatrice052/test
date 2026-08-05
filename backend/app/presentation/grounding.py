@@ -96,7 +96,7 @@ class ClaimGrounder:
                 formatted[binding.name] = self._format_statistical_value(
                     value, result, dataset, binding.column
                 )
-                evidence.extend(self._statistical_evidence(dataset, result))
+                evidence.extend(self._statistical_evidence(dataset, result, binding.column))
                 continue
             column = self._resolve_column(dataset, binding.column)
             row = self._select_row(dataset, binding.selector)
@@ -109,6 +109,16 @@ class ClaimGrounder:
                     dataset_id=dataset.dataset_id,
                     row_id=row.row_id,
                     column=column.name,
+                    table_id=dataset.object_id,
+                    value_path=f"rows.{row.row_id}.{column.name}",
+                    definition_ids=tuple(
+                        item
+                        for item in (
+                            column.measure_id,
+                            column.name if column.metric_id is not None else None,
+                        )
+                        if item is not None
+                    ),
                     metric_id=column.metric_id,
                 )
             )
@@ -209,7 +219,7 @@ class ClaimGrounder:
 
     @classmethod
     def _statistical_evidence(
-        cls, dataset: TabularDataset, result: StatisticalResult
+        cls, dataset: TabularDataset, result: StatisticalResult, value_path: str
     ) -> tuple[EvidenceRef, ...]:
         referenced_row_ids = cls._row_ids(result.values)
         rows_by_id = {item.row_id: item for item in dataset.rows}
@@ -224,6 +234,9 @@ class ClaimGrounder:
                 dataset_id=dataset.dataset_id,
                 row_id=row_id,
                 column=column,
+                table_id=result.calculation_table_id,
+                value_path=f"result.values.{value_path}",
+                definition_ids=(result.method_id,),
                 statistical_method_id=result.method_id,
                 statistical_result_hash=result_hash,
             )

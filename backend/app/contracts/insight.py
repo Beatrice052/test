@@ -134,6 +134,10 @@ class EvidenceRef(StrictModel):
     dataset_id: Identifier
     row_id: str
     column: str
+    table_id: str | None = None
+    artifact_id: str | None = None
+    value_path: str | None = None
+    definition_ids: tuple[Identifier, ...] = ()
     metric_id: Identifier | None = None
     statistical_method_id: Identifier | None = None
     statistical_result_hash: str | None = None

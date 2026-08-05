@@ -3,6 +3,14 @@
     "AdvancedEvidence": {
       "additionalProperties": false,
       "properties": {
+        "artifacts": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/EvidenceArtifactRef"
+          },
+          "title": "Artifacts",
+          "type": "array"
+        },
         "compiled_queries": {
           "default": [],
           "items": {
@@ -584,6 +592,22 @@
     "BusinessEvidence": {
       "additionalProperties": false,
       "properties": {
+        "calculated_tables": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/CalculationTableEvidence"
+          },
+          "title": "Calculated Tables",
+          "type": "array"
+        },
+        "claim_trace": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ClaimTraceEvidence"
+          },
+          "title": "Claim Trace",
+          "type": "array"
+        },
         "data_tables": {
           "default": [],
           "items": {
@@ -633,6 +657,17 @@
           "title": "Quality",
           "type": "array"
         },
+        "quality_summary": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/EvidenceQualitySummary"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
         "reconciliations": {
           "default": [],
           "items": {
@@ -650,12 +685,141 @@
           },
           "title": "Scope",
           "type": "object"
+        },
+        "source_queries": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/SourceQueryEvidence"
+          },
+          "title": "Source Queries",
+          "type": "array"
+        },
+        "source_results": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/EvidenceArtifactRef"
+          },
+          "title": "Source Results",
+          "type": "array"
+        },
+        "technical_definitions": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/TechnicalDefinitionEvidence"
+          },
+          "title": "Technical Definitions",
+          "type": "array"
         }
       },
       "required": [
         "scope"
       ],
       "title": "BusinessEvidence",
+      "type": "object"
+    },
+    "CalculationTableEvidence": {
+      "additionalProperties": false,
+      "properties": {
+        "approximate": {
+          "default": false,
+          "title": "Approximate",
+          "type": "boolean"
+        },
+        "artifact": {
+          "$ref": "#/$defs/EvidenceArtifactRef"
+        },
+        "calculation_id": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+          "title": "Calculation Id",
+          "type": "string"
+        },
+        "complete": {
+          "title": "Complete",
+          "type": "boolean"
+        },
+        "content_hash": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Content Hash",
+          "type": "string"
+        },
+        "definition_ids": {
+          "default": [],
+          "items": {
+            "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+            "type": "string"
+          },
+          "title": "Definition Ids",
+          "type": "array"
+        },
+        "grain": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Grain",
+          "type": "array"
+        },
+        "input_columns": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Input Columns",
+          "type": "array"
+        },
+        "output_columns": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Output Columns",
+          "type": "array"
+        },
+        "parameters": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Parameters",
+          "type": "object"
+        },
+        "row_ids": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Row Ids",
+          "type": "array"
+        },
+        "source_table_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Source Table Ids",
+          "type": "array"
+        },
+        "table_id": {
+          "title": "Table Id",
+          "type": "string"
+        },
+        "task_ids": {
+          "default": [],
+          "items": {
+            "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+            "type": "string"
+          },
+          "title": "Task Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "calculation_id",
+        "table_id",
+        "source_table_ids",
+        "grain",
+        "input_columns",
+        "output_columns",
+        "content_hash",
+        "complete",
+        "artifact"
+      ],
+      "title": "CalculationTableEvidence",
       "type": "object"
     },
     "ChartAnalysis": {
@@ -905,6 +1069,54 @@
         "evidence_refs"
       ],
       "title": "ClaimSpec",
+      "type": "object"
+    },
+    "ClaimTraceEvidence": {
+      "additionalProperties": false,
+      "properties": {
+        "claim_id": {
+          "title": "Claim Id",
+          "type": "string"
+        },
+        "definition_ids": {
+          "default": [],
+          "items": {
+            "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+            "type": "string"
+          },
+          "title": "Definition Ids",
+          "type": "array"
+        },
+        "evidence_refs": {
+          "items": {
+            "additionalProperties": {
+              "$ref": "#/$defs/JsonValue"
+            },
+            "type": "object"
+          },
+          "title": "Evidence Refs",
+          "type": "array"
+        },
+        "task_ids": {
+          "default": [],
+          "items": {
+            "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+            "type": "string"
+          },
+          "title": "Task Ids",
+          "type": "array"
+        },
+        "text": {
+          "title": "Text",
+          "type": "string"
+        }
+      },
+      "required": [
+        "claim_id",
+        "text",
+        "evidence_refs"
+      ],
+      "title": "ClaimTraceEvidence",
       "type": "object"
     },
     "Clarification": {
@@ -1629,6 +1841,104 @@
       "title": "EntityReference",
       "type": "object"
     },
+    "EvidenceArtifactRef": {
+      "additionalProperties": false,
+      "properties": {
+        "approximate": {
+          "default": false,
+          "title": "Approximate",
+          "type": "boolean"
+        },
+        "artifact_id": {
+          "pattern": "^art_[a-z0-9_-]{8,127}$",
+          "title": "Artifact Id",
+          "type": "string"
+        },
+        "artifact_kind": {
+          "enum": [
+            "raw_opensearch_result",
+            "source_result_table",
+            "calculation_table",
+            "statistical_result",
+            "chart_data",
+            "internal_qa"
+          ],
+          "title": "Artifact Kind",
+          "type": "string"
+        },
+        "byte_size": {
+          "minimum": 0,
+          "title": "Byte Size",
+          "type": "integer"
+        },
+        "complete": {
+          "default": true,
+          "title": "Complete",
+          "type": "boolean"
+        },
+        "content_hash": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Content Hash",
+          "type": "string"
+        },
+        "download_url": {
+          "title": "Download Url",
+          "type": "string"
+        },
+        "media_type": {
+          "enum": [
+            "application/json",
+            "text/csv"
+          ],
+          "title": "Media Type",
+          "type": "string"
+        },
+        "preview": {
+          "$ref": "#/$defs/JsonValue",
+          "default": null
+        },
+        "row_count": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Row Count"
+        },
+        "source_ids": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Source Ids",
+          "type": "array"
+        },
+        "task_ids": {
+          "default": [],
+          "items": {
+            "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+            "type": "string"
+          },
+          "title": "Task Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "artifact_id",
+        "artifact_kind",
+        "media_type",
+        "content_hash",
+        "byte_size",
+        "download_url"
+      ],
+      "title": "EvidenceArtifactRef",
+      "type": "object"
+    },
     "EvidencePackage": {
       "additionalProperties": false,
       "properties": {
@@ -1689,6 +1999,71 @@
       "title": "EvidencePackage",
       "type": "object"
     },
+    "EvidenceQualitySummary": {
+      "additionalProperties": false,
+      "properties": {
+        "blocked_reasons": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Blocked Reasons",
+          "type": "array"
+        },
+        "completeness": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Completeness",
+          "type": "array"
+        },
+        "internal_qa_artifact": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/EvidenceArtifactRef"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "material_warnings": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Material Warnings",
+          "type": "array"
+        },
+        "reconciliation_summary": {
+          "default": [],
+          "items": {
+            "additionalProperties": {
+              "$ref": "#/$defs/JsonValue"
+            },
+            "type": "object"
+          },
+          "title": "Reconciliation Summary",
+          "type": "array"
+        },
+        "status": {
+          "enum": [
+            "VALID",
+            "WARNING",
+            "BLOCKED"
+          ],
+          "title": "Status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "status"
+      ],
+      "title": "EvidenceQualitySummary",
+      "type": "object"
+    },
     "EvidenceRedaction": {
       "additionalProperties": false,
       "properties": {
@@ -1727,6 +2102,18 @@
     "EvidenceRef": {
       "additionalProperties": false,
       "properties": {
+        "artifact_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Artifact Id"
+        },
         "column": {
           "title": "Column",
           "type": "string"
@@ -1735,6 +2122,15 @@
           "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
           "title": "Dataset Id",
           "type": "string"
+        },
+        "definition_ids": {
+          "default": [],
+          "items": {
+            "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+            "type": "string"
+          },
+          "title": "Definition Ids",
+          "type": "array"
         },
         "metric_id": {
           "anyOf": [
@@ -1777,6 +2173,30 @@
           ],
           "default": null,
           "title": "Statistical Result Hash"
+        },
+        "table_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Table Id"
+        },
+        "value_path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Value Path"
         }
       },
       "required": [
@@ -2730,6 +3150,176 @@
       "title": "ReconciliationRecord",
       "type": "object"
     },
+    "SourceQueryEvidence": {
+      "additionalProperties": false,
+      "properties": {
+        "bucket_count": {
+          "minimum": 0,
+          "title": "Bucket Count",
+          "type": "integer"
+        },
+        "complete": {
+          "title": "Complete",
+          "type": "boolean"
+        },
+        "dataset_id": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+          "title": "Dataset Id",
+          "type": "string"
+        },
+        "dimensions": {
+          "default": [],
+          "items": {
+            "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+            "type": "string"
+          },
+          "title": "Dimensions",
+          "type": "array"
+        },
+        "execution_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Execution Ids",
+          "type": "array"
+        },
+        "filters": {
+          "default": [],
+          "items": {
+            "additionalProperties": {
+              "$ref": "#/$defs/JsonValue"
+            },
+            "type": "object"
+          },
+          "title": "Filters",
+          "type": "array"
+        },
+        "grain": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Grain",
+          "type": "array"
+        },
+        "indices": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Indices",
+          "type": "array"
+        },
+        "measures": {
+          "default": [],
+          "items": {
+            "additionalProperties": {
+              "$ref": "#/$defs/JsonValue"
+            },
+            "type": "object"
+          },
+          "title": "Measures",
+          "type": "array"
+        },
+        "metrics": {
+          "default": [],
+          "items": {
+            "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+            "type": "string"
+          },
+          "title": "Metrics",
+          "type": "array"
+        },
+        "page_count": {
+          "minimum": 1,
+          "title": "Page Count",
+          "type": "integer"
+        },
+        "partial": {
+          "title": "Partial",
+          "type": "boolean"
+        },
+        "query_fingerprint": {
+          "title": "Query Fingerprint",
+          "type": "string"
+        },
+        "query_id": {
+          "title": "Query Id",
+          "type": "string"
+        },
+        "query_plan_id": {
+          "title": "Query Plan Id",
+          "type": "string"
+        },
+        "query_step_id": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+          "title": "Query Step Id",
+          "type": "string"
+        },
+        "raw_result_artifact": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/EvidenceArtifactRef"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "row_count": {
+          "minimum": 0,
+          "title": "Row Count",
+          "type": "integer"
+        },
+        "safe_query_summary": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Safe Query Summary",
+          "type": "object"
+        },
+        "source_table_artifact": {
+          "$ref": "#/$defs/EvidenceArtifactRef"
+        },
+        "time_range": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Time Range",
+          "type": "object"
+        },
+        "timezone": {
+          "title": "Timezone",
+          "type": "string"
+        },
+        "took_ms": {
+          "minimum": 0,
+          "title": "Took Ms",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "query_id",
+        "query_plan_id",
+        "query_step_id",
+        "dataset_id",
+        "indices",
+        "time_range",
+        "timezone",
+        "query_fingerprint",
+        "safe_query_summary",
+        "execution_ids",
+        "took_ms",
+        "page_count",
+        "bucket_count",
+        "row_count",
+        "complete",
+        "partial",
+        "source_table_artifact"
+      ],
+      "title": "SourceQueryEvidence",
+      "type": "object"
+    },
     "StatisticalResult": {
       "additionalProperties": false,
       "properties": {
@@ -2942,6 +3532,58 @@
         "truncated"
       ],
       "title": "TabularDataset",
+      "type": "object"
+    },
+    "TechnicalDefinitionEvidence": {
+      "additionalProperties": false,
+      "properties": {
+        "definition_id": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+          "title": "Definition Id",
+          "type": "string"
+        },
+        "definition_type": {
+          "enum": [
+            "metric",
+            "measure",
+            "method"
+          ],
+          "title": "Definition Type",
+          "type": "string"
+        },
+        "details": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Details",
+          "type": "object"
+        },
+        "display_name": {
+          "title": "Display Name",
+          "type": "string"
+        },
+        "purpose_or_business_definition": {
+          "title": "Purpose Or Business Definition",
+          "type": "string"
+        },
+        "technical_expression": {
+          "title": "Technical Expression",
+          "type": "string"
+        },
+        "version": {
+          "title": "Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "definition_id",
+        "definition_type",
+        "version",
+        "display_name",
+        "purpose_or_business_definition",
+        "technical_expression"
+      ],
+      "title": "TechnicalDefinitionEvidence",
       "type": "object"
     },
     "TimeRange": {

@@ -151,3 +151,57 @@ def test_multi_value_aggregations_become_typed_dataset_columns() -> None:
         "generic_quality_score.v1"
     )
     assert typed["generic_quality_score_v1_percentiles_p95"].aggregation == "percentiles"
+
+
+def test_physical_mapping_changes_preserve_semantic_query_and_dataset_results() -> None:
+    """Equivalent packages may bind different physical names without changing core logic."""
+
+    definition = next(
+        item for item in PACKAGE.measures() if item.measure_id == "generic_quality_score"
+    )
+    specification = definition.aggregation_spec(AggregationKind.SUM)
+    logical_plan = _plan(specification)
+    primary_fields = PACKAGE.fields()
+    alternate_fields = tuple(
+        field.model_copy(update={"physical_path": f"alternate.{field.physical_path}"})
+        for field in primary_fields
+    )
+    primary = DslCompiler(fields=primary_fields, metrics=PACKAGE.metrics()).compile(
+        logical_plan, "generic_measure_step"
+    )
+    alternate = DslCompiler(fields=alternate_fields, metrics=PACKAGE.metrics()).compile(
+        logical_plan, "generic_measure_step"
+    )
+
+    assert primary.semantics == alternate.semantics
+    assert primary.query_dsl != alternate.query_dsl
+
+    root = primary.semantics.bucket_path[0].aggregation_name
+    aggregations = {
+        root: {
+            "buckets": [
+                {
+                    "key": "SYNTHETIC_A",
+                    "doc_count": 3,
+                    specification.aggregation_name: {"value": 2.1},
+                }
+            ]
+        }
+    }
+    normalized = []
+    for compiled, fields in ((primary, primary_fields), (alternate, alternate_fields)):
+        raw = RawSearchResult(
+            query_id=compiled.object_id,
+            took_ms=1,
+            timed_out=False,
+            shards=ShardSummary(total=1, successful=1, skipped=0, failed=0),
+            aggregations=aggregations,
+            raw_size_bytes=256,
+        )
+        contract = DatasetContractFactory(fields=fields).build(compiled)
+        normalized.append(
+            ResultNormalizer().normalize(RawResultParser().parse(compiled, raw), contract)
+        )
+
+    assert normalized[0].grain == normalized[1].grain
+    assert normalized[0].rows[0].values == normalized[1].rows[0].values

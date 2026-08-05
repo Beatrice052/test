@@ -5,6 +5,7 @@ from __future__ import annotations
 from sqlalchemy import select
 
 from app.contracts.dataset import TabularDataset
+from app.contracts.evidence import EvidenceArtifactRef
 from app.contracts.session import ActiveAnalyticalContext, AnswerSnapshot
 from app.persistence.database import Database
 from app.persistence.errors import OwnedObjectNotFound, PersistenceError, TurnCancelled
@@ -158,3 +159,19 @@ class AnswerRepository:
                 if match is not None:
                     return match
         raise OwnedObjectNotFound("dataset not found")
+
+    def get_artifact_reference(
+        self, subject_id: str, answer_id: str, artifact_id: str
+    ) -> EvidenceArtifactRef:
+        """Resolve an artifact only through an AnswerSnapshot owned by the subject."""
+
+        answer = self.get_answer(subject_id, answer_id)
+        evidence = answer.evidence_package
+        if evidence is not None:
+            match = next(
+                (item for item in evidence.advanced.artifacts if item.artifact_id == artifact_id),
+                None,
+            )
+            if match is not None:
+                return match
+        raise OwnedObjectNotFound("evidence artifact not found")

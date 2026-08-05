@@ -41,6 +41,7 @@ from app.persistence.database import Database, ensure_sqlite_parent
 from app.persistence.idempotency_repository import IdempotencyRepository
 from app.persistence.locks import SessionLockRepository
 from app.persistence.session_repository import SessionRepository
+from app.presentation.artifacts import EvidenceArtifactStore
 from app.presentation.dashboard import ChartFeasibilityValidator, DashboardBuilder
 from app.presentation.evidence import EvidenceBuilder
 from app.presentation.exploration import GovernedVisualizationExplorer
@@ -211,8 +212,14 @@ async def build_container(settings: AppSettings) -> ApplicationContainer:
         grounder=ClaimGrounder(),
         dashboard_builder=DashboardBuilder(package.metrics()),
         visualization_explorer=GovernedVisualizationExplorer(chart_validator),
-        evidence_builder=EvidenceBuilder(),
+        evidence_builder=EvidenceBuilder(
+            EvidenceArtifactStore(
+                settings.app_artifact_dir,
+                maximum_bytes=settings.chatbi_max_raw_response_bytes,
+            )
+        ),
         metric_definitions=package.metrics(),
+        measure_definitions=package.measures(),
         method_definitions=package.methods(),
         visualization_definitions=package.visualizations(),
         semantic_package_version=package.manifest.package_version,

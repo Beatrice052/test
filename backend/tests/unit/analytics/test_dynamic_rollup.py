@@ -4,7 +4,7 @@ from datetime import UTC, datetime
 
 from app.analytics.identity import stable_row_id
 from app.analytics.pipeline import AnalyticsPipeline
-from app.analytics.rollup import AdditiveRollupDeriver
+from app.analytics.rollup import AdditiveRollupDeriver, RollupDerivationError
 from app.contracts.common import Provenance, semantic_hash
 from app.contracts.dataset import (
     DatasetColumn,
@@ -141,3 +141,37 @@ def test_additive_rollup_produces_one_row_per_requested_generic_category() -> No
     assert len(values) == len(rolled.rows)
     assert reconciliation.passed
     assert reconciliation.expected == reconciliation.actual == 18
+
+
+def test_non_additive_measure_is_rejected_instead_of_silently_summed() -> None:
+    source = _source()
+    score_column = DatasetColumn(
+        name="generic_score_avg",
+        data_type="number",
+        nullable=False,
+        semantic_role="measure",
+        measure_id="generic_score.v1",
+        aggregation="avg",
+        aggregation_semantics="non_additive",
+    )
+    altered = source.model_copy(
+        update={
+            "columns": (*source.columns, score_column),
+            "rows": tuple(
+                row.model_copy(update={"values": {**row.values, "generic_score_avg": 0.5}})
+                for row in source.rows
+            ),
+        }
+    )
+
+    try:
+        AdditiveRollupDeriver().derive(
+            altered,
+            output_dataset_id="forbidden_score_rollup",
+            group_by=("telemetry.region_key",),
+            measure_columns=("generic_score_avg",),
+        )
+    except RollupDerivationError as error:
+        assert "non-additive" in str(error)
+    else:
+        raise AssertionError("non-additive average must not be summed during rollup")

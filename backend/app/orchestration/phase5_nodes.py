@@ -26,7 +26,7 @@ from app.contracts.insight import (
     KpiSelectionDraft,
     VisualInsightDraft,
 )
-from app.contracts.metric import MethodDefinition, MetricDefinition
+from app.contracts.metric import MeasureDefinition, MethodDefinition, MetricDefinition
 from app.contracts.session import ActiveAnalyticalContext, AnswerSnapshot
 from app.orchestration.state import ChatBIState
 from app.persistence.answer_repository import AnswerRepository
@@ -55,6 +55,7 @@ class Phase5Nodes:
         visualization_explorer: GovernedVisualizationExplorer,
         evidence_builder: EvidenceBuilder,
         metric_definitions: tuple[MetricDefinition, ...],
+        measure_definitions: tuple[MeasureDefinition, ...],
         method_definitions: tuple[MethodDefinition, ...],
         visualization_definitions: tuple[VisualizationDefinition, ...],
         semantic_package_version: str,
@@ -67,6 +68,7 @@ class Phase5Nodes:
         self.visualization_explorer = visualization_explorer
         self.evidence_builder = evidence_builder
         self.metric_definitions = metric_definitions
+        self.measure_definitions = measure_definitions
         self.method_definitions = method_definitions
         self.analytics_tool = GovernedAnalyticsTool(method_definitions)
         self.visualization_definitions = visualization_definitions
@@ -747,15 +749,21 @@ class Phase5Nodes:
             follow_up_suggestions=draft.follow_up_suggestions,
             ensure_result_table=(agent_failed or exploration_failed or draft.fallback_requested),
         )
+        answer_id = new_id("ans")
         evidence = self.evidence_builder.build(
             analysis_plan=state["analysis_plan"],
             query_plan=state["query_plan"],
             compiled_queries=state["compiled_queries"],
             executions=state["execution_records"],
             bundle=state["dataset_bundle"],
+            raw_results=state.get("raw_results", ()),
             analytics_tool_results=analytics_tool_results,
+            claims=claims,
             metric_definitions=self.metric_definitions,
+            measure_definitions=self.measure_definitions,
+            method_definitions=self.method_definitions,
             semantic_package_version=self.semantic_package_version,
+            answer_id=answer_id,
         )
         visualization_requirement_failed = any(
             item.rows for item in state["dataset_bundle"].datasets
@@ -782,7 +790,6 @@ class Phase5Nodes:
                 + (["visualization exploration unavailable"] if exploration_failed else [])
             )
         )
-        answer_id = new_id("ans")
         payload = {
             "session_id": state["session_context"].object_id,
             "turn_kind": state["turn_decision"].turn_kind,

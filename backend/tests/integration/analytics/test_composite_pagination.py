@@ -102,6 +102,10 @@ async def test_two_composite_pages_are_merged_and_marked_complete() -> None:
         {"key": {"dim_00_channel": "SMS"}, "doc_count": 7},
     ]
     assert completed.result.gateway_metadata["composite_complete"] is True
+    assert completed.result.gateway_metadata["composite_pages"] == 2
+    assert completed.result.gateway_metadata["composite_after_keys"] == [
+        {"dim_00_channel": "EMAIL"}
+    ]
     assert len(completed.execution_records) == 1
 
 

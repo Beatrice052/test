@@ -3,6 +3,18 @@
     "EvidenceRef": {
       "additionalProperties": false,
       "properties": {
+        "artifact_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Artifact Id"
+        },
         "column": {
           "title": "Column",
           "type": "string"
@@ -11,6 +23,15 @@
           "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
           "title": "Dataset Id",
           "type": "string"
+        },
+        "definition_ids": {
+          "default": [],
+          "items": {
+            "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+            "type": "string"
+          },
+          "title": "Definition Ids",
+          "type": "array"
         },
         "metric_id": {
           "anyOf": [
@@ -53,6 +74,30 @@
           ],
           "default": null,
           "title": "Statistical Result Hash"
+        },
+        "table_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Table Id"
+        },
+        "value_path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Value Path"
         }
       },
       "required": [

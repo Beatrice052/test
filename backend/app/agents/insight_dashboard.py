@@ -113,9 +113,26 @@ class InsightDashboardAgent:
             }
             for item in bundle.datasets
         ]
+        dataset_tables = [
+            {
+                "dataset_id": item.dataset_id,
+                "table_id": item.object_id,
+                "kind": item.kind,
+                "grain": list(item.grain),
+                "columns": [column.name for column in item.columns],
+                "rows": [row.model_dump(mode="json") for row in item.rows[:500]],
+                "row_count": len(item.rows),
+                "rows_complete_in_payload": len(item.rows) <= 500,
+                "completeness": item.completeness,
+                "content_hash": item.content_hash,
+            }
+            for item in bundle.datasets
+        ]
+        failed_qa = [item for item in bundle.data_qa if not item.passed]
         return {
             "analysis_plan": analysis_plan.model_dump(mode="json"),
             "dataset_schemas": dataset_schemas,
+            "validated_dataset_tables": dataset_tables,
             "feature_summaries": [item.model_dump(mode="json") for item in feature_summaries],
             "metric_definitions": [
                 {
@@ -135,6 +152,9 @@ class InsightDashboardAgent:
                         "measure_column": "one supplied numeric metric/measure column",
                         "method_id": "one registered method_id",
                         "parameters": "only registered default parameter names",
+                        "partition_columns": "zero or more supplied dimension columns",
+                        "category_column": "optional supplied category dimension",
+                        "time_column": "optional supplied time dimension",
                     },
                     "methods": [
                         {
@@ -144,12 +164,32 @@ class InsightDashboardAgent:
                             "minimum_rows": item.minimum_rows,
                             "required_semantic_types": item.required_semantic_types,
                             "default_params": item.default_params,
+                            "parameter_limits": item.parameter_limits,
+                            "requires_category": item.requires_category,
+                            "requires_time": item.requires_time,
                         }
                         for item in method_definitions
                     ],
                 }
             },
-            "data_qa": [item.model_dump(mode="json") for item in bundle.data_qa],
+            "data_quality": {
+                "status": (
+                    "BLOCKED"
+                    if any(item.severity in {"ERROR", "FATAL"} for item in failed_qa)
+                    else "WARNING"
+                    if failed_qa or bundle.warnings
+                    else "VALID"
+                ),
+                "material_warnings": [item.message for item in failed_qa],
+                "completeness": [
+                    {
+                        "dataset_id": item.dataset_id,
+                        "status": item.completeness,
+                        "complete": item.complete,
+                    }
+                    for item in bundle.datasets
+                ],
+            },
             "visualization_intents": [
                 item.model_dump(mode="json") for item in visualization_definitions
             ],

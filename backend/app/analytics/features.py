@@ -23,13 +23,14 @@ class FeatureSummaryBuilder:
         *,
         statistical_results: tuple[StatisticalResult, ...] = (),
         qa_records: tuple[DataQARecord, ...] = (),
+        task_ids: tuple[str, ...] = (),
         max_rows: int = 5,
     ) -> FeatureSummary:
         relevant_qa = tuple(
             item for item in qa_records if item.dataset_id in {None, dataset.dataset_id}
         )
-        if DataQAEngine.has_fatal(relevant_qa):
-            raise FeatureSummaryBlocked("FATAL data QA prevents insight generation")
+        if DataQAEngine.has_blocking(relevant_qa):
+            raise FeatureSummaryBlocked("ERROR/FATAL data QA prevents insight generation")
         numeric_columns = [
             item.name
             for item in dataset.columns
@@ -66,6 +67,9 @@ class FeatureSummaryBuilder:
         )
         payload = {
             "dataset_id": dataset.dataset_id,
+            "task_ids": task_ids,
+            "grain": dataset.grain,
+            "completeness": dataset.completeness.value,
             "row_count": len(dataset.rows),
             "columns": [item.name for item in dataset.columns],
             "top_rows": top_rows,
@@ -86,6 +90,9 @@ class FeatureSummaryBuilder:
                 source_ids=(dataset.object_id,),
             ),
             dataset_id=dataset.dataset_id,
+            task_ids=task_ids,
+            grain=dataset.grain,
+            completeness=dataset.completeness.value,
             row_count=len(dataset.rows),
             columns=tuple(item.name for item in dataset.columns),
             top_rows=top_rows,

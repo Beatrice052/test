@@ -62,6 +62,7 @@ class AnalyticsPipeline:
         executions: tuple[ExecutionRecord, ...],
         *,
         method_ids: tuple[str, ...] = (),
+        task_ids: tuple[str, ...] = (),
     ) -> AnalyticsPipelineResult:
         parsed = self.parser.parse(query, raw)
         contract = self.contract_factory.build(query)
@@ -112,7 +113,7 @@ class AnalyticsPipeline:
         requested_metrics = tuple(
             self.metrics[item] for item in requested_metric_ids if item in self.metrics
         )
-        if requested_metrics and not self.qa.has_fatal(base_qa):
+        if requested_metrics and not self.qa.has_blocking(base_qa):
             status_dictionary = self._status_dictionary(query)
             requires_status = any(
                 item.numerator is not None or item.denominator is not None
@@ -153,6 +154,7 @@ class AnalyticsPipeline:
                         status_field_id=status_field_id,
                         value_dictionary=dictionary,
                         metric_definitions=requested_metrics,
+                        task_ids=task_ids,
                     )
                     reproduced = self.deriver.derive(
                         base,
@@ -162,6 +164,7 @@ class AnalyticsPipeline:
                         status_field_id=status_field_id,
                         value_dictionary=dictionary,
                         metric_definitions=requested_metrics,
+                        task_ids=task_ids,
                     )
                     derived_qa = self.qa.evaluate(
                         derived.dataset,
@@ -182,12 +185,13 @@ class AnalyticsPipeline:
                         base,
                         output_dataset_id=f"{query.step_id}_{suffix}",
                         group_by=view_grain,
+                        task_ids=task_ids,
                     )
                     datasets.append(rollup)
                     reconciliation = (*reconciliation, rollup_reconciliation)
                     feature_targets.append(rollup)
         del metric_values_by_row
-        fatal = self.qa.has_fatal(all_qa)
+        fatal = self.qa.has_blocking(all_qa)
         summaries: tuple[FeatureSummary, ...] = ()
         if not fatal:
             try:
@@ -199,6 +203,7 @@ class AnalyticsPipeline:
                             method_ids=method_ids,
                         ),
                         qa_records=tuple(all_qa),
+                        task_ids=task_ids,
                     )
                     for target in feature_targets
                 )
