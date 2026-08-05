@@ -47,6 +47,66 @@
     "DatasetColumn": {
       "additionalProperties": false,
       "properties": {
+        "aggregation": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Aggregation"
+        },
+        "aggregation_name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Aggregation Name"
+        },
+        "aggregation_parameters": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Aggregation Parameters",
+          "type": "object"
+        },
+        "aggregation_result_path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Aggregation Result Path"
+        },
+        "aggregation_semantics": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Aggregation Semantics"
+        },
+        "approximate": {
+          "default": false,
+          "title": "Approximate",
+          "type": "boolean"
+        },
         "business_domain": {
           "anyOf": [
             {
@@ -96,6 +156,19 @@
           "default": null,
           "title": "Field Id"
         },
+        "measure_id": {
+          "anyOf": [
+            {
+              "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Measure Id"
+        },
         "metric_id": {
           "anyOf": [
             {
@@ -117,6 +190,18 @@
           "default": false,
           "title": "Nullable",
           "type": "boolean"
+        },
+        "population_scope": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Population Scope"
         },
         "security_classification": {
           "default": "internal",
@@ -150,6 +235,28 @@
           ],
           "default": null,
           "title": "Semantic Type"
+        },
+        "source_field_id": {
+          "anyOf": [
+            {
+              "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source Field Id"
+        },
+        "source_grain": {
+          "default": [],
+          "items": {
+            "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+            "type": "string"
+          },
+          "title": "Source Grain",
+          "type": "array"
         },
         "unit": {
           "anyOf": [
@@ -296,6 +403,15 @@
         "type": "string"
       },
       "title": "Grain",
+      "type": "array"
+    },
+    "measures": {
+      "default": [],
+      "items": {
+        "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+        "type": "string"
+      },
+      "title": "Measures",
       "type": "array"
     },
     "metrics": {

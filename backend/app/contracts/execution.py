@@ -37,6 +37,13 @@ class ExecutionRecord(VersionedModel):
     completed_at: datetime | None = None
     attempt: int = Field(default=1, ge=1)
     raw_result_hash: Sha256 | None = None
+    raw_artifact_id: str | None = None
+    source_table_artifact_id: str | None = None
+    page_count: int = Field(default=0, ge=0)
+    bucket_count: int = Field(default=0, ge=0)
+    row_count: int = Field(default=0, ge=0)
+    complete: bool = False
+    partial: bool = False
     timed_out: bool = False
     shard_failures: int = Field(default=0, ge=0)
     error_code: str | None = None

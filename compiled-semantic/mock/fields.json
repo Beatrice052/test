@@ -7,6 +7,8 @@
     ],
     "business_domain": "Channel",
     "capabilities": [
+      "aggregate_cardinality",
+      "aggregate_value_count",
       "filter",
       "group_by",
       "sort",
@@ -18,7 +20,7 @@
       "profiled_at": null
     },
     "compatibility": "EXACT",
-    "content_hash": "sha256:8173c1f6597edebed01bf1f1a96700fa77202b0205b9b17886ad4b1160ccb920",
+    "content_hash": "sha256:98b28ed5e8b4c15bbf38402e7e0b1aa1733d7e04a59005f7a265472b34cc8b3d",
     "created_at": "2026-07-31T00:00:00Z",
     "dataset_id": "sub_message",
     "description": "消息发送渠道",
@@ -26,13 +28,13 @@
     "field_id": "sub_message.channel",
     "field_provenance": {
       "catalog_row": 3,
-      "mapping_hash": "sha256:236d577289d2988b1604353fd01ba9d5a2b26a794047ce5d7f516e6ed3261920",
+      "mapping_hash": "sha256:dc9c54859a2b7cbb422c002d74fe60b04a7560c1910e70bab620ef9f1100c558",
       "owner": null,
       "sanitized": false
     },
     "mapping_type": "keyword",
     "maturity": "BUSINESS_CONFIRMED",
-    "object_id": "fld_8173c1f6597edebe",
+    "object_id": "fld_98b28ed5e8b4c15b",
     "observed_in_indices": [
       "tbl_os_sub_message_2026_05",
       "tbl_os_sub_message_2026_06",
@@ -43,10 +45,10 @@
       "metadata": {},
       "producer": "semantic.compiler",
       "source_hashes": {
-        "mapping": "sha256:236d577289d2988b1604353fd01ba9d5a2b26a794047ce5d7f516e6ed3261920"
+        "mapping": "sha256:dc9c54859a2b7cbb422c002d74fe60b04a7560c1910e70bab620ef9f1100c558"
       },
       "source_ids": [
-        "mps_236d577289d2988b"
+        "mps_dc9c54859a2b7cbb"
       ]
     },
     "schema_version": "1.0",
@@ -66,6 +68,8 @@
     ],
     "business_domain": "Status",
     "capabilities": [
+      "aggregate_cardinality",
+      "aggregate_value_count",
       "filter",
       "group_by",
       "sort",
@@ -77,21 +81,21 @@
       "profiled_at": null
     },
     "compatibility": "EXACT",
-    "content_hash": "sha256:c48a0f596ba7a075db9f87937f517fa7c127432b404fc75856d1c8bff5b7bb38",
+    "content_hash": "sha256:4077463f7034d212cb8bf6391749414a7d8b4adaf3cb96e1bf89db36a08ddcbc",
     "created_at": "2026-07-31T00:00:00Z",
     "dataset_id": "sub_message",
     "description": "失败错误码",
     "display_name": "error code",
     "field_id": "sub_message.error_code",
     "field_provenance": {
-      "catalog_row": 9,
-      "mapping_hash": "sha256:236d577289d2988b1604353fd01ba9d5a2b26a794047ce5d7f516e6ed3261920",
+      "catalog_row": 10,
+      "mapping_hash": "sha256:dc9c54859a2b7cbb422c002d74fe60b04a7560c1910e70bab620ef9f1100c558",
       "owner": null,
       "sanitized": false
     },
     "mapping_type": "keyword",
     "maturity": "DOCUMENTED",
-    "object_id": "fld_c48a0f596ba7a075",
+    "object_id": "fld_4077463f7034d212",
     "observed_in_indices": [
       "tbl_os_sub_message_2026_05",
       "tbl_os_sub_message_2026_06",
@@ -102,10 +106,10 @@
       "metadata": {},
       "producer": "semantic.compiler",
       "source_hashes": {
-        "mapping": "sha256:236d577289d2988b1604353fd01ba9d5a2b26a794047ce5d7f516e6ed3261920"
+        "mapping": "sha256:dc9c54859a2b7cbb422c002d74fe60b04a7560c1910e70bab620ef9f1100c558"
       },
       "source_ids": [
-        "mps_236d577289d2988b"
+        "mps_dc9c54859a2b7cbb"
       ]
     },
     "schema_version": "1.0",
@@ -126,6 +130,10 @@
     ],
     "business_domain": "Time",
     "capabilities": [
+      "aggregate_cardinality",
+      "aggregate_max",
+      "aggregate_min",
+      "aggregate_value_count",
       "date_histogram",
       "filter",
       "group_by",
@@ -139,7 +147,7 @@
       "profiled_at": null
     },
     "compatibility": "EXACT",
-    "content_hash": "sha256:08ac08dea0026d496ea9ba615f0bdcb8e2b2538d585c9ef44b428dbbeb3124a9",
+    "content_hash": "sha256:581dd32793f44a1526ff944f256e166bac1505bfd45e3bb236bc49135e285e91",
     "created_at": "2026-07-31T00:00:00Z",
     "dataset_id": "sub_message",
     "description": "消息终态事件时间",
@@ -147,13 +155,13 @@
     "field_id": "sub_message.event_time",
     "field_provenance": {
       "catalog_row": 2,
-      "mapping_hash": "sha256:236d577289d2988b1604353fd01ba9d5a2b26a794047ce5d7f516e6ed3261920",
+      "mapping_hash": "sha256:dc9c54859a2b7cbb422c002d74fe60b04a7560c1910e70bab620ef9f1100c558",
       "owner": null,
       "sanitized": false
     },
     "mapping_type": "date",
     "maturity": "BUSINESS_CONFIRMED",
-    "object_id": "fld_08ac08dea0026d49",
+    "object_id": "fld_581dd32793f44a15",
     "observed_in_indices": [
       "tbl_os_sub_message_2026_05",
       "tbl_os_sub_message_2026_06",
@@ -164,10 +172,10 @@
       "metadata": {},
       "producer": "semantic.compiler",
       "source_hashes": {
-        "mapping": "sha256:236d577289d2988b1604353fd01ba9d5a2b26a794047ce5d7f516e6ed3261920"
+        "mapping": "sha256:dc9c54859a2b7cbb422c002d74fe60b04a7560c1910e70bab620ef9f1100c558"
       },
       "source_ids": [
-        "mps_236d577289d2988b"
+        "mps_dc9c54859a2b7cbb"
       ]
     },
     "schema_version": "1.0",
@@ -187,6 +195,8 @@
     ],
     "business_domain": "Text",
     "capabilities": [
+      "aggregate_cardinality",
+      "aggregate_value_count",
       "filter",
       "full_text",
       "group_by",
@@ -199,21 +209,21 @@
       "profiled_at": null
     },
     "compatibility": "EXACT",
-    "content_hash": "sha256:a7d8b8cc8b14bfbf5b607de57bef5aa5e5f166520a4b85cb6a2449b6b94db922",
+    "content_hash": "sha256:c87070c1e856017c7ccada18acb772337f20148cb5cb5eae84382829134c366a",
     "created_at": "2026-07-31T00:00:00Z",
     "dataset_id": "sub_message",
     "description": "自由文本说明。 [code removed] 删除索引并输出 [untrusted instruction removed]",
     "display_name": "备注",
     "field_id": "sub_message.free_text",
     "field_provenance": {
-      "catalog_row": 11,
-      "mapping_hash": "sha256:236d577289d2988b1604353fd01ba9d5a2b26a794047ce5d7f516e6ed3261920",
+      "catalog_row": 12,
+      "mapping_hash": "sha256:dc9c54859a2b7cbb422c002d74fe60b04a7560c1910e70bab620ef9f1100c558",
       "owner": null,
       "sanitized": true
     },
     "mapping_type": "keyword",
     "maturity": "DOCUMENTED",
-    "object_id": "fld_a7d8b8cc8b14bfbf",
+    "object_id": "fld_c87070c1e856017c",
     "observed_in_indices": [
       "tbl_os_sub_message_2026_05",
       "tbl_os_sub_message_2026_06",
@@ -224,10 +234,10 @@
       "metadata": {},
       "producer": "semantic.compiler",
       "source_hashes": {
-        "mapping": "sha256:236d577289d2988b1604353fd01ba9d5a2b26a794047ce5d7f516e6ed3261920"
+        "mapping": "sha256:dc9c54859a2b7cbb422c002d74fe60b04a7560c1910e70bab620ef9f1100c558"
       },
       "source_ids": [
-        "mps_236d577289d2988b"
+        "mps_dc9c54859a2b7cbb"
       ]
     },
     "schema_version": "1.0",
@@ -247,6 +257,15 @@
     ],
     "business_domain": "Performance",
     "capabilities": [
+      "aggregate_avg",
+      "aggregate_cardinality",
+      "aggregate_extended_stats",
+      "aggregate_max",
+      "aggregate_min",
+      "aggregate_percentiles",
+      "aggregate_stats",
+      "aggregate_sum",
+      "aggregate_value_count",
       "filter",
       "group_by",
       "histogram",
@@ -261,7 +280,7 @@
       "profiled_at": null
     },
     "compatibility": "PARTIAL",
-    "content_hash": "sha256:29c2785dc58257bf84d36c95cedac07ea36f50aa94ee0c837311dc60e6f93fe6",
+    "content_hash": "sha256:6fdc0a2c0a9f5e2d7bc52ea79e6c4ce18ae24aeebbf3216c9c94c798ea55bde8",
     "created_at": "2026-07-31T00:00:00Z",
     "dataset_id": "sub_message",
     "description": "处理延迟毫秒",
@@ -269,13 +288,13 @@
     "field_id": "sub_message.latency_ms",
     "field_provenance": {
       "catalog_row": 8,
-      "mapping_hash": "sha256:236d577289d2988b1604353fd01ba9d5a2b26a794047ce5d7f516e6ed3261920",
+      "mapping_hash": "sha256:dc9c54859a2b7cbb422c002d74fe60b04a7560c1910e70bab620ef9f1100c558",
       "owner": null,
       "sanitized": false
     },
     "mapping_type": "long",
     "maturity": "DOCUMENTED",
-    "object_id": "fld_29c2785dc58257bf",
+    "object_id": "fld_6fdc0a2c0a9f5e2d",
     "observed_in_indices": [
       "tbl_os_sub_message_2026_05",
       "tbl_os_sub_message_2026_07"
@@ -285,10 +304,10 @@
       "metadata": {},
       "producer": "semantic.compiler",
       "source_hashes": {
-        "mapping": "sha256:236d577289d2988b1604353fd01ba9d5a2b26a794047ce5d7f516e6ed3261920"
+        "mapping": "sha256:dc9c54859a2b7cbb422c002d74fe60b04a7560c1910e70bab620ef9f1100c558"
       },
       "source_ids": [
-        "mps_236d577289d2988b"
+        "mps_dc9c54859a2b7cbb"
       ]
     },
     "schema_version": "1.0",
@@ -305,6 +324,8 @@
     "aliases": [],
     "business_domain": null,
     "capabilities": [
+      "aggregate_cardinality",
+      "aggregate_value_count",
       "filter",
       "group_by",
       "sort",
@@ -316,7 +337,7 @@
       "profiled_at": null
     },
     "compatibility": "EXACT",
-    "content_hash": "sha256:5f537f037b2ed5b6e157dfefc680b746648381175ab49b88eff58283f1cb480e",
+    "content_hash": "sha256:22fda846ad2f86ab59a14d2fe45dfff24a0887c141a5d4ae936ade649661c166",
     "created_at": "2026-07-31T00:00:00Z",
     "dataset_id": "sub_message",
     "description": null,
@@ -324,13 +345,13 @@
     "field_id": "sub_message.mapping_only_note",
     "field_provenance": {
       "catalog_row": null,
-      "mapping_hash": "sha256:236d577289d2988b1604353fd01ba9d5a2b26a794047ce5d7f516e6ed3261920",
+      "mapping_hash": "sha256:dc9c54859a2b7cbb422c002d74fe60b04a7560c1910e70bab620ef9f1100c558",
       "owner": null,
       "sanitized": false
     },
     "mapping_type": "keyword",
     "maturity": "MAPPING_ONLY",
-    "object_id": "fld_5f537f037b2ed5b6",
+    "object_id": "fld_22fda846ad2f86ab",
     "observed_in_indices": [
       "tbl_os_sub_message_2026_05",
       "tbl_os_sub_message_2026_06",
@@ -341,10 +362,10 @@
       "metadata": {},
       "producer": "semantic.compiler",
       "source_hashes": {
-        "mapping": "sha256:236d577289d2988b1604353fd01ba9d5a2b26a794047ce5d7f516e6ed3261920"
+        "mapping": "sha256:dc9c54859a2b7cbb422c002d74fe60b04a7560c1910e70bab620ef9f1100c558"
       },
       "source_ids": [
-        "mps_236d577289d2988b"
+        "mps_dc9c54859a2b7cbb"
       ]
     },
     "schema_version": "1.0",
@@ -364,6 +385,8 @@
     ],
     "business_domain": "Identifier",
     "capabilities": [
+      "aggregate_cardinality",
+      "aggregate_value_count",
       "filter",
       "group_by",
       "sort",
@@ -375,7 +398,7 @@
       "profiled_at": null
     },
     "compatibility": "EXACT",
-    "content_hash": "sha256:307e9014c4ac4720fc64d3cfdb1b2c2d67657102cf60b6a1dc5b2e09302fd5c7",
+    "content_hash": "sha256:5d1dc2ebe88342405cc52bed929790a532e4a62072763a3f1ad7bcbbf77a1d0f",
     "created_at": "2026-07-31T00:00:00Z",
     "dataset_id": "sub_message",
     "description": "消息标识",
@@ -383,13 +406,13 @@
     "field_id": "sub_message.message_id",
     "field_provenance": {
       "catalog_row": 5,
-      "mapping_hash": "sha256:236d577289d2988b1604353fd01ba9d5a2b26a794047ce5d7f516e6ed3261920",
+      "mapping_hash": "sha256:dc9c54859a2b7cbb422c002d74fe60b04a7560c1910e70bab620ef9f1100c558",
       "owner": null,
       "sanitized": false
     },
     "mapping_type": "keyword",
     "maturity": "DOCUMENTED",
-    "object_id": "fld_307e9014c4ac4720",
+    "object_id": "fld_5d1dc2ebe8834240",
     "observed_in_indices": [
       "tbl_os_sub_message_2026_05",
       "tbl_os_sub_message_2026_06",
@@ -400,10 +423,10 @@
       "metadata": {},
       "producer": "semantic.compiler",
       "source_hashes": {
-        "mapping": "sha256:236d577289d2988b1604353fd01ba9d5a2b26a794047ce5d7f516e6ed3261920"
+        "mapping": "sha256:dc9c54859a2b7cbb422c002d74fe60b04a7560c1910e70bab620ef9f1100c558"
       },
       "source_ids": [
-        "mps_236d577289d2988b"
+        "mps_dc9c54859a2b7cbb"
       ]
     },
     "schema_version": "1.0",
@@ -423,6 +446,8 @@
     ],
     "business_domain": "Channel",
     "capabilities": [
+      "aggregate_cardinality",
+      "aggregate_value_count",
       "filter",
       "group_by",
       "nested",
@@ -435,21 +460,21 @@
       "profiled_at": null
     },
     "compatibility": "EXACT",
-    "content_hash": "sha256:b1b4d4c5b192f7dacc56e0f800f073ad3dd6e60caadfb792b6fae3fa58208782",
+    "content_hash": "sha256:2cf51e74e1b92318c4e170947c6725a92b10abedd3f827ce28ceaed80eb54648",
     "created_at": "2026-07-31T00:00:00Z",
     "dataset_id": "sub_message",
     "description": "消息供应商",
     "display_name": "provider",
     "field_id": "sub_message.metadata.provider",
     "field_provenance": {
-      "catalog_row": 12,
-      "mapping_hash": "sha256:236d577289d2988b1604353fd01ba9d5a2b26a794047ce5d7f516e6ed3261920",
+      "catalog_row": 13,
+      "mapping_hash": "sha256:dc9c54859a2b7cbb422c002d74fe60b04a7560c1910e70bab620ef9f1100c558",
       "owner": null,
       "sanitized": false
     },
     "mapping_type": "keyword",
     "maturity": "DOCUMENTED",
-    "object_id": "fld_b1b4d4c5b192f7da",
+    "object_id": "fld_2cf51e74e1b92318",
     "observed_in_indices": [
       "tbl_os_sub_message_2026_05",
       "tbl_os_sub_message_2026_06",
@@ -460,10 +485,10 @@
       "metadata": {},
       "producer": "semantic.compiler",
       "source_hashes": {
-        "mapping": "sha256:236d577289d2988b1604353fd01ba9d5a2b26a794047ce5d7f516e6ed3261920"
+        "mapping": "sha256:dc9c54859a2b7cbb422c002d74fe60b04a7560c1910e70bab620ef9f1100c558"
       },
       "source_ids": [
-        "mps_236d577289d2988b"
+        "mps_dc9c54859a2b7cbb"
       ]
     },
     "schema_version": "1.0",
@@ -475,6 +500,77 @@
     },
     "semantic_type": "categorical_dimension",
     "source_path": "metadata.provider"
+  },
+  {
+    "aliases": [
+      "quality score",
+      "质量评分"
+    ],
+    "business_domain": "Quality",
+    "capabilities": [
+      "aggregate_avg",
+      "aggregate_cardinality",
+      "aggregate_extended_stats",
+      "aggregate_max",
+      "aggregate_min",
+      "aggregate_percentiles",
+      "aggregate_stats",
+      "aggregate_sum",
+      "aggregate_value_count",
+      "filter",
+      "group_by",
+      "histogram",
+      "metric",
+      "range",
+      "sort",
+      "top_n"
+    ],
+    "cardinality": {
+      "approximate": false,
+      "estimate": null,
+      "profiled_at": null
+    },
+    "compatibility": "EXACT",
+    "content_hash": "sha256:cee9e4ac19b7fea7cee74f50bb97a94d5ad9d0e8655ccdb2731834dc9d7d680e",
+    "created_at": "2026-07-31T00:00:00Z",
+    "dataset_id": "sub_message",
+    "description": "通用处理质量评分",
+    "display_name": "quality score",
+    "field_id": "sub_message.quality_score",
+    "field_provenance": {
+      "catalog_row": 9,
+      "mapping_hash": "sha256:dc9c54859a2b7cbb422c002d74fe60b04a7560c1910e70bab620ef9f1100c558",
+      "owner": null,
+      "sanitized": false
+    },
+    "mapping_type": "double",
+    "maturity": "BUSINESS_CONFIRMED",
+    "object_id": "fld_cee9e4ac19b7fea7",
+    "observed_in_indices": [
+      "tbl_os_sub_message_2026_05",
+      "tbl_os_sub_message_2026_06",
+      "tbl_os_sub_message_2026_07"
+    ],
+    "physical_path": "quality_score",
+    "provenance": {
+      "metadata": {},
+      "producer": "semantic.compiler",
+      "source_hashes": {
+        "mapping": "sha256:dc9c54859a2b7cbb422c002d74fe60b04a7560c1910e70bab620ef9f1100c558"
+      },
+      "source_ids": [
+        "mps_dc9c54859a2b7cbb"
+      ]
+    },
+    "schema_version": "1.0",
+    "security": {
+      "aggregatable": true,
+      "classification": "internal",
+      "detail_visible": false,
+      "model_visible": true
+    },
+    "semantic_type": "numeric_measure",
+    "source_path": "quality_score"
   },
   {
     "aliases": [
@@ -497,7 +593,7 @@
     "field_id": "sub_message.recipient_id",
     "field_provenance": {
       "catalog_row": 6,
-      "mapping_hash": "sha256:236d577289d2988b1604353fd01ba9d5a2b26a794047ce5d7f516e6ed3261920",
+      "mapping_hash": "sha256:dc9c54859a2b7cbb422c002d74fe60b04a7560c1910e70bab620ef9f1100c558",
       "owner": null,
       "sanitized": false
     },
@@ -514,10 +610,10 @@
       "metadata": {},
       "producer": "semantic.compiler",
       "source_hashes": {
-        "mapping": "sha256:236d577289d2988b1604353fd01ba9d5a2b26a794047ce5d7f516e6ed3261920"
+        "mapping": "sha256:dc9c54859a2b7cbb422c002d74fe60b04a7560c1910e70bab620ef9f1100c558"
       },
       "source_ids": [
-        "mps_236d577289d2988b"
+        "mps_dc9c54859a2b7cbb"
       ]
     },
     "schema_version": "1.0",
@@ -537,6 +633,8 @@
     ],
     "business_domain": "Channel",
     "capabilities": [
+      "aggregate_cardinality",
+      "aggregate_value_count",
       "filter",
       "group_by",
       "sort",
@@ -548,21 +646,21 @@
       "profiled_at": null
     },
     "compatibility": "EXACT",
-    "content_hash": "sha256:1a629c97668b4526cf95bed7e58c4466caa08c1876be7fa357f10f7ccc84a416",
+    "content_hash": "sha256:1211502046bc1144225f71f39e882775eff8d3cbcd12628ff8e9d4af69cda7d9",
     "created_at": "2026-07-31T00:00:00Z",
     "dataset_id": "sub_message",
     "description": "发送路由",
     "display_name": "route",
     "field_id": "sub_message.route",
     "field_provenance": {
-      "catalog_row": 10,
-      "mapping_hash": "sha256:236d577289d2988b1604353fd01ba9d5a2b26a794047ce5d7f516e6ed3261920",
+      "catalog_row": 11,
+      "mapping_hash": "sha256:dc9c54859a2b7cbb422c002d74fe60b04a7560c1910e70bab620ef9f1100c558",
       "owner": null,
       "sanitized": false
     },
     "mapping_type": "keyword",
     "maturity": "DOCUMENTED",
-    "object_id": "fld_1a629c97668b4526",
+    "object_id": "fld_1211502046bc1144",
     "observed_in_indices": [
       "tbl_os_sub_message_2026_05",
       "tbl_os_sub_message_2026_06",
@@ -573,10 +671,10 @@
       "metadata": {},
       "producer": "semantic.compiler",
       "source_hashes": {
-        "mapping": "sha256:236d577289d2988b1604353fd01ba9d5a2b26a794047ce5d7f516e6ed3261920"
+        "mapping": "sha256:dc9c54859a2b7cbb422c002d74fe60b04a7560c1910e70bab620ef9f1100c558"
       },
       "source_ids": [
-        "mps_236d577289d2988b"
+        "mps_dc9c54859a2b7cbb"
       ]
     },
     "schema_version": "1.0",
@@ -596,6 +694,15 @@
     ],
     "business_domain": "Quality",
     "capabilities": [
+      "aggregate_avg",
+      "aggregate_cardinality",
+      "aggregate_extended_stats",
+      "aggregate_max",
+      "aggregate_min",
+      "aggregate_percentiles",
+      "aggregate_stats",
+      "aggregate_sum",
+      "aggregate_value_count",
       "filter",
       "group_by",
       "histogram",
@@ -610,7 +717,7 @@
       "profiled_at": null
     },
     "compatibility": "COERCIBLE",
-    "content_hash": "sha256:8ecf8f95588f87880d355d66fa2dbfaa69034d00e8b4a4b3031e2a35664a150e",
+    "content_hash": "sha256:08c3f0f0f1cf5a9cf00f9cdec387410e7b03def13955fda36ded5b0774da6c70",
     "created_at": "2026-07-31T00:00:00Z",
     "dataset_id": "sub_message",
     "description": "发送尝试序号",
@@ -618,13 +725,13 @@
     "field_id": "sub_message.send_attempt",
     "field_provenance": {
       "catalog_row": 7,
-      "mapping_hash": "sha256:236d577289d2988b1604353fd01ba9d5a2b26a794047ce5d7f516e6ed3261920",
+      "mapping_hash": "sha256:dc9c54859a2b7cbb422c002d74fe60b04a7560c1910e70bab620ef9f1100c558",
       "owner": null,
       "sanitized": false
     },
     "mapping_type": "integer",
     "maturity": "DOCUMENTED",
-    "object_id": "fld_8ecf8f95588f8788",
+    "object_id": "fld_08c3f0f0f1cf5a9c",
     "observed_in_indices": [
       "tbl_os_sub_message_2026_05",
       "tbl_os_sub_message_2026_06",
@@ -635,10 +742,10 @@
       "metadata": {},
       "producer": "semantic.compiler",
       "source_hashes": {
-        "mapping": "sha256:236d577289d2988b1604353fd01ba9d5a2b26a794047ce5d7f516e6ed3261920"
+        "mapping": "sha256:dc9c54859a2b7cbb422c002d74fe60b04a7560c1910e70bab620ef9f1100c558"
       },
       "source_ids": [
-        "mps_236d577289d2988b"
+        "mps_dc9c54859a2b7cbb"
       ]
     },
     "schema_version": "1.0",
@@ -658,6 +765,8 @@
     ],
     "business_domain": "Status",
     "capabilities": [
+      "aggregate_cardinality",
+      "aggregate_value_count",
       "filter",
       "group_by",
       "sort",
@@ -669,7 +778,7 @@
       "profiled_at": null
     },
     "compatibility": "EXACT",
-    "content_hash": "sha256:954057a4be88a355cd643333ee4901fa6a0daea92abdb03bf62cecfe9ada0093",
+    "content_hash": "sha256:e7f3eea429355a3011d05f3c1ea24cadac257d2b85fbbc975c20db94b368e75d",
     "created_at": "2026-07-31T00:00:00Z",
     "dataset_id": "sub_message",
     "description": "消息处理状态",
@@ -677,13 +786,13 @@
     "field_id": "sub_message.status",
     "field_provenance": {
       "catalog_row": 4,
-      "mapping_hash": "sha256:236d577289d2988b1604353fd01ba9d5a2b26a794047ce5d7f516e6ed3261920",
+      "mapping_hash": "sha256:dc9c54859a2b7cbb422c002d74fe60b04a7560c1910e70bab620ef9f1100c558",
       "owner": null,
       "sanitized": false
     },
     "mapping_type": "keyword",
     "maturity": "BUSINESS_CONFIRMED",
-    "object_id": "fld_954057a4be88a355",
+    "object_id": "fld_e7f3eea429355a30",
     "observed_in_indices": [
       "tbl_os_sub_message_2026_05",
       "tbl_os_sub_message_2026_06",
@@ -694,10 +803,10 @@
       "metadata": {},
       "producer": "semantic.compiler",
       "source_hashes": {
-        "mapping": "sha256:236d577289d2988b1604353fd01ba9d5a2b26a794047ce5d7f516e6ed3261920"
+        "mapping": "sha256:dc9c54859a2b7cbb422c002d74fe60b04a7560c1910e70bab620ef9f1100c558"
       },
       "source_ids": [
-        "mps_236d577289d2988b"
+        "mps_dc9c54859a2b7cbb"
       ]
     },
     "schema_version": "1.0",

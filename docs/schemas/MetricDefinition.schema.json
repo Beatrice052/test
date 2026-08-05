@@ -1,5 +1,15 @@
 {
   "$defs": {
+    "AggregationSemantics": {
+      "enum": [
+        "additive",
+        "semi_additive",
+        "non_additive",
+        "weighted"
+      ],
+      "title": "AggregationSemantics",
+      "type": "string"
+    },
     "FormulaNode": {
       "additionalProperties": false,
       "properties": {
@@ -97,6 +107,15 @@
   },
   "additionalProperties": false,
   "properties": {
+    "aggregation_semantics": {
+      "$ref": "#/$defs/AggregationSemantics",
+      "default": "non_additive"
+    },
+    "approximate": {
+      "default": false,
+      "title": "Approximate",
+      "type": "boolean"
+    },
     "business_definition": {
       "title": "Business Definition",
       "type": "string"
@@ -194,6 +213,15 @@
       "minimum": 0,
       "title": "Precision",
       "type": "integer"
+    },
+    "source_field_ids": {
+      "default": [],
+      "items": {
+        "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+        "type": "string"
+      },
+      "title": "Source Field Ids",
+      "type": "array"
     },
     "time_semantics": {
       "anyOf": [

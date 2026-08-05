@@ -113,6 +113,7 @@ class QueryPlanFinalizer:
             step.time_field_id,
             *step.dimensions,
             *(item.field_id for item in step.filters),
+            *(item.source_field_id for item in step.field_measures if item.source_field_id),
         }
         if not referenced_fields.issubset(allowed_fields):
             raise QueryPlanFinalizationError(
@@ -124,6 +125,23 @@ class QueryPlanFinalizer:
             raise QueryPlanFinalizationError(
                 f"step references unresolved metrics: {unresolved_metrics}"
             )
+        allowed_measures = {f"{item.measure_id}.{item.version}": item for item in resolved.measures}
+        for specification in step.field_measures:
+            measure = allowed_measures.get(specification.measure_id)
+            if measure is None:
+                raise QueryPlanFinalizationError(
+                    f"step references unresolved measure: {specification.measure_id}"
+                )
+            if (
+                specification.source_field_id != measure.source_field_id
+                or specification.aggregation.value != measure.aggregation
+                or specification.parameters != measure.parameters
+                or specification.unit != measure.unit
+                or specification.semantics.value != measure.semantics
+            ):
+                raise QueryPlanFinalizationError(
+                    f"step changed the resolved aggregation contract: {specification.measure_id}"
+                )
         resolved_metrics = {f"{item.metric_id}.{item.version}": item for item in resolved.metrics}
         for metric_id in step.measures:
             metric = resolved_metrics[metric_id]
@@ -157,6 +175,11 @@ class QueryPlanFinalizer:
                     step.time_field_id,
                     *step.dimensions,
                     *(item.field_id for item in step.filters),
+                    *(
+                        item.source_field_id
+                        for item in step.field_measures
+                        if item.source_field_id is not None
+                    ),
                     *metric_required_fields,
                 )
             )
@@ -198,6 +221,9 @@ class QueryPlanFinalizer:
             sufficiently_scoped = any(
                 set(task.dimension_ids).issubset(step.dimensions)
                 and set(task.metric_ids).issubset(step.measures)
+                and set(task.measure_ids).issubset(
+                    {measure.measure_id for measure in step.field_measures}
+                )
                 and set(task.grain).issubset(step.grain)
                 for step in supporting
             )

@@ -11,6 +11,18 @@ from app.contracts.semantic import (
 
 NUMERIC_TYPES = {"byte", "short", "integer", "long", "half_float", "float", "double"}
 
+AGGREGATION_CAPABILITIES = {
+    "value_count": "aggregate_value_count",
+    "cardinality": "aggregate_cardinality",
+    "sum": "aggregate_sum",
+    "avg": "aggregate_avg",
+    "min": "aggregate_min",
+    "max": "aggregate_max",
+    "stats": "aggregate_stats",
+    "extended_stats": "aggregate_extended_stats",
+    "percentiles": "aggregate_percentiles",
+}
+
 
 def choose_mapping_variant(variants: Sequence[MappingField]) -> MappingField:
     if not variants:
@@ -71,13 +83,40 @@ def infer_capabilities(variants: Sequence[MappingField]) -> tuple[str, ...]:
     if any(field.mapping_type in {"text", "match_only_text"} for field in variants):
         capabilities.add("full_text")
     if any(field.aggregatable for field in variants):
-        capabilities.update({"group_by", "top_n"})
+        capabilities.update(
+            {
+                "group_by",
+                "top_n",
+                AGGREGATION_CAPABILITIES["value_count"],
+                AGGREGATION_CAPABILITIES["cardinality"],
+            }
+        )
     if any(field.sortable for field in variants):
         capabilities.add("sort")
     if any(field.mapping_type == "date" for field in variants):
-        capabilities.update({"range", "date_histogram"})
+        capabilities.update(
+            {
+                "range",
+                "date_histogram",
+                AGGREGATION_CAPABILITIES["min"],
+                AGGREGATION_CAPABILITIES["max"],
+            }
+        )
     if any(field.mapping_type in NUMERIC_TYPES for field in variants):
-        capabilities.update({"metric", "histogram", "range"})
+        capabilities.update(
+            {
+                "metric",
+                "histogram",
+                "range",
+                AGGREGATION_CAPABILITIES["sum"],
+                AGGREGATION_CAPABILITIES["avg"],
+                AGGREGATION_CAPABILITIES["min"],
+                AGGREGATION_CAPABILITIES["max"],
+                AGGREGATION_CAPABILITIES["stats"],
+                AGGREGATION_CAPABILITIES["extended_stats"],
+                AGGREGATION_CAPABILITIES["percentiles"],
+            }
+        )
     if any(field.nested_path for field in variants):
         capabilities.add("nested")
     return tuple(sorted(capabilities))

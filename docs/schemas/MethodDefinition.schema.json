@@ -38,6 +38,14 @@
       "title": "Exploratory Label Required",
       "type": "boolean"
     },
+    "interpretation_limitations": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Interpretation Limitations",
+      "type": "array"
+    },
     "method_id": {
       "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
       "title": "Method Id",
@@ -48,6 +56,18 @@
       "title": "Minimum Rows",
       "type": "integer"
     },
+    "parameter_limits": {
+      "additionalProperties": {
+        "$ref": "#/$defs/JsonScalar"
+      },
+      "title": "Parameter Limits",
+      "type": "object"
+    },
+    "purpose": {
+      "default": "Governed deterministic statistical analysis",
+      "title": "Purpose",
+      "type": "string"
+    },
     "required_semantic_types": {
       "default": [],
       "items": {
@@ -55,6 +75,29 @@
       },
       "title": "Required Semantic Types",
       "type": "array"
+    },
+    "requires_category": {
+      "default": false,
+      "title": "Requires Category",
+      "type": "boolean"
+    },
+    "requires_time": {
+      "default": false,
+      "title": "Requires Time",
+      "type": "boolean"
+    },
+    "supported_partition_roles": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Supported Partition Roles",
+      "type": "array"
+    },
+    "technical_description": {
+      "default": "Computed by the host from validated tabular data.",
+      "title": "Technical Description",
+      "type": "string"
     },
     "version": {
       "title": "Version",

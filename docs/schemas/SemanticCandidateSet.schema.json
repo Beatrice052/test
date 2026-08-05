@@ -24,7 +24,9 @@
           "enum": [
             "dataset",
             "metric",
+            "measure",
             "field",
+            "entity",
             "recipe",
             "method",
             "value"
@@ -152,12 +154,28 @@
       "title": "Dataset Candidates",
       "type": "array"
     },
+    "entity_candidates": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/CandidateItem"
+      },
+      "title": "Entity Candidates",
+      "type": "array"
+    },
     "field_candidates": {
       "default": [],
       "items": {
         "$ref": "#/$defs/CandidateItem"
       },
       "title": "Field Candidates",
+      "type": "array"
+    },
+    "measure_candidates": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/CandidateItem"
+      },
+      "title": "Measure Candidates",
       "type": "array"
     },
     "method_candidates": {

@@ -1,6 +1,8 @@
 """Governed semantic, metric, method, visualization, and policy registries."""
 
 from app.registries.dataset_registry import DatasetRegistry
+from app.registries.entity_registry import EntityRegistry
+from app.registries.measure_registry import MeasureRegistry
 from app.registries.method_registry import MethodRegistry
 from app.registries.metric_registry import MetricRegistry
 from app.registries.policy_registry import PolicyRegistry
@@ -10,6 +12,8 @@ from app.registries.visualization_registry import VisualizationRegistry
 
 __all__ = [
     "DatasetRegistry",
+    "EntityRegistry",
+    "MeasureRegistry",
     "MethodRegistry",
     "MetricRegistry",
     "PolicyRegistry",

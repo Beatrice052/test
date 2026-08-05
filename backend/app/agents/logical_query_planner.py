@@ -42,6 +42,12 @@ class LogicalQueryPlannerAgent:
                     }
                     for metric in resolved_analysis.metrics
                 ],
+                "measures": [
+                    measure.model_dump(mode="json") for measure in resolved_analysis.measures
+                ],
+                "entities": [
+                    entity.model_dump(mode="json") for entity in resolved_analysis.entities
+                ],
                 "filters": [
                     {
                         "field_id": item.field_id,

@@ -12,6 +12,7 @@ from app.contracts.common import semantic_hash
 from app.contracts.dashboard import VisualizationDefinition
 from app.contracts.metric import (
     AnalysisRecipe,
+    MeasureDefinition,
     MethodDefinition,
     MetricDefinition,
     ValueDictionary,
@@ -19,6 +20,7 @@ from app.contracts.metric import (
 from app.contracts.semantic import (
     CanonicalField,
     DatasetDefinition,
+    EntityDefinition,
     ImportReport,
     PolicyDefinition,
     SemanticManifest,
@@ -74,6 +76,18 @@ class CompiledSemanticPackage:
     def metrics(self) -> tuple[MetricDefinition, ...]:
         raw = (self.package_dir / "metrics.json").read_text(encoding="utf-8")
         return tuple(TypeAdapter(list[MetricDefinition]).validate_json(raw))
+
+    def measures(self) -> tuple[MeasureDefinition, ...]:
+        path = self.package_dir / "measures.json"
+        if not path.exists():
+            return ()
+        return tuple(TypeAdapter(list[MeasureDefinition]).validate_json(path.read_text("utf-8")))
+
+    def entities(self) -> tuple[EntityDefinition, ...]:
+        path = self.package_dir / "entities.json"
+        if not path.exists():
+            return ()
+        return tuple(TypeAdapter(list[EntityDefinition]).validate_json(path.read_text("utf-8")))
 
     def values(self) -> tuple[ValueDictionary, ...]:
         raw = (self.package_dir / "values.json").read_text(encoding="utf-8")

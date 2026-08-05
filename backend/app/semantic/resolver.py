@@ -5,13 +5,15 @@ from datetime import UTC, datetime
 from app.contracts.analysis import (
     AnalysisPlan,
     ResolvedAnalysis,
+    ResolvedEntityMember,
     ResolvedFieldDescriptor,
     ResolvedFilter,
+    ResolvedMeasure,
     ResolvedMetric,
 )
 from app.contracts.common import Provenance, semantic_hash
-from app.contracts.metric import FormulaNode, MetricDefinition
-from app.contracts.semantic import CanonicalField
+from app.contracts.metric import AggregationKind, FormulaNode, MeasureDefinition, MetricDefinition
+from app.contracts.semantic import CanonicalField, EntityDefinition
 from app.persistence.ids import new_id
 from app.semantic.package import CompiledSemanticPackage
 
@@ -46,6 +48,56 @@ class MetricResolver:
         return metric
 
 
+class MeasureResolver:
+    def __init__(self, measures: tuple[MeasureDefinition, ...]) -> None:
+        self.by_id = {measure.versioned_id: measure for measure in measures}
+
+    def require(self, measure_id: str) -> MeasureDefinition:
+        measure = self.by_id.get(measure_id)
+        if measure is None:
+            raise SemanticResolutionError(f"unknown measure_id: {measure_id}")
+        return measure
+
+
+class MemberResolver:
+    """Resolve configured members without exposing a high-cardinality field to an LLM."""
+
+    def __init__(self, entities: tuple[EntityDefinition, ...]) -> None:
+        self.by_id = {entity.versioned_id: entity for entity in entities}
+
+    def resolve(self, entity_id: str, mention: str) -> ResolvedEntityMember:
+        entity = self.by_id.get(entity_id)
+        if entity is None or not entity.enabled:
+            raise SemanticResolutionError(f"unknown entity_id: {entity_id}")
+        normalized = mention.casefold().strip()
+        if len(normalized) < entity.minimum_query_length:
+            raise SemanticResolutionError("entity mention is too short for safe resolution")
+        if entity.member_resolution == "dictionary":
+            matches = [
+                member_id
+                for member_id, aliases in entity.dictionary.items()
+                if normalized == member_id.casefold()
+                or normalized in {alias.casefold() for alias in aliases}
+            ]
+            if len(matches) != 1:
+                raise SemanticResolutionError(
+                    "entity member is ambiguous or absent; clarification is required"
+                )
+            member_id = matches[0]
+        elif entity.member_resolution == "exact":
+            member_id = mention.strip()
+        else:
+            raise SemanticResolutionError(
+                "gateway member lookup requires the approved runtime member adapter"
+            )
+        return ResolvedEntityMember(
+            entity_id=entity.versioned_id,
+            mention=mention,
+            member_id=member_id,
+            resolution=entity.member_resolution,
+        )
+
+
 class AnalysisPlanResolver:
     """Bind only validated IDs to authoritative package objects."""
 
@@ -53,6 +105,8 @@ class AnalysisPlanResolver:
         self.package = package
         self.fields = FieldResolver(package.fields())
         self.metrics = MetricResolver(package.metrics())
+        self.measures = MeasureResolver(package.measures())
+        self.members = MemberResolver(package.entities())
         self.datasets = {dataset.dataset_id: dataset for dataset in package.datasets()}
         self.values = package.values()
         self.policies = package.policies()
@@ -138,8 +192,53 @@ class AnalysisPlanResolver:
                 )
             )
 
-        answerable = bool(resolved_metrics) and all(
-            metric.executable for metric in resolved_metrics
+        resolved_measures: list[ResolvedMeasure] = []
+        for measure_decision in plan.measure_decisions:
+            if measure_decision.decision not in {"required", "recommended", "optional"}:
+                continue
+            measure = self.measures.require(measure_decision.measure_id)
+            try:
+                aggregation = AggregationKind(
+                    measure_decision.aggregation or measure.default_aggregation
+                )
+            except ValueError as error:
+                raise SemanticResolutionError("unsupported aggregation selection") from error
+            executable = measure.enabled and aggregation in measure.allowed_aggregations
+            measure_reason: str | None = None
+            if measure.source_field_id is not None:
+                capability = f"aggregate_{aggregation.value}"
+                try:
+                    field = self.fields.require(measure.source_field_id, capability=capability)
+                    if field.field_id in policy.blocked_field_ids:
+                        raise SemanticResolutionError(f"field is blocked: {field.field_id}")
+                    resolved_field_ids.add(field.field_id)
+                except SemanticResolutionError as error:
+                    executable = False
+                    measure_reason = str(error)
+            resolved_measures.append(
+                ResolvedMeasure(
+                    measure_id=measure.measure_id,
+                    version=measure.version,
+                    source_field_id=measure.source_field_id,
+                    aggregation=aggregation.value,
+                    parameters=measure.default_parameters,
+                    unit=measure.unit,
+                    semantics=measure.semantics.value,
+                    approximate=measure.approximate or aggregation == AggregationKind.CARDINALITY,
+                    executable=executable,
+                    reason=measure_reason,
+                )
+            )
+
+        resolved_entities = tuple(
+            self.members.resolve(reference.entity_id, reference.mention)
+            for reference in plan.entity_references
+        )
+
+        answerable = (
+            bool(resolved_metrics or resolved_measures)
+            and all(item.executable for item in resolved_metrics)
+            and all(item.executable for item in resolved_measures)
         )
         index_patterns = tuple(
             pattern
@@ -162,6 +261,8 @@ class AnalysisPlanResolver:
                 descriptor.model_dump(mode="json") for descriptor in field_descriptors
             ],
             "metrics": [metric.model_dump(mode="json") for metric in resolved_metrics],
+            "measures": [measure.model_dump(mode="json") for measure in resolved_measures],
+            "entities": [entity.model_dump(mode="json") for entity in resolved_entities],
             "filters": [item.model_dump(mode="json") for item in resolved_filters],
             "package_version": self.package.manifest.package_version,
             "policy": policy.policy_id,
@@ -181,6 +282,8 @@ class AnalysisPlanResolver:
             resolved_field_ids=tuple(sorted(resolved_field_ids)),
             field_descriptors=field_descriptors,
             metrics=tuple(resolved_metrics),
+            measures=tuple(resolved_measures),
+            entities=resolved_entities,
             filters=tuple(resolved_filters),
             time_field_id=time_field_id,
             time_range=plan.scope.time_range,

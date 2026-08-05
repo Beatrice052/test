@@ -12,7 +12,7 @@ from typing import Any, Literal, cast
 from pydantic import ValidationError
 
 from app.contracts.common import Provenance, safe_identifier, semantic_hash
-from app.contracts.metric import FormulaNode
+from app.contracts.metric import AggregationKind, FormulaNode
 from app.contracts.semantic import (
     CanonicalField,
     CardinalityProfile,
@@ -30,6 +30,8 @@ from app.contracts.semantic import (
 )
 from app.registries import (
     DatasetRegistry,
+    EntityRegistry,
+    MeasureRegistry,
     MethodRegistry,
     MetricRegistry,
     PolicyRegistry,
@@ -133,6 +135,8 @@ def _retrieval_documents(
     fields: Sequence[CanonicalField],
     datasets: DatasetRegistry,
     metrics: MetricRegistry,
+    measures: MeasureRegistry,
+    entities: EntityRegistry,
     recipes: RecipeRegistry,
     methods: MethodRegistry,
     values: ValueRegistry,
@@ -189,6 +193,37 @@ def _retrieval_documents(
                         if metric.time_semantics is None
                         else metric.time_semantics.model_dump(mode="json")
                     ),
+                }
+            )
+    for measure in measures.definitions:
+        if measure.enabled:
+            documents.append(
+                {
+                    "item_id": measure.versioned_id,
+                    "item_type": "measure",
+                    "display_name": measure.display_name,
+                    "description": measure.business_definition,
+                    "capabilities": tuple(kind.value for kind in measure.allowed_aggregations),
+                    "source_field_id": measure.source_field_id,
+                    "default_aggregation": measure.default_aggregation,
+                    "unit": measure.unit,
+                    "semantics": measure.semantics,
+                    "approximate": measure.approximate,
+                }
+            )
+    for entity in entities.definitions:
+        if entity.enabled:
+            documents.append(
+                {
+                    "item_id": entity.versioned_id,
+                    "item_type": "entity",
+                    "display_name": entity.display_name,
+                    "aliases": entity.aliases,
+                    "description": entity.description,
+                    "dataset_id": entity.dataset_id,
+                    "identifier_field_id": entity.identifier_field_id,
+                    "label_field_id": entity.label_field_id,
+                    "member_resolution": entity.member_resolution,
                 }
             )
     for recipe in recipes.definitions:
@@ -265,6 +300,8 @@ def compile_semantic_package(
         )
         datasets = DatasetRegistry.load(input_dir / "dataset_registry.yaml")
         metrics = MetricRegistry.load(metric_registry_path or input_dir / "metric_registry")
+        measures = MeasureRegistry.load(input_dir / "measures")
+        entities = EntityRegistry.load(input_dir / "entities")
         values = ValueRegistry.load(input_dir / "values")
         recipes = RecipeRegistry.load(input_dir / "recipes")
         methods = MethodRegistry.load(input_dir / "methods")
@@ -528,6 +565,47 @@ def compile_semantic_package(
                 )
             )
 
+    for measure in measures.definitions:
+        if not measure.enabled or measure.source_field_id is None:
+            continue
+        field = next(
+            (item for item in canonical_fields if item.field_id == measure.source_field_id), None
+        )
+        missing_capabilities = {
+            f"aggregate_{kind.value}"
+            for kind in measure.allowed_aggregations
+            if kind != AggregationKind.DOCUMENT_COUNT
+        } - (set(field.capabilities) if field is not None else set())
+        if field is None or missing_capabilities:
+            invalid_metric_bindings.append(measure.versioned_id)
+            issues.append(
+                ImportIssue(
+                    code="INVALID_MEASURE_BINDING",
+                    severity="FATAL",
+                    message="measure source field is missing or lacks aggregation capability",
+                    field_path=measure.versioned_id,
+                    details={"missing_capabilities": sorted(missing_capabilities)},
+                )
+            )
+    for entity in entities.definitions:
+        if not entity.enabled:
+            continue
+        required = {entity.identifier_field_id} | (
+            {entity.label_field_id} if entity.label_field_id is not None else set()
+        )
+        missing = required - canonical_field_ids
+        if entity.dataset_id != dataset.dataset_id or missing:
+            invalid_metric_bindings.append(entity.versioned_id)
+            issues.append(
+                ImportIssue(
+                    code="INVALID_ENTITY_BINDING",
+                    severity="FATAL",
+                    message="entity references an unavailable dataset or field",
+                    field_path=entity.versioned_id,
+                    details={"missing_fields": sorted(missing)},
+                )
+            )
+
     fatal = any(issue.severity == "FATAL" for issue in issues)
     if type_conflicts:
         issues.extend(
@@ -597,6 +675,8 @@ def compile_semantic_package(
         "datasets.json": datasets.definitions,
         "fields.json": canonical_fields,
         "metrics.json": metrics.definitions,
+        "measures.json": measures.definitions,
+        "entities.json": entities.definitions,
         "values.json": values.definitions,
         "recipes.json": recipes.definitions,
         "methods.json": methods.definitions,
@@ -616,7 +696,9 @@ def compile_semantic_package(
         )
         file_hashes[name] = semantic_hash(normalized)
 
-    documents = _retrieval_documents(canonical_fields, datasets, metrics, recipes, methods, values)
+    documents = _retrieval_documents(
+        canonical_fields, datasets, metrics, measures, entities, recipes, methods, values
+    )
     retrieval_path = output_dir / "retrieval_documents.jsonl"
     retrieval_text = "".join(
         json.dumps(document, ensure_ascii=False, sort_keys=True) + "\n" for document in documents

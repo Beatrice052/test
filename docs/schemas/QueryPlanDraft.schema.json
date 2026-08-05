@@ -1,5 +1,129 @@
 {
   "$defs": {
+    "AggregationKind": {
+      "enum": [
+        "document_count",
+        "value_count",
+        "cardinality",
+        "sum",
+        "avg",
+        "min",
+        "max",
+        "stats",
+        "extended_stats",
+        "percentiles"
+      ],
+      "title": "AggregationKind",
+      "type": "string"
+    },
+    "AggregationParameters": {
+      "additionalProperties": false,
+      "properties": {
+        "keyed": {
+          "default": true,
+          "title": "Keyed",
+          "type": "boolean"
+        },
+        "percents": {
+          "default": [],
+          "items": {
+            "type": "number"
+          },
+          "title": "Percents",
+          "type": "array"
+        },
+        "precision_threshold": {
+          "anyOf": [
+            {
+              "maximum": 40000,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Precision Threshold"
+        },
+        "sigma": {
+          "anyOf": [
+            {
+              "maximum": 10,
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sigma"
+        }
+      },
+      "title": "AggregationParameters",
+      "type": "object"
+    },
+    "AggregationSemantics": {
+      "enum": [
+        "additive",
+        "semi_additive",
+        "non_additive",
+        "weighted"
+      ],
+      "title": "AggregationSemantics",
+      "type": "string"
+    },
+    "AggregationSpec": {
+      "additionalProperties": false,
+      "description": "A logical, governed field aggregation. It never contains a physical path.",
+      "properties": {
+        "aggregation": {
+          "$ref": "#/$defs/AggregationKind"
+        },
+        "approximate": {
+          "default": false,
+          "title": "Approximate",
+          "type": "boolean"
+        },
+        "measure_id": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+          "title": "Measure Id",
+          "type": "string"
+        },
+        "parameters": {
+          "$ref": "#/$defs/AggregationParameters"
+        },
+        "semantics": {
+          "$ref": "#/$defs/AggregationSemantics",
+          "default": "non_additive"
+        },
+        "source_field_id": {
+          "anyOf": [
+            {
+              "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source Field Id"
+        },
+        "unit": {
+          "default": "number",
+          "title": "Unit",
+          "type": "string"
+        }
+      },
+      "required": [
+        "measure_id",
+        "aggregation"
+      ],
+      "title": "AggregationSpec",
+      "type": "object"
+    },
     "ParameterBinding": {
       "additionalProperties": false,
       "properties": {
@@ -135,6 +259,14 @@
           "minimum": 0,
           "title": "Estimated Buckets",
           "type": "integer"
+        },
+        "field_measures": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/AggregationSpec"
+          },
+          "title": "Field Measures",
+          "type": "array"
         },
         "filters": {
           "items": {

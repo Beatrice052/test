@@ -8,11 +8,14 @@ from app.contracts.common import Identifier, JsonScalar, JsonValue, StrictModel,
 
 
 class StatisticalResult(StrictModel):
+    result_id: Identifier | None = None
     method_id: Identifier
     version: str
     applicability: Literal["APPLICABLE", "NOT_APPLICABLE"]
     sample_size: int = Field(ge=0)
     values: dict[str, JsonValue] = Field(default_factory=dict)
+    value_paths: tuple[str, ...] = ()
+    calculation_table_id: Identifier | None = None
     warnings: tuple[str, ...] = ()
     exploratory: bool = True
 
@@ -30,6 +33,9 @@ class AnalyticsToolRequest(StrictModel):
     dataset_id: Identifier
     method_id: Identifier
     measure_column: str = Field(min_length=1)
+    partition_columns: tuple[str, ...] = ()
+    category_column: str | None = None
+    time_column: str | None = None
     parameters: dict[str, JsonScalar] = Field(default_factory=dict)
     purpose: str = Field(min_length=1, max_length=500)
 
@@ -42,6 +48,9 @@ class AnalyticsToolResult(VersionedModel):
     dataset_id: Identifier
     method_id: Identifier
     measure_column: str
+    partition_columns: tuple[str, ...] = ()
+    category_column: str | None = None
+    time_column: str | None = None
     decision: str
     result: StatisticalResult
     reason: str
@@ -51,6 +60,9 @@ class FeatureSummary(VersionedModel):
     dataset_id: Identifier
     row_count: int = Field(ge=0)
     columns: tuple[str, ...]
+    task_ids: tuple[Identifier, ...] = ()
+    grain: tuple[str, ...] = ()
+    completeness: str | None = None
     top_rows: tuple[dict[str, JsonValue], ...] = ()
     bottom_rows: tuple[dict[str, JsonValue], ...] = ()
     totals: dict[str, JsonValue] = Field(default_factory=dict)

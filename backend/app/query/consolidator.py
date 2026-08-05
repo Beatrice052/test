@@ -27,6 +27,9 @@ class QueryConsolidator:
                         dict.fromkeys((*match.purpose_task_ids, *step.purpose_task_ids))
                     ),
                     "measures": tuple(dict.fromkeys((*match.measures, *step.measures))),
+                    "field_measures": tuple(
+                        dict.fromkeys((*match.field_measures, *step.field_measures))
+                    ),
                     "estimated_buckets": max(match.estimated_buckets, step.estimated_buckets),
                     "required": match.required or step.required,
                 }

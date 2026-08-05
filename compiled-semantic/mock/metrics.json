@@ -1,5 +1,7 @@
 [
   {
+    "aggregation_semantics": "non_additive",
+    "approximate": false,
     "business_definition": "Mock 中失败状态记录占 success 与 failure 正式分母记录的比例",
     "denominator": {
       "column": null,
@@ -35,6 +37,7 @@
     "owner": "mock_business_metric_owner",
     "pending_policy": "exclude",
     "precision": 4,
+    "source_field_ids": [],
     "time_semantics": {
       "capability_id": "terminal_event_time",
       "timezone": "Asia/Hong_Kong"
@@ -44,6 +47,8 @@
     "version": "v1"
   },
   {
+    "aggregation_semantics": "non_additive",
+    "approximate": false,
     "business_definition": "过滤范围内的 OpenSearch 文档记录数，不自动称为去重发送量",
     "denominator": null,
     "dimensions": [
@@ -69,6 +74,7 @@
     "owner": "framework",
     "pending_policy": "exclude",
     "precision": 0,
+    "source_field_ids": [],
     "time_semantics": null,
     "unit": "count",
     "unknown_policy": "exclude_and_report",

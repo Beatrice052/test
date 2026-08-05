@@ -1,7 +1,9 @@
 """Closed query AST created only from validated IDs by deterministic code."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Literal
+
+from app.contracts.metric import AggregationParameters
 
 
 @dataclass(frozen=True, slots=True)
@@ -38,6 +40,7 @@ class MeasureNode:
     ]
     metric_id: str
     field_id: str | None = None
+    parameters: AggregationParameters = field(default_factory=AggregationParameters)
 
 
 @dataclass(frozen=True, slots=True)

@@ -16,7 +16,7 @@ def test_excel_and_csv_column_aliases_produce_same_catalog() -> None:
         INPUT / "field_descriptions.csv"
     ).load_field_descriptions()
 
-    assert len(excel_rows) == len(csv_rows) == 11
+    assert len(excel_rows) == len(csv_rows) == 12
     assert [row.field_path for row in excel_rows] == [row.field_path for row in csv_rows]
     assert excel_rows[1].aliases == ("Channel", "渠道", "发送渠道")
 

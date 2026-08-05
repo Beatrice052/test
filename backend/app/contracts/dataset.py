@@ -24,6 +24,16 @@ class DatasetColumn(StrictModel):
     semantic_role: Literal["dimension", "measure", "metric", "metadata"]
     field_id: Identifier | None = None
     metric_id: Identifier | None = None
+    measure_id: Identifier | None = None
+    source_field_id: Identifier | None = None
+    aggregation: str | None = None
+    aggregation_name: str | None = None
+    aggregation_result_path: str | None = None
+    aggregation_parameters: dict[str, JsonValue] = Field(default_factory=dict)
+    aggregation_semantics: str | None = None
+    source_grain: tuple[Identifier, ...] = ()
+    population_scope: str | None = None
+    approximate: bool = False
     unit: str | None = None
     display_name: str | None = None
     semantic_type: str | None = None
@@ -38,6 +48,7 @@ class DatasetContract(VersionedModel):
     grain: tuple[str, ...]
     dimensions: tuple[str, ...]
     metrics: tuple[Identifier, ...]
+    measures: tuple[Identifier, ...] = ()
     primary_key: tuple[str, ...]
     expected_complete_dimensions: tuple[str, ...]
     columns: tuple[DatasetColumn, ...]

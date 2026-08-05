@@ -6,7 +6,7 @@ from datetime import UTC, datetime
 from typing import Any, Literal, cast
 
 from app.contracts.common import JsonValue, Provenance, semantic_hash
-from app.contracts.metric import MetricDefinition
+from app.contracts.metric import AggregationKind, MetricDefinition
 from app.contracts.query import (
     BucketPathItem,
     CompiledQuery,
@@ -57,6 +57,9 @@ class DslCompiler:
         metric_required_fields = tuple(
             field_id for metric_id in step.measures for field_id in self._required_fields(metric_id)
         )
+        measure_required_fields = tuple(
+            item.source_field_id for item in step.field_measures if item.source_field_id is not None
+        )
         field_ids = tuple(
             dict.fromkeys(
                 (
@@ -64,6 +67,7 @@ class DslCompiler:
                     *step.dimensions,
                     *(item.field_id for item in step.filters),
                     *metric_required_fields,
+                    *measure_required_fields,
                 )
             )
         )
@@ -73,6 +77,7 @@ class DslCompiler:
             time_field_id=step.time_field_id,
             field_ids=field_ids,
             metric_ids=step.measures,
+            field_measures=step.field_measures,
             filter_fingerprint=semantic_hash(
                 [item.model_dump(mode="json") for item in step.filters]
             ),
@@ -176,6 +181,15 @@ class DslCompiler:
                 metric_id=metric_id,
             )
             for index, metric_id in enumerate(step.measures)
+        ) + tuple(
+            MeasureNode(
+                name=specification.aggregation_name,
+                kind=specification.aggregation.value,
+                metric_id=specification.measure_id,
+                field_id=specification.source_field_id,
+                parameters=specification.parameters,
+            )
+            for specification in step.field_measures
         )
         return QueryAst(filters=filters, buckets=tuple(buckets), measures=measures)
 
@@ -225,9 +239,12 @@ class DslCompiler:
                         key_field=root_name,
                     )
                 )
-            dsl["aggs"] = {
-                root_name: {"composite": {"size": self.composite_page_size, "sources": sources}}
+            root_body: dict[str, Any] = {
+                "composite": {"size": self.composite_page_size, "sources": sources},
+                "aggs": {},
             }
+            dsl["aggs"] = {root_name: root_body}
+            current_aggs = root_body["aggs"]
         else:
             current_aggs = dsl["aggs"]
             for node in ast.buckets:
@@ -263,7 +280,31 @@ class DslCompiler:
                 )
                 body["aggs"] = {}
                 current_aggs = body["aggs"]
+        for measure in ast.measures:
+            if measure.kind == "document_count":
+                continue
+            current_aggs[measure.name] = self._compile_measure(measure)
         return cast(dict[str, JsonValue], dsl), tuple(bucket_path)
+
+    def _compile_measure(self, node: MeasureNode) -> dict[str, Any]:
+        if node.field_id is None:
+            raise QueryCompilationError(f"field aggregation lacks source field: {node.metric_id}")
+        field = self._field(node.field_id)
+        capability = f"aggregate_{node.kind}"
+        if capability not in field.capabilities:
+            raise QueryCompilationError(f"field does not support {node.kind}: {node.field_id}")
+        body: dict[str, Any] = {"field": field.physical_path}
+        if node.kind == AggregationKind.CARDINALITY.value:
+            if node.parameters.precision_threshold is not None:
+                body["precision_threshold"] = node.parameters.precision_threshold
+        elif node.kind == AggregationKind.PERCENTILES.value:
+            body["percents"] = list(node.parameters.percents or (50.0, 95.0, 99.0))
+            body["keyed"] = node.parameters.keyed
+        elif (
+            node.kind == AggregationKind.EXTENDED_STATS.value and node.parameters.sigma is not None
+        ):
+            body["sigma"] = node.parameters.sigma
+        return {node.kind: body}
 
     def _compile_filter(self, node: FilterNode) -> dict[str, Any]:
         field = self._field(node.field_id).physical_path

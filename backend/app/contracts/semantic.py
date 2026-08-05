@@ -194,9 +194,33 @@ class PolicyDefinition(StrictModel):
     scripts_allowed: bool = False
 
 
+class EntityDefinition(StrictModel):
+    """Config-only entity/member resolution definition."""
+
+    entity_id: Identifier
+    version: str = Field(pattern=r"^v[1-9][0-9]*$")
+    display_name: str
+    description: str
+    dataset_id: Identifier
+    identifier_field_id: Identifier
+    label_field_id: Identifier | None = None
+    aliases: tuple[str, ...] = ()
+    member_resolution: Literal["exact", "dictionary", "gateway_lookup"] = "exact"
+    dictionary: dict[str, tuple[str, ...]] = Field(default_factory=dict)
+    minimum_query_length: int = Field(default=2, ge=1, le=128)
+    maximum_candidates: int = Field(default=20, ge=1, le=100)
+    enabled: bool = True
+
+    @property
+    def versioned_id(self) -> str:
+        return f"{self.entity_id}.{self.version}"
+
+
 class CandidateItem(StrictModel):
     item_id: Identifier
-    item_type: Literal["dataset", "metric", "field", "recipe", "method", "value"]
+    item_type: Literal[
+        "dataset", "metric", "measure", "field", "entity", "recipe", "method", "value"
+    ]
     display_name: str
     summary: str
     score: float
@@ -208,7 +232,9 @@ class SemanticCandidateSet(VersionedModel):
     query: str
     dataset_candidates: tuple[CandidateItem, ...] = ()
     metric_candidates: tuple[CandidateItem, ...] = ()
+    measure_candidates: tuple[CandidateItem, ...] = ()
     field_candidates: tuple[CandidateItem, ...] = ()
+    entity_candidates: tuple[CandidateItem, ...] = ()
     recipe_candidates: tuple[CandidateItem, ...] = ()
     method_candidates: tuple[CandidateItem, ...] = ()
     value_candidates: tuple[CandidateItem, ...] = ()

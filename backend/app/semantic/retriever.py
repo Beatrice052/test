@@ -15,12 +15,16 @@ from app.semantic.package import read_json
 DEFAULT_LIMITS = {
     "dataset": 5,
     "metric": 10,
+    "measure": 20,
     "field": 20,
+    "entity": 10,
     "recipe": 10,
     "method": 10,
     "value": 20,
 }
-type CandidateType = Literal["dataset", "metric", "field", "recipe", "method", "value"]
+type CandidateType = Literal[
+    "dataset", "metric", "measure", "field", "entity", "recipe", "method", "value"
+]
 
 
 class SemanticRetriever:
@@ -117,7 +121,9 @@ class SemanticRetriever:
             query=query,
             dataset_candidates=tuple(grouped["dataset"]),
             metric_candidates=tuple(grouped["metric"]),
+            measure_candidates=tuple(grouped["measure"]),
             field_candidates=tuple(grouped["field"]),
+            entity_candidates=tuple(grouped["entity"]),
             recipe_candidates=tuple(grouped["recipe"]),
             method_candidates=tuple(grouped["method"]),
             value_candidates=tuple(grouped["value"]),
@@ -163,7 +169,7 @@ class SemanticRetriever:
     ) -> None:
         """Keep the small governed registries visible as bounded low-score candidates."""
 
-        supported = {"metric", "recipe", "method", "value"}
+        supported = {"metric", "measure", "entity", "recipe", "method", "value"}
         path = self.package_dir / "retrieval_documents.jsonl"
         for line in path.read_text(encoding="utf-8").splitlines():
             document = json.loads(line)

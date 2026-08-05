@@ -52,12 +52,19 @@ class AnalysisPlanValidator:
             )
         allowed_datasets = {item.item_id for item in candidates.dataset_candidates}
         allowed_metrics = {item.item_id for item in candidates.metric_candidates}
+        allowed_measures = {item.item_id for item in candidates.measure_candidates}
         allowed_fields = {item.item_id for item in candidates.field_candidates}
+        allowed_entities = {item.item_id for item in candidates.entity_candidates}
         allowed_methods = {item.item_id for item in candidates.method_candidates}
         self._require_unique(
             "DUPLICATE_METRIC_DECISION",
             "metric decision",
             (item.metric_id for item in draft.metric_decisions),
+        )
+        self._require_unique(
+            "DUPLICATE_MEASURE_DECISION",
+            "measure decision",
+            (item.measure_id for item in draft.measure_decisions),
         )
         self._require_unique(
             "DUPLICATE_TASK_ID", "analytical task", (item.task_id for item in draft.tasks)
@@ -69,12 +76,23 @@ class AnalysisPlanValidator:
         self._require_subset(
             "metric", (item.metric_id for item in draft.metric_decisions), allowed_metrics
         )
+        self._require_subset(
+            "measure", (item.measure_id for item in draft.measure_decisions), allowed_measures
+        )
+        self._require_subset(
+            "entity", (item.entity_id for item in draft.entity_references), allowed_entities
+        )
         # ``downgraded`` and ``rejected`` are explanatory decisions, not executable
         # metric selections.  A task may not quietly use either one as a query or
         # statistics input.
         selected_metrics = {
             item.metric_id
             for item in draft.metric_decisions
+            if item.decision in {"required", "recommended", "optional"}
+        }
+        selected_measures = {
+            item.measure_id
+            for item in draft.measure_decisions
             if item.decision in {"required", "recommended", "optional"}
         }
         required_or_recommended_metrics = {
@@ -92,12 +110,20 @@ class AnalysisPlanValidator:
             )
         for task in draft.tasks:
             self._require_subset("task metric", task.metric_ids, allowed_metrics)
+            self._require_subset("task measure", task.measure_ids, allowed_measures)
             unselected_metrics = set(task.metric_ids) - selected_metrics
             if unselected_metrics:
                 raise AnalysisPlanValidationError(
                     "TASK_METRIC_NOT_SELECTED",
                     "analytical task references metrics that Agent A did not select: "
                     f"{sorted(unselected_metrics)}",
+                )
+            unselected_measures = set(task.measure_ids) - selected_measures
+            if unselected_measures:
+                raise AnalysisPlanValidationError(
+                    "TASK_MEASURE_NOT_SELECTED",
+                    "analytical task references measures that Agent A did not select: "
+                    f"{sorted(unselected_measures)}",
                 )
             self._require_subset("task dimension", task.dimension_ids, allowed_fields)
             self._require_subset("task method", task.statistical_method_ids, allowed_methods)

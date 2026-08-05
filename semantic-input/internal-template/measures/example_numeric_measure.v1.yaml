@@ -1,0 +1,13 @@
+measures:
+  - measure_id: example_numeric_measure
+    version: v1
+    display_name: REPLACE_WITH_MEASURE_NAME
+    business_definition: REPLACE_WITH_BUSINESS_DEFINITION
+    source_field_id: sub_message.replace_with_numeric_field
+    allowed_aggregations: [value_count, sum, avg, min, max, stats, extended_stats, percentiles]
+    default_aggregation: avg
+    unit: number
+    population_scope: non_null_filtered_documents
+    semantics: non_additive
+    owner: REPLACE_WITH_OWNER
+    enabled: false

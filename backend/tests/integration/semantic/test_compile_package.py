@@ -50,6 +50,31 @@ def test_mock_compile_is_stable_complete_and_policy_filtered(
     assert fields["sub_message.latency_ms"].compatibility == MappingCompatibility.PARTIAL
     assert fields["sub_message.recipient_id"].maturity == FieldMaturity.BLOCKED
     assert fields["sub_message.recipient_id"].capabilities == ()
+    assert "aggregate_percentiles" in fields["sub_message.quality_score"].capabilities
+    assert {item.versioned_id for item in package.measures()} >= {
+        "generic_quality_score.v1",
+        "processing_latency.v1",
+    }
+    assert {item.versioned_id for item in package.entities()} == {"delivery_route.v1"}
+
+
+def test_measure_and_entity_are_retrievable_without_physical_paths(
+    compiled_package: tuple[CompileResult, Path],
+) -> None:
+    _, output_dir = compiled_package
+    candidates = SemanticRetriever(output_dir).retrieve("通用质量评分与发送路由")
+
+    measure = next(
+        item for item in candidates.measure_candidates if item.item_id == "generic_quality_score.v1"
+    )
+    entity = next(
+        item for item in candidates.entity_candidates if item.item_id == "delivery_route.v1"
+    )
+    assert "avg" in measure.capabilities
+    assert measure.metadata["source_field_id"] == "sub_message.quality_score"
+    assert "physical_path" not in measure.metadata
+    assert entity.metadata["member_resolution"] == "dictionary"
+    assert "dictionary" not in entity.metadata
 
 
 def test_fts_retrieval_returns_channel_top_one_and_excludes_blocked(

@@ -84,6 +84,19 @@
           "title": "Applicability",
           "type": "string"
         },
+        "calculation_table_id": {
+          "anyOf": [
+            {
+              "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Calculation Table Id"
+        },
         "exploratory": {
           "default": true,
           "title": "Exploratory",
@@ -94,10 +107,31 @@
           "title": "Method Id",
           "type": "string"
         },
+        "result_id": {
+          "anyOf": [
+            {
+              "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Result Id"
+        },
         "sample_size": {
           "minimum": 0,
           "title": "Sample Size",
           "type": "integer"
+        },
+        "value_paths": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Value Paths",
+          "type": "array"
         },
         "values": {
           "additionalProperties": {
@@ -149,6 +183,18 @@
       "title": "Columns",
       "type": "array"
     },
+    "completeness": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Completeness"
+    },
     "content_hash": {
       "pattern": "^sha256:[0-9a-f]{64}$",
       "title": "Content Hash",
@@ -163,6 +209,14 @@
       "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
       "title": "Dataset Id",
       "type": "string"
+    },
+    "grain": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Grain",
+      "type": "array"
     },
     "object_id": {
       "pattern": "^[a-z][a-z0-9_-]{2,127}$",
@@ -214,6 +268,15 @@
         "$ref": "#/$defs/StatisticalResult"
       },
       "title": "Statistical Results",
+      "type": "array"
+    },
+    "task_ids": {
+      "default": [],
+      "items": {
+        "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+        "type": "string"
+      },
+      "title": "Task Ids",
       "type": "array"
     },
     "time_features": {

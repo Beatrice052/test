@@ -1,0 +1,182 @@
+{
+  "$defs": {
+    "AggregationKind": {
+      "enum": [
+        "document_count",
+        "value_count",
+        "cardinality",
+        "sum",
+        "avg",
+        "min",
+        "max",
+        "stats",
+        "extended_stats",
+        "percentiles"
+      ],
+      "title": "AggregationKind",
+      "type": "string"
+    },
+    "AggregationParameters": {
+      "additionalProperties": false,
+      "properties": {
+        "keyed": {
+          "default": true,
+          "title": "Keyed",
+          "type": "boolean"
+        },
+        "percents": {
+          "default": [],
+          "items": {
+            "type": "number"
+          },
+          "title": "Percents",
+          "type": "array"
+        },
+        "precision_threshold": {
+          "anyOf": [
+            {
+              "maximum": 40000,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Precision Threshold"
+        },
+        "sigma": {
+          "anyOf": [
+            {
+              "maximum": 10,
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sigma"
+        }
+      },
+      "title": "AggregationParameters",
+      "type": "object"
+    },
+    "AggregationSemantics": {
+      "enum": [
+        "additive",
+        "semi_additive",
+        "non_additive",
+        "weighted"
+      ],
+      "title": "AggregationSemantics",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Config-only definition of a governed aggregation over one semantic field.",
+  "properties": {
+    "allowed_aggregations": {
+      "items": {
+        "$ref": "#/$defs/AggregationKind"
+      },
+      "minItems": 1,
+      "title": "Allowed Aggregations",
+      "type": "array"
+    },
+    "approximate": {
+      "default": false,
+      "title": "Approximate",
+      "type": "boolean"
+    },
+    "business_definition": {
+      "title": "Business Definition",
+      "type": "string"
+    },
+    "default_aggregation": {
+      "$ref": "#/$defs/AggregationKind"
+    },
+    "default_parameters": {
+      "$ref": "#/$defs/AggregationParameters"
+    },
+    "display_name": {
+      "title": "Display Name",
+      "type": "string"
+    },
+    "enabled": {
+      "default": true,
+      "title": "Enabled",
+      "type": "boolean"
+    },
+    "measure_id": {
+      "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+      "title": "Measure Id",
+      "type": "string"
+    },
+    "owner": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Owner"
+    },
+    "population_scope": {
+      "default": "filtered_documents",
+      "title": "Population Scope",
+      "type": "string"
+    },
+    "semantics": {
+      "$ref": "#/$defs/AggregationSemantics",
+      "default": "non_additive"
+    },
+    "source_field_id": {
+      "anyOf": [
+        {
+          "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Source Field Id"
+    },
+    "source_grain": {
+      "default": [],
+      "items": {
+        "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+        "type": "string"
+      },
+      "title": "Source Grain",
+      "type": "array"
+    },
+    "unit": {
+      "default": "number",
+      "title": "Unit",
+      "type": "string"
+    },
+    "version": {
+      "pattern": "^v[1-9][0-9]*$",
+      "title": "Version",
+      "type": "string"
+    }
+  },
+  "required": [
+    "measure_id",
+    "version",
+    "display_name",
+    "business_definition",
+    "allowed_aggregations",
+    "default_aggregation"
+  ],
+  "title": "MeasureDefinition",
+  "type": "object"
+}

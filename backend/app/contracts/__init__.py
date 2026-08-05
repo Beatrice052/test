@@ -17,8 +17,10 @@ from app.contracts.evidence import EvidencePackage
 from app.contracts.execution import ExecutionRecord, RawSearchResult
 from app.contracts.insight import ClaimDraft, ClaimSpec, FeatureSummary
 from app.contracts.metric import (
+    AggregationSpec,
     AnalysisRecipe,
     FormulaNode,
+    MeasureDefinition,
     MethodDefinition,
     MetricDefinition,
     MetricValue,
@@ -30,6 +32,7 @@ from app.contracts.request import ChatRequest, IdentityContext
 from app.contracts.semantic import (
     CanonicalField,
     DatasetDefinition,
+    EntityDefinition,
     FieldDescriptionRow,
     FieldProfileSnapshot,
     ImportReport,
@@ -79,7 +82,10 @@ SCHEMA_MODELS = (
     FormulaNode,
     ValueDictionary,
     MethodDefinition,
+    MeasureDefinition,
+    AggregationSpec,
     AnalysisRecipe,
+    EntityDefinition,
     VisualizationDefinition,
     AnalysisProgressEvent,
 )

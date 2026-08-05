@@ -27,6 +27,27 @@ export type AdvancedEvidence = {
 }>;
 };
 
+export type AggregationKind = "document_count" | "value_count" | "cardinality" | "sum" | "avg" | "min" | "max" | "stats" | "extended_stats" | "percentiles";
+
+export type AggregationParameters = {
+  percents?: Array<number>;
+  precision_threshold?: number | null;
+  sigma?: number | null;
+  keyed?: boolean;
+};
+
+export type AggregationSemantics = "additive" | "semi_additive" | "non_additive" | "weighted";
+
+export type AggregationSpec = {
+  measure_id: string;
+  source_field_id?: string | null;
+  aggregation: AggregationKind;
+  parameters?: AggregationParameters;
+  unit?: string;
+  semantics?: AggregationSemantics;
+  approximate?: boolean;
+};
+
 export type AnalysisBudget = {
   max_queries?: number;
   max_buckets?: number;
@@ -44,6 +65,8 @@ export type AnalysisPlan = {
   turn_relation: TurnKind;
   scope: AnalysisScope;
   metric_decisions: Array<MetricDecision>;
+  measure_decisions?: Array<MeasureDecision>;
+  entity_references?: Array<EntityReference>;
   tasks: Array<AnalyticalTask>;
   presentation_preference?: PresentationPreference;
   clarification?: Clarification | null;
@@ -64,6 +87,7 @@ export type AnalyticalTask = {
   analysis_type: string;
   priority: "required" | "recommended" | "optional";
   metric_ids?: Array<string>;
+  measure_ids?: Array<string>;
   dimension_ids?: Array<string>;
   grain?: Array<string>;
   statistical_method_ids?: Array<string>;
@@ -83,6 +107,9 @@ export type AnalyticsToolResult = {
   dataset_id: string;
   method_id: string;
   measure_column: string;
+  partition_columns?: Array<string>;
+  category_column?: string | null;
+  time_column?: string | null;
   decision: string;
   result: StatisticalResult;
   reason: string;
@@ -266,6 +293,18 @@ export type DatasetColumn = {
   semantic_role: "dimension" | "measure" | "metric" | "metadata";
   field_id?: string | null;
   metric_id?: string | null;
+  measure_id?: string | null;
+  source_field_id?: string | null;
+  aggregation?: string | null;
+  aggregation_name?: string | null;
+  aggregation_result_path?: string | null;
+  aggregation_parameters?: {
+  [key: string]: JsonValue;
+};
+  aggregation_semantics?: string | null;
+  source_grain?: Array<string>;
+  population_scope?: string | null;
+  approximate?: boolean;
   unit?: string | null;
   display_name?: string | null;
   semantic_type?: string | null;
@@ -294,6 +333,12 @@ export type DatasetRowsResponse = {
   total: number;
   complete: boolean;
   warnings: Array<string>;
+};
+
+export type EntityReference = {
+  entity_id: string;
+  mention: string;
+  resolved_member_id?: string | null;
 };
 
 export type EvidencePackage = {
@@ -339,6 +384,9 @@ export type FeatureSummary = {
   dataset_id: string;
   row_count: number;
   columns: Array<string>;
+  task_ids?: Array<string>;
+  grain?: Array<string>;
+  completeness?: string | null;
   top_rows?: Array<{
   [key: string]: JsonValue;
 }>;
@@ -397,6 +445,15 @@ export type KpiSelectionDraft = {
   measure_column: string;
   task_ids: Array<string>;
   reason: string;
+};
+
+export type MeasureDecision = {
+  measure_id: string;
+  aggregation?: string | null;
+  decision: "required" | "recommended" | "optional" | "rejected" | "downgraded";
+  role: string;
+  reason: string;
+  confidence: number;
 };
 
 export type MetricDecision = {
@@ -463,6 +520,7 @@ export type QueryStep = {
   filters: Array<QueryFilter>;
   dimensions: Array<string>;
   measures: Array<string>;
+  field_measures?: Array<AggregationSpec>;
   grain: Array<string>;
   result_contract_id: string;
   depends_on?: Array<string>;
@@ -524,6 +582,7 @@ export type SessionPatchRequest = {
 };
 
 export type StatisticalResult = {
+  result_id?: string | null;
   method_id: string;
   version: string;
   applicability: "APPLICABLE" | "NOT_APPLICABLE";
@@ -531,6 +590,8 @@ export type StatisticalResult = {
   values?: {
   [key: string]: JsonValue;
 };
+  value_paths?: Array<string>;
+  calculation_table_id?: string | null;
   warnings?: Array<string>;
   exploratory?: boolean;
 };

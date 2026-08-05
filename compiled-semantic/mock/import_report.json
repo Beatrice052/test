@@ -3,30 +3,30 @@
   "blocked_fields": [
     "sub_message.recipient_id"
   ],
-  "catalog_hash": "sha256:79a282dc10b7a28484a17616fc42b19ae857f2d3eb620cd69975511b4b9e577f",
+  "catalog_hash": "sha256:addad1e1f8d27c85769dd635977928bc94ff21285337c5203bfd5ba529cfdbab",
   "catalog_only_fields": [],
-  "catalog_row_count": 11,
-  "content_hash": "sha256:5a4e0e4f5bc6ceafc6ef8584f0ffd830e25d0aaebbe70d8ab12b34967ba5854e",
+  "catalog_row_count": 12,
+  "content_hash": "sha256:0e62740535c7c77aa6e7b2b45dd73362c5dc304a46a167bfb6f1d4559fa8d7d0",
   "created_at": "2026-07-31T00:00:00Z",
   "duplicate_field_paths": [],
   "invalid_metric_bindings": [],
   "issues": [],
-  "mapping_field_count": 15,
-  "mapping_hash": "sha256:236d577289d2988b1604353fd01ba9d5a2b26a794047ce5d7f516e6ed3261920",
+  "mapping_field_count": 16,
+  "mapping_hash": "sha256:dc9c54859a2b7cbb422c002d74fe60b04a7560c1910e70bab620ef9f1100c558",
   "mapping_only_fields": [
     "sub_message.mapping_only_note"
   ],
-  "matched_count": 11,
-  "object_id": "imr_5a4e0e4f5bc6ceaf",
+  "matched_count": 12,
+  "object_id": "imr_0e62740535c7c77a",
   "provenance": {
     "metadata": {},
     "producer": "semantic.compiler",
     "source_hashes": {
-      "catalog": "sha256:79a282dc10b7a28484a17616fc42b19ae857f2d3eb620cd69975511b4b9e577f",
-      "mapping": "sha256:236d577289d2988b1604353fd01ba9d5a2b26a794047ce5d7f516e6ed3261920"
+      "catalog": "sha256:addad1e1f8d27c85769dd635977928bc94ff21285337c5203bfd5ba529cfdbab",
+      "mapping": "sha256:dc9c54859a2b7cbb422c002d74fe60b04a7560c1910e70bab620ef9f1100c558"
     },
     "source_ids": [
-      "mps_236d577289d2988b"
+      "mps_dc9c54859a2b7cbb"
     ]
   },
   "sanitized_descriptions": [

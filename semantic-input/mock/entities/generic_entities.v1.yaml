@@ -1,0 +1,16 @@
+entities:
+  - entity_id: delivery_route
+    version: v1
+    display_name: 发送路由实体
+    description: 通过配置字典把用户提及的路由别名唯一解析为受治理成员值
+    dataset_id: sub_message
+    identifier_field_id: sub_message.route
+    label_field_id: sub_message.route
+    aliases: [route, 路由]
+    member_resolution: dictionary
+    dictionary:
+      route_primary: [primary, 主路由]
+      route_backup: [backup, 备路由]
+    minimum_query_length: 2
+    maximum_candidates: 10
+

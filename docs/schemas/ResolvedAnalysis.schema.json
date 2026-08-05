@@ -1,5 +1,53 @@
 {
   "$defs": {
+    "AggregationParameters": {
+      "additionalProperties": false,
+      "properties": {
+        "keyed": {
+          "default": true,
+          "title": "Keyed",
+          "type": "boolean"
+        },
+        "percents": {
+          "default": [],
+          "items": {
+            "type": "number"
+          },
+          "title": "Percents",
+          "type": "array"
+        },
+        "precision_threshold": {
+          "anyOf": [
+            {
+              "maximum": 40000,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Precision Threshold"
+        },
+        "sigma": {
+          "anyOf": [
+            {
+              "maximum": 10,
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sigma"
+        }
+      },
+      "title": "AggregationParameters",
+      "type": "object"
+    },
     "FieldMaturity": {
       "enum": [
         "MAPPING_ONLY",
@@ -92,6 +140,53 @@
         "producer"
       ],
       "title": "Provenance",
+      "type": "object"
+    },
+    "ResolvedEntityMember": {
+      "additionalProperties": false,
+      "properties": {
+        "entity_id": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+          "title": "Entity Id",
+          "type": "string"
+        },
+        "label": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Label"
+        },
+        "member_id": {
+          "title": "Member Id",
+          "type": "string"
+        },
+        "mention": {
+          "title": "Mention",
+          "type": "string"
+        },
+        "resolution": {
+          "enum": [
+            "exact",
+            "dictionary",
+            "gateway_lookup"
+          ],
+          "title": "Resolution",
+          "type": "string"
+        }
+      },
+      "required": [
+        "entity_id",
+        "mention",
+        "member_id",
+        "resolution"
+      ],
+      "title": "ResolvedEntityMember",
       "type": "object"
     },
     "ResolvedFieldDescriptor": {
@@ -255,6 +350,79 @@
       "title": "ResolvedFilter",
       "type": "object"
     },
+    "ResolvedMeasure": {
+      "additionalProperties": false,
+      "properties": {
+        "aggregation": {
+          "title": "Aggregation",
+          "type": "string"
+        },
+        "approximate": {
+          "default": false,
+          "title": "Approximate",
+          "type": "boolean"
+        },
+        "executable": {
+          "default": true,
+          "title": "Executable",
+          "type": "boolean"
+        },
+        "measure_id": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+          "title": "Measure Id",
+          "type": "string"
+        },
+        "parameters": {
+          "$ref": "#/$defs/AggregationParameters"
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reason"
+        },
+        "semantics": {
+          "title": "Semantics",
+          "type": "string"
+        },
+        "source_field_id": {
+          "anyOf": [
+            {
+              "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source Field Id"
+        },
+        "unit": {
+          "title": "Unit",
+          "type": "string"
+        },
+        "version": {
+          "title": "Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "measure_id",
+        "version",
+        "aggregation",
+        "unit",
+        "semantics"
+      ],
+      "title": "ResolvedMeasure",
+      "type": "object"
+    },
     "ResolvedMetric": {
       "additionalProperties": false,
       "properties": {
@@ -388,6 +556,14 @@
       "title": "Dataset Ids",
       "type": "array"
     },
+    "entities": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/ResolvedEntityMember"
+      },
+      "title": "Entities",
+      "type": "array"
+    },
     "field_descriptors": {
       "items": {
         "$ref": "#/$defs/ResolvedFieldDescriptor"
@@ -407,6 +583,14 @@
         "type": "string"
       },
       "title": "Index Patterns",
+      "type": "array"
+    },
+    "measures": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/ResolvedMeasure"
+      },
+      "title": "Measures",
       "type": "array"
     },
     "method_ids": {

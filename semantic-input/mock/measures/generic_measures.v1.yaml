@@ -1,0 +1,40 @@
+measures:
+  - measure_id: processing_latency
+    version: v1
+    display_name: 处理延迟
+    business_definition: 过滤范围内有值记录的处理延迟字段聚合
+    source_field_id: sub_message.latency_ms
+    allowed_aggregations: [value_count, sum, avg, min, max, stats, extended_stats, percentiles]
+    default_aggregation: avg
+    unit: milliseconds
+    population_scope: non_null_filtered_documents
+    semantics: non_additive
+    owner: framework
+  - measure_id: generic_quality_score
+    version: v1
+    display_name: 通用质量评分
+    business_definition: 由配置新接入的通用数值字段聚合，用于验证核心代码无需认识字段名
+    source_field_id: sub_message.quality_score
+    allowed_aggregations: [value_count, sum, avg, min, max, stats, extended_stats, percentiles]
+    default_aggregation: avg
+    default_parameters:
+      keyed: true
+    unit: score
+    population_scope: non_null_filtered_documents
+    semantics: non_additive
+    owner: mock-fixture
+  - measure_id: unique_message_identifier
+    version: v1
+    display_name: 去重消息标识数
+    business_definition: 过滤范围内消息标识的近似基数，仅用于演示受治理字段级 cardinality
+    source_field_id: sub_message.message_id
+    allowed_aggregations: [cardinality]
+    default_aggregation: cardinality
+    default_parameters:
+      precision_threshold: 3000
+    unit: count
+    population_scope: non_null_filtered_documents
+    semantics: non_additive
+    approximate: true
+    owner: framework
+

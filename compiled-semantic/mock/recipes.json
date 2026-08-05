@@ -5,6 +5,7 @@
       "time",
       "status_group"
     ],
+    "measure_ids": [],
     "method_ids": [
       "rank",
       "contribution"

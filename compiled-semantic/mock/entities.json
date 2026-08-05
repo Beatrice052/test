@@ -1,0 +1,29 @@
+[
+  {
+    "aliases": [
+      "route",
+      "路由"
+    ],
+    "dataset_id": "sub_message",
+    "description": "通过配置字典把用户提及的路由别名唯一解析为受治理成员值",
+    "dictionary": {
+      "route_backup": [
+        "backup",
+        "备路由"
+      ],
+      "route_primary": [
+        "primary",
+        "主路由"
+      ]
+    },
+    "display_name": "发送路由实体",
+    "enabled": true,
+    "entity_id": "delivery_route",
+    "identifier_field_id": "sub_message.route",
+    "label_field_id": "sub_message.route",
+    "maximum_candidates": 10,
+    "member_resolution": "dictionary",
+    "minimum_query_length": 2,
+    "version": "v1"
+  }
+]

@@ -6,6 +6,7 @@ from typing import Literal
 from pydantic import Field
 
 from app.contracts.common import Identifier, StrictModel, TimeRange, VersionedModel
+from app.contracts.metric import AggregationParameters
 from app.contracts.semantic import FieldMaturity, MappingCompatibility, SemanticType
 
 type GovernedChartType = Literal[
@@ -77,12 +78,28 @@ class MetricDecision(StrictModel):
     confidence: float = Field(ge=0, le=1)
 
 
+class MeasureDecision(StrictModel):
+    measure_id: Identifier
+    aggregation: str | None = None
+    decision: Literal["required", "recommended", "optional", "rejected", "downgraded"]
+    role: str
+    reason: str
+    confidence: float = Field(ge=0, le=1)
+
+
+class EntityReference(StrictModel):
+    entity_id: Identifier
+    mention: str
+    resolved_member_id: str | None = None
+
+
 class AnalyticalTask(StrictModel):
     task_id: Identifier
     analytical_question: str
     analysis_type: str
     priority: Literal["required", "recommended", "optional"]
     metric_ids: tuple[Identifier, ...] = ()
+    measure_ids: tuple[Identifier, ...] = ()
     dimension_ids: tuple[Identifier, ...] = ()
     grain: tuple[str, ...] = ()
     statistical_method_ids: tuple[Identifier, ...] = ()
@@ -117,6 +134,8 @@ class AnalysisPlanDraft(StrictModel):
     turn_relation: TurnKind
     scope: AnalysisScope
     metric_decisions: tuple[MetricDecision, ...]
+    measure_decisions: tuple[MeasureDecision, ...] = ()
+    entity_references: tuple[EntityReference, ...] = ()
     tasks: tuple[AnalyticalTask, ...]
     presentation_preference: PresentationPreference = Field(default_factory=PresentationPreference)
     clarification: Clarification | None = None
@@ -131,6 +150,8 @@ class AnalysisPlan(VersionedModel):
     turn_relation: TurnKind
     scope: AnalysisScope
     metric_decisions: tuple[MetricDecision, ...]
+    measure_decisions: tuple[MeasureDecision, ...] = ()
+    entity_references: tuple[EntityReference, ...] = ()
     tasks: tuple[AnalyticalTask, ...]
     presentation_preference: PresentationPreference = Field(default_factory=PresentationPreference)
     clarification: Clarification | None = None
@@ -163,6 +184,27 @@ class ResolvedMetric(StrictModel):
     reason: str | None = None
 
 
+class ResolvedMeasure(StrictModel):
+    measure_id: Identifier
+    version: str
+    source_field_id: Identifier | None = None
+    aggregation: str
+    parameters: AggregationParameters = Field(default_factory=AggregationParameters)
+    unit: str
+    semantics: str
+    approximate: bool = False
+    executable: bool = True
+    reason: str | None = None
+
+
+class ResolvedEntityMember(StrictModel):
+    entity_id: Identifier
+    mention: str
+    member_id: str
+    label: str | None = None
+    resolution: Literal["exact", "dictionary", "gateway_lookup"]
+
+
 class ResolvedFieldDescriptor(StrictModel):
     """Bounded semantic facts supplied to Agent B; never a physical field binding."""
 
@@ -188,6 +230,8 @@ class ResolvedAnalysis(VersionedModel):
     resolved_field_ids: tuple[Identifier, ...]
     field_descriptors: tuple[ResolvedFieldDescriptor, ...]
     metrics: tuple[ResolvedMetric, ...]
+    measures: tuple[ResolvedMeasure, ...] = ()
+    entities: tuple[ResolvedEntityMember, ...] = ()
     filters: tuple[ResolvedFilter, ...]
     time_field_id: Identifier
     time_range: TimeRange

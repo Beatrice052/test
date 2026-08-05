@@ -1,0 +1,104 @@
+{
+  "additionalProperties": false,
+  "description": "Config-only entity/member resolution definition.",
+  "properties": {
+    "aliases": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Aliases",
+      "type": "array"
+    },
+    "dataset_id": {
+      "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+      "title": "Dataset Id",
+      "type": "string"
+    },
+    "description": {
+      "title": "Description",
+      "type": "string"
+    },
+    "dictionary": {
+      "additionalProperties": {
+        "items": {
+          "type": "string"
+        },
+        "type": "array"
+      },
+      "title": "Dictionary",
+      "type": "object"
+    },
+    "display_name": {
+      "title": "Display Name",
+      "type": "string"
+    },
+    "enabled": {
+      "default": true,
+      "title": "Enabled",
+      "type": "boolean"
+    },
+    "entity_id": {
+      "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+      "title": "Entity Id",
+      "type": "string"
+    },
+    "identifier_field_id": {
+      "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+      "title": "Identifier Field Id",
+      "type": "string"
+    },
+    "label_field_id": {
+      "anyOf": [
+        {
+          "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Label Field Id"
+    },
+    "maximum_candidates": {
+      "default": 20,
+      "maximum": 100,
+      "minimum": 1,
+      "title": "Maximum Candidates",
+      "type": "integer"
+    },
+    "member_resolution": {
+      "default": "exact",
+      "enum": [
+        "exact",
+        "dictionary",
+        "gateway_lookup"
+      ],
+      "title": "Member Resolution",
+      "type": "string"
+    },
+    "minimum_query_length": {
+      "default": 2,
+      "maximum": 128,
+      "minimum": 1,
+      "title": "Minimum Query Length",
+      "type": "integer"
+    },
+    "version": {
+      "pattern": "^v[1-9][0-9]*$",
+      "title": "Version",
+      "type": "string"
+    }
+  },
+  "required": [
+    "entity_id",
+    "version",
+    "display_name",
+    "description",
+    "dataset_id",
+    "identifier_field_id"
+  ],
+  "title": "EntityDefinition",
+  "type": "object"
+}

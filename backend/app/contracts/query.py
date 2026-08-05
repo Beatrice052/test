@@ -6,6 +6,7 @@ from typing import Literal
 from pydantic import Field
 
 from app.contracts.common import Identifier, JsonValue, StrictModel, TimeRange, VersionedModel
+from app.contracts.metric import AggregationSpec
 
 
 class QueryStepStatus(StrEnum):
@@ -42,6 +43,7 @@ class QueryStep(StrictModel):
     filters: tuple[QueryFilter, ...]
     dimensions: tuple[Identifier, ...]
     measures: tuple[Identifier, ...]
+    field_measures: tuple[AggregationSpec, ...] = ()
     grain: tuple[str, ...]
     result_contract_id: Identifier
     depends_on: tuple[Identifier, ...] = ()
@@ -79,6 +81,7 @@ class QuerySemantics(StrictModel):
     time_field_id: Identifier
     field_ids: tuple[Identifier, ...]
     metric_ids: tuple[Identifier, ...]
+    field_measures: tuple[AggregationSpec, ...] = ()
     filter_fingerprint: str
     grain: tuple[str, ...]
     bucket_path: tuple[BucketPathItem, ...]

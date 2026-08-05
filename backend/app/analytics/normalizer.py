@@ -49,7 +49,7 @@ class ResultNormalizer:
                     contract,
                     {},
                     self._record_count(parsed.raw.aggregations),
-                    self._metric_values(parsed.raw.aggregations),
+                    self._metric_values(parsed.raw.aggregations, contract),
                 )
             )
         row_ids = [row.row_id for row in rows]
@@ -112,7 +112,7 @@ class ResultNormalizer:
                     contract,
                     dimensions,
                     self._record_count(node),
-                    self._metric_values(node),
+                    self._metric_values(node, contract),
                 )
             )
             return
@@ -248,25 +248,56 @@ class ResultNormalizer:
         contract: DatasetContract,
         dimensions: Mapping[str, JsonValue],
         record_count: int,
-        raw_metrics: Mapping[str, JsonValue],
+        metric_values: Mapping[str, JsonValue],
     ) -> DatasetRow:
         values: dict[str, JsonValue] = {**dimensions, "record_count": record_count}
-        if raw_metrics:
-            values["raw_metrics"] = dict(raw_metrics)
+        values.update(metric_values)
         return DatasetRow(
             row_id=stable_row_id(contract.dataset_id, contract.primary_key, dimensions),
             values=values,
         )
 
     @staticmethod
-    def _metric_values(node: Mapping[str, Any]) -> dict[str, JsonValue]:
+    def _metric_values(node: Mapping[str, Any], contract: DatasetContract) -> dict[str, JsonValue]:
         values: dict[str, JsonValue] = {}
+        governed_names = {
+            column.aggregation_name
+            for column in contract.columns
+            if column.aggregation_name is not None
+        }
+        for column in contract.columns:
+            aggregation_name = column.aggregation_name
+            if aggregation_name in {None, "_bucket_doc_count"}:
+                continue
+            assert aggregation_name is not None
+            child = node.get(aggregation_name)
+            if not isinstance(child, Mapping) or column.aggregation_result_path is None:
+                raise DatasetContractViolation(
+                    f"required measure aggregation is missing: {aggregation_name}"
+                )
+            value: Any = child
+            for segment in column.aggregation_result_path.split("."):
+                if not isinstance(value, Mapping):
+                    value = None
+                    break
+                if segment in value:
+                    value = value[segment]
+                    continue
+                decimal_key = f"{segment}.0"
+                value = value.get(decimal_key)
+            if isinstance(value, str | int | float | bool) or value is None:
+                values[column.name] = value
+            else:
+                raise DatasetContractViolation(f"measure value is not scalar: {column.name}")
+        legacy_values: dict[str, JsonValue] = {}
         for name, child in node.items():
-            if not isinstance(child, Mapping) or "value" not in child:
+            if name in governed_names or not isinstance(child, Mapping) or "value" not in child:
                 continue
             value = child.get("value")
             if isinstance(value, str | int | float | bool) or value is None:
-                values[name] = value
+                legacy_values[name] = value
+        if legacy_values:
+            values["raw_metrics"] = legacy_values
         return values
 
 

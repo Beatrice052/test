@@ -122,6 +122,15 @@
           "title": "Grain",
           "type": "array"
         },
+        "measure_ids": {
+          "default": [],
+          "items": {
+            "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+            "type": "string"
+          },
+          "title": "Measure Ids",
+          "type": "array"
+        },
         "metric_ids": {
           "default": [],
           "items": {

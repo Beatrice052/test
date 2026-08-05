@@ -1,0 +1,14 @@
+entities:
+  - entity_id: example_entity
+    version: v1
+    display_name: REPLACE_WITH_ENTITY_NAME
+    description: REPLACE_WITH_ENTITY_DESCRIPTION
+    dataset_id: sub_message
+    identifier_field_id: sub_message.replace_with_identifier_field
+    label_field_id: sub_message.replace_with_label_field
+    aliases: []
+    member_resolution: exact
+    dictionary: {}
+    minimum_query_length: 2
+    maximum_candidates: 20
+    enabled: false

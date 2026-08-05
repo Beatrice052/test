@@ -1,38 +1,40 @@
 {
-  "catalog_hash": "sha256:79a282dc10b7a28484a17616fc42b19ae857f2d3eb620cd69975511b4b9e577f",
+  "catalog_hash": "sha256:addad1e1f8d27c85769dd635977928bc94ff21285337c5203bfd5ba529cfdbab",
   "compiled_at": "2026-07-31T00:00:00Z",
-  "content_hash": "sha256:eb33e93bdb36bb290b5e1098883ad535b0946d9bd4e93e343a271fc4d02cb3da",
+  "content_hash": "sha256:408942842315e6fccb5b7afd73067099816fdcfcef24aeb13abfd015dcb46152",
   "created_at": "2026-07-31T00:00:00Z",
   "dataset_ids": [
     "sub_message"
   ],
   "file_hashes": {
     "datasets.json": "sha256:88e518653eea1ceb61ff25349254304c78ac0e9eff1ff5d40c0df81e1ed45b67",
-    "fields.json": "sha256:963113a9af463372cd4315da97fa4cbe41ac28f3d094ec142a5066fbb6643527",
-    "import_report.json": "sha256:bab84401ec3267d1d2fbb469c9588eae1464aad4cfa3ba1dc884e8e0329e6db7",
-    "methods.json": "sha256:af5548cf81e835b901318e5e576f87efe9f19a1c8a2541dcc81facef0982ce4a",
-    "metrics.json": "sha256:898c7515e03f3607d570b9b83b4ad98823be0511681413a794f3b630988d7db8",
+    "entities.json": "sha256:e2d8c06d7f59b348b83c051562409f6626db9525972cabcf3c2ba20a1e2c26a6",
+    "fields.json": "sha256:484b72adfa98ed2d88aed0fdb5ddcd3eebc76ef58abe416b58cec9dae1f6ef30",
+    "import_report.json": "sha256:94b489b8e1d21b26c6acce005a1691d6d025e8a9d775617c003a7871c3161d57",
+    "measures.json": "sha256:cffef885501f86663d48142e12bdbe2b426264e863224f94d8802d7f5ac476f2",
+    "methods.json": "sha256:60735c4e13d2884a72cd42ef8879154bac43a3f4385cf1dd1d22a762626bcf3e",
+    "metrics.json": "sha256:05c78a74532c5e663556b25d76c0363e40e87eabe06159425c81cf5329c5a8a9",
     "policies.json": "sha256:392d952195fa8e80ef6e0fd98c29fdc8372e1bf005afbc4e2c227fdba9b08ddc",
-    "recipes.json": "sha256:f3c867b35ccc16de8aa61ac063b656433a66395baf819071bb8ac10382961b0b",
-    "retrieval_documents.jsonl": "sha256:b9d4e6fcce41437b415c2303e0e5f32ff810dd412df2419c9b4ab187a78710e5",
+    "recipes.json": "sha256:fe89f860834f63a2a6b5a1d27059348364ed5100065d989ca2c780142529f0e1",
+    "retrieval_documents.jsonl": "sha256:5389689121bee1b4d1d2f85ca8d6903ec711aaa7f7cc29abf7a5ef75eb659062",
     "values.json": "sha256:9b2060ba179f2555fa74403af08f497d1b627b394786f8c1a5fa0e2d54852578",
     "visualizations.json": "sha256:fe3c5beeceb32cfbc26aa1114a9b091ad18a68cf987ef7ab44f463df90f6ab8b"
   },
   "fts_schema_version": "1",
-  "mapping_hash": "sha256:236d577289d2988b1604353fd01ba9d5a2b26a794047ce5d7f516e6ed3261920",
-  "object_id": "spm_eb33e93bdb36bb29",
-  "package_version": "sp_eb33e93bdb36bb29",
+  "mapping_hash": "sha256:dc9c54859a2b7cbb422c002d74fe60b04a7560c1910e70bab620ef9f1100c558",
+  "object_id": "spm_408942842315e6fc",
+  "package_version": "sp_408942842315e6fc",
   "provenance": {
     "metadata": {},
     "producer": "semantic.compiler",
     "source_hashes": {
-      "catalog": "sha256:79a282dc10b7a28484a17616fc42b19ae857f2d3eb620cd69975511b4b9e577f",
-      "mapping": "sha256:236d577289d2988b1604353fd01ba9d5a2b26a794047ce5d7f516e6ed3261920"
+      "catalog": "sha256:addad1e1f8d27c85769dd635977928bc94ff21285337c5203bfd5ba529cfdbab",
+      "mapping": "sha256:dc9c54859a2b7cbb422c002d74fe60b04a7560c1910e70bab620ef9f1100c558"
     },
     "source_ids": [
-      "mps_236d577289d2988b"
+      "mps_dc9c54859a2b7cbb"
     ]
   },
-  "registry_hash": "sha256:cb9afe175a88c89fbb4f6fc6abe910726023810e35277308315a226b7f810930",
+  "registry_hash": "sha256:98e8db7bbd349bbd97cbc7acaae2489822b258f3885e0dbb224e1222bec7a247",
   "schema_version": "1.0"
 }

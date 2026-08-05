@@ -50,6 +50,130 @@
       "title": "AdvancedEvidence",
       "type": "object"
     },
+    "AggregationKind": {
+      "enum": [
+        "document_count",
+        "value_count",
+        "cardinality",
+        "sum",
+        "avg",
+        "min",
+        "max",
+        "stats",
+        "extended_stats",
+        "percentiles"
+      ],
+      "title": "AggregationKind",
+      "type": "string"
+    },
+    "AggregationParameters": {
+      "additionalProperties": false,
+      "properties": {
+        "keyed": {
+          "default": true,
+          "title": "Keyed",
+          "type": "boolean"
+        },
+        "percents": {
+          "default": [],
+          "items": {
+            "type": "number"
+          },
+          "title": "Percents",
+          "type": "array"
+        },
+        "precision_threshold": {
+          "anyOf": [
+            {
+              "maximum": 40000,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Precision Threshold"
+        },
+        "sigma": {
+          "anyOf": [
+            {
+              "maximum": 10,
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sigma"
+        }
+      },
+      "title": "AggregationParameters",
+      "type": "object"
+    },
+    "AggregationSemantics": {
+      "enum": [
+        "additive",
+        "semi_additive",
+        "non_additive",
+        "weighted"
+      ],
+      "title": "AggregationSemantics",
+      "type": "string"
+    },
+    "AggregationSpec": {
+      "additionalProperties": false,
+      "description": "A logical, governed field aggregation. It never contains a physical path.",
+      "properties": {
+        "aggregation": {
+          "$ref": "#/$defs/AggregationKind"
+        },
+        "approximate": {
+          "default": false,
+          "title": "Approximate",
+          "type": "boolean"
+        },
+        "measure_id": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+          "title": "Measure Id",
+          "type": "string"
+        },
+        "parameters": {
+          "$ref": "#/$defs/AggregationParameters"
+        },
+        "semantics": {
+          "$ref": "#/$defs/AggregationSemantics",
+          "default": "non_additive"
+        },
+        "source_field_id": {
+          "anyOf": [
+            {
+              "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source Field Id"
+        },
+        "unit": {
+          "default": "number",
+          "title": "Unit",
+          "type": "string"
+        }
+      },
+      "required": [
+        "measure_id",
+        "aggregation"
+      ],
+      "title": "AggregationSpec",
+      "type": "object"
+    },
     "AnalysisBudget": {
       "additionalProperties": false,
       "properties": {
@@ -116,12 +240,28 @@
           "title": "Created At",
           "type": "string"
         },
+        "entity_references": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/EntityReference"
+          },
+          "title": "Entity References",
+          "type": "array"
+        },
         "limitations": {
           "default": [],
           "items": {
             "type": "string"
           },
           "title": "Limitations",
+          "type": "array"
+        },
+        "measure_decisions": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/MeasureDecision"
+          },
+          "title": "Measure Decisions",
           "type": "array"
         },
         "metric_decisions": {
@@ -251,6 +391,15 @@
           "title": "Grain",
           "type": "array"
         },
+        "measure_ids": {
+          "default": [],
+          "items": {
+            "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+            "type": "string"
+          },
+          "title": "Measure Ids",
+          "type": "array"
+        },
         "metric_ids": {
           "default": [],
           "items": {
@@ -306,6 +455,18 @@
       "additionalProperties": false,
       "description": "Auditable result returned by the host's governed analytics tool.",
       "properties": {
+        "category_column": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Category Column"
+        },
         "content_hash": {
           "pattern": "^sha256:[0-9a-f]{64}$",
           "title": "Content Hash",
@@ -339,6 +500,14 @@
           "title": "Object Id",
           "type": "string"
         },
+        "partition_columns": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Partition Columns",
+          "type": "array"
+        },
         "provenance": {
           "$ref": "#/$defs/Provenance"
         },
@@ -367,6 +536,18 @@
           },
           "title": "Task Ids",
           "type": "array"
+        },
+        "time_column": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Time Column"
         }
       },
       "required": [
@@ -1150,6 +1331,66 @@
     "DatasetColumn": {
       "additionalProperties": false,
       "properties": {
+        "aggregation": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Aggregation"
+        },
+        "aggregation_name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Aggregation Name"
+        },
+        "aggregation_parameters": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Aggregation Parameters",
+          "type": "object"
+        },
+        "aggregation_result_path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Aggregation Result Path"
+        },
+        "aggregation_semantics": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Aggregation Semantics"
+        },
+        "approximate": {
+          "default": false,
+          "title": "Approximate",
+          "type": "boolean"
+        },
         "business_domain": {
           "anyOf": [
             {
@@ -1199,6 +1440,19 @@
           "default": null,
           "title": "Field Id"
         },
+        "measure_id": {
+          "anyOf": [
+            {
+              "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Measure Id"
+        },
         "metric_id": {
           "anyOf": [
             {
@@ -1220,6 +1474,18 @@
           "default": false,
           "title": "Nullable",
           "type": "boolean"
+        },
+        "population_scope": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Population Scope"
         },
         "security_classification": {
           "default": "internal",
@@ -1253,6 +1519,28 @@
           ],
           "default": null,
           "title": "Semantic Type"
+        },
+        "source_field_id": {
+          "anyOf": [
+            {
+              "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source Field Id"
+        },
+        "source_grain": {
+          "default": [],
+          "items": {
+            "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+            "type": "string"
+          },
+          "title": "Source Grain",
+          "type": "array"
         },
         "unit": {
           "anyOf": [
@@ -1307,6 +1595,38 @@
         "values"
       ],
       "title": "DatasetRow",
+      "type": "object"
+    },
+    "EntityReference": {
+      "additionalProperties": false,
+      "properties": {
+        "entity_id": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+          "title": "Entity Id",
+          "type": "string"
+        },
+        "mention": {
+          "title": "Mention",
+          "type": "string"
+        },
+        "resolved_member_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Resolved Member Id"
+        }
+      },
+      "required": [
+        "entity_id",
+        "mention"
+      ],
+      "title": "EntityReference",
       "type": "object"
     },
     "EvidencePackage": {
@@ -1488,6 +1808,18 @@
           "title": "Columns",
           "type": "array"
         },
+        "completeness": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Completeness"
+        },
         "content_hash": {
           "pattern": "^sha256:[0-9a-f]{64}$",
           "title": "Content Hash",
@@ -1502,6 +1834,14 @@
           "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
           "title": "Dataset Id",
           "type": "string"
+        },
+        "grain": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Grain",
+          "type": "array"
         },
         "object_id": {
           "pattern": "^[a-z][a-z0-9_-]{2,127}$",
@@ -1553,6 +1893,15 @@
             "$ref": "#/$defs/StatisticalResult"
           },
           "title": "Statistical Results",
+          "type": "array"
+        },
+        "task_ids": {
+          "default": [],
+          "items": {
+            "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+            "type": "string"
+          },
+          "title": "Task Ids",
           "type": "array"
         },
         "time_features": {
@@ -1807,6 +2156,62 @@
         "reason"
       ],
       "title": "KpiSelectionDraft",
+      "type": "object"
+    },
+    "MeasureDecision": {
+      "additionalProperties": false,
+      "properties": {
+        "aggregation": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Aggregation"
+        },
+        "confidence": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Confidence",
+          "type": "number"
+        },
+        "decision": {
+          "enum": [
+            "required",
+            "recommended",
+            "optional",
+            "rejected",
+            "downgraded"
+          ],
+          "title": "Decision",
+          "type": "string"
+        },
+        "measure_id": {
+          "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+          "title": "Measure Id",
+          "type": "string"
+        },
+        "reason": {
+          "title": "Reason",
+          "type": "string"
+        },
+        "role": {
+          "title": "Role",
+          "type": "string"
+        }
+      },
+      "required": [
+        "measure_id",
+        "decision",
+        "role",
+        "reason",
+        "confidence"
+      ],
+      "title": "MeasureDecision",
       "type": "object"
     },
     "MetricDecision": {
@@ -2154,6 +2559,14 @@
           "title": "Estimated Buckets",
           "type": "integer"
         },
+        "field_measures": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/AggregationSpec"
+          },
+          "title": "Field Measures",
+          "type": "array"
+        },
         "filters": {
           "items": {
             "$ref": "#/$defs/QueryFilter"
@@ -2328,6 +2741,19 @@
           "title": "Applicability",
           "type": "string"
         },
+        "calculation_table_id": {
+          "anyOf": [
+            {
+              "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Calculation Table Id"
+        },
         "exploratory": {
           "default": true,
           "title": "Exploratory",
@@ -2338,10 +2764,31 @@
           "title": "Method Id",
           "type": "string"
         },
+        "result_id": {
+          "anyOf": [
+            {
+              "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Result Id"
+        },
         "sample_size": {
           "minimum": 0,
           "title": "Sample Size",
           "type": "integer"
+        },
+        "value_paths": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Value Paths",
+          "type": "array"
         },
         "values": {
           "additionalProperties": {
