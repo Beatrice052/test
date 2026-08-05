@@ -105,6 +105,7 @@ async function installApi(page: Page) {
         metric_definitions: [{ metric_id: "failure_rate", display_name: "失败率", business_definition: "失败消息占比" }],
         data_tables: ["message_health"],
         quality: [{ rule_id: "non_negative", passed: true, message: "所有指标均为非负数" }],
+        quality_summary: { status: "VALID", material_warnings: [], blocked_reasons: [], completeness: ["message_health: COMPLETE"], reconciliation_summary: [] },
         downloads: ["/api/v1/datasets/ds_restored/csv"],
       },
       advanced: {
@@ -141,6 +142,7 @@ test("G02/G15/G25 restores isolated sessions and renders safe evidence-backed re
   await expect(page.getByRole("heading", { name: "OpenSearch 返回了什么" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "指标是怎么得到的" })).toBeVisible();
   await expect(page.getByText("25 ÷ 1,000 = 2.5%")).toBeVisible();
+  await expect(page.getByText("所有指标均为非负数")).toHaveCount(0);
   await page.getByRole("tab", { name: /高级证据/ }).click();
   await expect(page.getByRole("heading", { name: "实际检索 DSL" })).toBeVisible();
   await expect(page.getByRole("dialog").locator("pre").filter({ hasText: '"size": 0' })).toBeVisible();

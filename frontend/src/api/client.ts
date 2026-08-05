@@ -181,9 +181,9 @@ export const workspaceApi = {
       `/answers/${encodeURIComponent(answerId)}/evidence`,
       withSignal(signal),
     ),
-  getDatasetRows: (datasetId: string, signal?: AbortSignal) =>
+  getDatasetRows: (datasetId: string, signal?: AbortSignal, offset = 0, limit = 200) =>
     request<DatasetRowsResponse>(
-      `/datasets/${encodeURIComponent(datasetId)}/rows?offset=0&limit=200`,
+      `/datasets/${encodeURIComponent(datasetId)}/rows?offset=${String(offset)}&limit=${String(limit)}`,
       withSignal(signal),
     ),
   datasetCsvUrl: (datasetId: string) =>

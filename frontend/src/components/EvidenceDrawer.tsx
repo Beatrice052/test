@@ -57,7 +57,15 @@ function EvidenceTableBrowser({ datasets }: { datasets: DatasetRowsResponse[] })
     return left.kind === "base" ? -1 : 1;
   });
   const [selectedId, setSelectedId] = useState(ordered[0]?.dataset_id ?? "");
-  const selected = ordered.find((item) => item.dataset_id === selectedId) ?? ordered[0];
+  const [offset, setOffset] = useState(0);
+  const selectedPreview = ordered.find((item) => item.dataset_id === selectedId) ?? ordered[0];
+  const selectedQuery = useQuery({
+    queryKey: ["dataset", selectedPreview?.object_id, offset],
+    queryFn: ({ signal }) => workspaceApi.getDatasetRows(selectedPreview?.object_id ?? "", signal, offset, 100),
+    enabled: selectedPreview !== undefined,
+    staleTime: Number.POSITIVE_INFINITY,
+  });
+  const selected = selectedQuery.data ?? selectedPreview;
   if (selected === undefined) return <p className="drawer-empty">暂时没有可展示的数据表。</p>;
 
   return (
@@ -67,7 +75,7 @@ function EvidenceTableBrowser({ datasets }: { datasets: DatasetRowsResponse[] })
           <span>01 · 数据</span>
           <h3 id="evidence-data-title">OpenSearch 返回了什么</h3>
         </div>
-        <a className="download-link" href={workspaceApi.datasetCsvUrl(selected.dataset_id)}>下载当前表</a>
+        <a className="download-link" href={workspaceApi.datasetCsvUrl(selected.object_id)}>下载完整表</a>
       </div>
       <p className="evidence-help">
         “原始检索结果”指 OpenSearch 返回的受控聚合桶；系统默认执行 size=0 聚合查询，不在业务证据中暴露原始文档。
@@ -77,7 +85,7 @@ function EvidenceTableBrowser({ datasets }: { datasets: DatasetRowsResponse[] })
         id="evidence-dataset"
         className="evidence-select"
         value={selected.dataset_id}
-        onChange={(event) => setSelectedId(event.target.value)}
+        onChange={(event) => { setSelectedId(event.target.value); setOffset(0); }}
       >
         {ordered.map((dataset) => (
           <option key={dataset.dataset_id} value={dataset.dataset_id}>
@@ -91,6 +99,11 @@ function EvidenceTableBrowser({ datasets }: { datasets: DatasetRowsResponse[] })
         <span>{selected.complete ? "结果完整" : "结果可能被截断"}</span>
       </div>
       <DataTable dataset={selected} hiddenColumns={["metric_metadata", "raw_metrics"]} />
+      <div className="evidence-pagination" aria-label="证据表分页">
+        <button type="button" disabled={offset === 0 || selectedQuery.isFetching} onClick={() => setOffset(Math.max(0, offset - 100))}>上一页</button>
+        <span>{offset + 1}–{Math.min(offset + selected.rows.length, selected.total)} / {selected.total}</span>
+        <button type="button" disabled={offset + selected.rows.length >= selected.total || selectedQuery.isFetching} onClick={() => setOffset(offset + 100)}>下一页</button>
+      </div>
     </section>
   );
 }
@@ -108,7 +121,7 @@ function BusinessEvidenceContent({ evidence }: { evidence: BusinessEvidence }) {
     .map((query) => query.data)
     .filter((item): item is DatasetRowsResponse => item !== undefined);
   const calculations = extractMetricCalculations(evidence, datasets);
-  const quality = evidence.quality ?? [];
+  const qualitySummary = evidence.quality_summary;
   const reconciliations = evidence.reconciliations ?? [];
   const exploratoryAnalysis = evidence.exploratory_analysis ?? [];
   const loading = datasetQueries.some((query) => query.isPending);
@@ -124,6 +137,21 @@ function BusinessEvidenceContent({ evidence }: { evidence: BusinessEvidence }) {
       {loading ? <div className="drawer-state">正在载入检索结果与指标证据…</div> : null}
       {failed ? <div className="drawer-state error-text">部分证据数据暂时无法读取。</div> : null}
       {datasets.length > 0 ? <EvidenceTableBrowser datasets={datasets} /> : null}
+      <section className="evidence-section" aria-labelledby="source-query-title">
+        <div className="evidence-section-heading"><div><span>01A · 取数</span><h3 id="source-query-title">Source Queries 与原始聚合结果</h3></div></div>
+        <div className="calculation-list">
+          {(evidence.source_queries ?? []).map((query) => (
+            <article className="calculation-card" key={query.query_id}>
+              <div className="calculation-title"><strong>{query.query_step_id}</strong><span>{query.complete ? "COMPLETE" : "PARTIAL"}</span></div>
+              <p>{query.indices.join("、")} · {query.row_count} 行 · {query.bucket_count} buckets · {query.page_count} pages</p>
+              <p>grain：{(query.grain ?? []).join(" × ") || "整体"}；timezone：{query.timezone}</p>
+              <code>{query.query_fingerprint}</code>
+              <details><summary>查询范围、过滤和度量</summary><pre>{JSON.stringify({ time_range: query.time_range, filters: query.filters, dimensions: query.dimensions, metrics: query.metrics, measures: query.measures, safe_query_summary: query.safe_query_summary }, null, 2)}</pre></details>
+              {query.raw_result_artifact === null || query.raw_result_artifact === undefined ? null : <a className="download-link" href={query.raw_result_artifact.download_url}>下载完整 OpenSearch aggregation JSON</a>}
+            </article>
+          ))}
+        </div>
+      </section>
       <section className="evidence-section" aria-labelledby="metric-calculation-title">
         <div className="evidence-section-heading">
           <div><span>02 · 计算</span><h3 id="metric-calculation-title">指标是怎么得到的</h3></div>
@@ -140,6 +168,35 @@ function BusinessEvidenceContent({ evidence }: { evidence: BusinessEvidence }) {
             </article>
           ))}
           {!loading && calculations.length === 0 ? <p className="drawer-empty">本次没有可展示的正式指标计算。</p> : null}
+        </div>
+      </section>
+      <section className="evidence-section" aria-labelledby="calculation-table-title">
+        <div className="evidence-section-heading"><div><span>02A · 表格</span><h3 id="calculation-table-title">Calculated Tables</h3></div></div>
+        <p className="evidence-help">每张表记录来源、grain、输入输出列、方法或指标版本及 content hash，可下载完整结果重算。</p>
+        <div className="calculation-list">
+          {(evidence.calculated_tables ?? []).map((table) => (
+            <article className="calculation-card" key={table.calculation_id}>
+              <div className="calculation-title"><strong>{table.calculation_id}</strong><span>{table.complete ? "COMPLETE" : "PARTIAL"}</span></div>
+              <p>grain：{table.grain.join(" × ") || "整体"}；输出：{table.output_columns.join("、")}</p>
+              <p>来源：{table.source_table_ids.join("、") || "无"}；输入：{table.input_columns.join("、") || "无"}</p>
+              <p>口径：{(table.definition_ids ?? []).join("、") || "确定性基础转换"}</p>
+              <code>{table.content_hash}</code>
+              <details><summary>计算参数与 row IDs</summary><pre>{JSON.stringify({ parameters: table.parameters, row_ids: table.row_ids }, null, 2)}</pre></details>
+              <a className="download-link" href={table.artifact.download_url}>下载计算表</a>
+            </article>
+          ))}
+        </div>
+      </section>
+      <section className="evidence-section" aria-labelledby="definition-title">
+        <div className="evidence-section-heading"><div><span>03A · 口径</span><h3 id="definition-title">Metric & Method Definitions</h3></div></div>
+        <div className="calculation-list">
+          {(evidence.technical_definitions ?? []).map((definition) => (
+            <article className="calculation-card" key={definition.definition_id}>
+              <div className="calculation-title"><strong>{definition.display_name}</strong><span>{definition.definition_type} · {definition.version}</span></div>
+              <p>{definition.purpose_or_business_definition}</p><code>{definition.technical_expression}</code>
+              <details><summary>完整技术口径</summary><pre>{JSON.stringify(definition.details, null, 2)}</pre></details>
+            </article>
+          ))}
         </div>
       </section>
       <section className="evidence-section" aria-labelledby="evidence-analysis-title">
@@ -162,22 +219,40 @@ function BusinessEvidenceContent({ evidence }: { evidence: BusinessEvidence }) {
           {exploratoryAnalysis.length === 0 ? <p className="drawer-empty">本次没有额外的探索性统计计算。</p> : null}
         </div>
       </section>
+      <section className="evidence-section" aria-labelledby="claim-trace-title">
+        <div className="evidence-section-heading"><div><span>04 · 追踪</span><h3 id="claim-trace-title">Claim Trace</h3></div></div>
+        <div className="calculation-list">
+          {(evidence.claim_trace ?? []).map((trace) => (
+            <article className="calculation-card" key={trace.claim_id}>
+              <strong>{trace.text}</strong><p>{trace.evidence_refs.length} 个 cell/statistic 绑定</p><small>{(trace.definition_ids ?? []).join("、")}</small>
+              <ul>{trace.evidence_refs.map((reference, index) => <li key={`${trace.claim_id}-${String(index)}`}><code>{[reference.table_id, reference.row_id, reference.column, reference.value_path, reference.artifact_id].map(asString).filter((value): value is string => value !== null && value.length > 0).join(" · ")}</code></li>)}</ul>
+            </article>
+          ))}
+        </div>
+      </section>
       <section className="evidence-section" aria-labelledby="evidence-qa-title">
         <div className="evidence-section-heading">
-          <div><span>04 · 核验</span><h3 id="evidence-qa-title">质量与对账</h3></div>
+          <div><span>05 · 限制</span><h3 id="evidence-qa-title">Important Limitations</h3></div>
         </div>
+        <p className="evidence-help">完整 QA checklist 保留在后台审计与调试快照中；这里只展示会影响解释的状态、限制和对账摘要。</p>
+        <div className="calculation-title"><strong>Overall quality</strong><span>{qualitySummary?.status ?? "VALID"}</span></div>
         <ul className="evidence-checks">
-          {reconciliations.map((item, index) => (
+          {(qualitySummary?.reconciliation_summary ?? reconciliations).filter((item) => item.passed !== true).map((item, index) => (
             <li key={`reconciliation-${String(index)}`} className={item.passed === true ? "passed" : "failed"}>
               <strong>{item.passed === true ? "通过" : "未通过"}</strong>
               <span>{readableQuality(asString(item.message) ?? "聚合对账")}</span>
             </li>
           ))}
-          {quality.map((item, index) => (
-            <li key={`quality-${String(index)}`} className={item.passed === true ? "passed" : "failed"}>
-              <strong>{item.passed === true ? "通过" : "注意"}</strong>
-              <span>{readableQuality(asString(item.message) ?? "数据质量检查")}</span>
+          {(qualitySummary?.material_warnings ?? []).map((message, index) => (
+            <li key={`limitation-${String(index)}`} className="failed">
+              <strong>注意</strong><span>{readableQuality(message)}</span>
             </li>
+          ))}
+          {(qualitySummary?.blocked_reasons ?? []).filter((message) => !(qualitySummary?.material_warnings ?? []).includes(message)).map((message, index) => (
+            <li key={`blocked-${String(index)}`} className="failed"><strong>阻断</strong><span>{readableQuality(message)}</span></li>
+          ))}
+          {(qualitySummary?.completeness ?? []).filter((message) => !message.endsWith("COMPLETE")).map((message, index) => (
+            <li key={`completeness-${String(index)}`} className="failed"><strong>完整性</strong><span>{message}</span></li>
           ))}
         </ul>
       </section>

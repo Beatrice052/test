@@ -205,6 +205,9 @@ td { color: #304843; font-variant-numeric: tabular-nums; }
 .evidence-checks li strong { color: #2b6c5d; }
 .evidence-checks li.failed strong { color: #a15a45; }
 .evidence-checks li span { color: #586f68; }
+.evidence-pagination { display: flex; align-items: center; justify-content: flex-end; gap: 10px; margin-top: 10px; font-size: .7rem; color: #586f68; }
+.evidence-pagination button { border: 1px solid #cad8d3; border-radius: 6px; background: #fff; padding: 5px 9px; color: #285d52; cursor: pointer; }
+.evidence-pagination button:disabled { cursor: not-allowed; opacity: .45; }
 .dsl-list { display: grid; gap: 10px; }
 .dsl-card { overflow: hidden; border: 1px solid #dce4df; border-radius: 10px; background: #fff; }
 .dsl-card summary { display: flex; align-items: center; gap: 10px; padding: 12px 14px; color: #345850; cursor: pointer; }

@@ -1,7 +1,9 @@
 # Generic Analytics Phase 2 Gate Report
 
-Date: 2026-08-05  
-Branch: `MI-GENERIC-ANALYTICS`  
+Date: 2026-08-05
+
+Branch: `MI-GENERIC-ANALYTICS`
+
 Baseline: `dbe31fdc198cbc07975bfcbe20163f647b01aacc`
 
 ## Scope

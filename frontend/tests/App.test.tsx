@@ -113,7 +113,8 @@ describe("Session Workspace", () => {
         metric_definitions: [],
         data_tables: [],
         reconciliations: [],
-        quality: [],
+        quality: [{ rule_id: "qa_should_stay_internal", passed: true, message: "DO_NOT_RENDER_QA_PASS" }],
+        quality_summary: { status: "VALID", material_warnings: [], blocked_reasons: [], completeness: [], reconciliation_summary: [] },
         downloads: [],
       },
       advanced: {
@@ -156,6 +157,8 @@ describe("Session Workspace", () => {
     const businessTab = await screen.findByRole("tab", { name: "业务证据" });
     expect(businessTab).toHaveAttribute("aria-selected", "true");
     expect(screen.getByText("指标是怎么得到的")).toBeVisible();
+    expect(screen.getByText("Important Limitations")).toBeVisible();
+    expect(screen.queryByText("DO_NOT_RENDER_QA_PASS")).not.toBeInTheDocument();
     expect(screen.queryByText("实际检索 DSL")).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("tab", { name: "高级证据 · DSL" }));
     expect(screen.getByText("实际检索 DSL")).toBeVisible();
