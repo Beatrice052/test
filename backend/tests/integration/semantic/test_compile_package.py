@@ -56,6 +56,11 @@ def test_mock_compile_is_stable_complete_and_policy_filtered(
         "processing_latency.v1",
     }
     assert {item.versioned_id for item in package.entities()} == {"delivery_route.v1"}
+    failure_rate = next(
+        item for item in package.metrics() if item.versioned_id == "failure_rate.v1"
+    )
+    assert failure_rate.value_dictionary_ids == ("status_group.v1",)
+    assert failure_rate.source_field_ids == ("sub_message.status",)
 
 
 def test_measure_and_entity_are_retrievable_without_physical_paths(

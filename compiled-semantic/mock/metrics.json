@@ -37,13 +37,18 @@
     "owner": "mock_business_metric_owner",
     "pending_policy": "exclude",
     "precision": 4,
-    "source_field_ids": [],
+    "source_field_ids": [
+      "sub_message.status"
+    ],
     "time_semantics": {
       "capability_id": "terminal_event_time",
       "timezone": "Asia/Hong_Kong"
     },
     "unit": "ratio",
     "unknown_policy": "exclude_and_report",
+    "value_dictionary_ids": [
+      "status_group.v1"
+    ],
     "version": "v1"
   },
   {
@@ -78,6 +83,7 @@
     "time_semantics": null,
     "unit": "count",
     "unknown_policy": "exclude_and_report",
+    "value_dictionary_ids": [],
     "version": "v1"
   }
 ]

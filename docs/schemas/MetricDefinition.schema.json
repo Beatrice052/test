@@ -250,6 +250,15 @@
       "title": "Unknown Policy",
       "type": "string"
     },
+    "value_dictionary_ids": {
+      "default": [],
+      "items": {
+        "pattern": "^[a-z][a-z0-9_.-]{0,127}$",
+        "type": "string"
+      },
+      "title": "Value Dictionary Ids",
+      "type": "array"
+    },
     "version": {
       "pattern": "^v[1-9][0-9]*$",
       "title": "Version",

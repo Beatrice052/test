@@ -245,6 +245,13 @@ async def test_phase3_composition_root_returns_validated_compiled_query() -> Non
         ):
             path.unlink(missing_ok=True)
         if artifacts.exists():
+            for path in sorted(
+                artifacts.rglob("*"), key=lambda item: len(item.parts), reverse=True
+            ):
+                if path.is_file():
+                    path.unlink()
+                else:
+                    path.rmdir()
             artifacts.rmdir()
         if runtime_dir.exists():
             runtime_dir.rmdir()

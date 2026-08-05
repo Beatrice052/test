@@ -538,32 +538,46 @@ def compile_semantic_package(
         )
 
     canonical_field_ids = {field.field_id for field in canonical_fields}
-    available_status_groups = {
-        group for dictionary in values.definitions for group in dictionary.values.values()
-    } | {dictionary.null_group for dictionary in values.definitions}
-    missing_dictionary_fields = {
-        dictionary.source_field_id
-        for dictionary in values.definitions
-        if dictionary.source_field_id not in canonical_field_ids
-    }
     invalid_metric_bindings: list[str] = []
     for metric in metrics.definitions:
-        required_groups = _formula_status_groups(metric.numerator) | _formula_status_groups(
-            metric.denominator
+        required_groups = (
+            _formula_status_groups(metric.numerator)
+            | _formula_status_groups(metric.denominator)
+            | _formula_status_groups(metric.formula)
         )
-        if required_groups - available_status_groups or (
-            required_groups and missing_dictionary_fields
-        ):
+        configured_dictionary_ids = set(metric.value_dictionary_ids)
+        compatible_dictionaries = [
+            dictionary
+            for dictionary in values.definitions
+            if (
+                not configured_dictionary_ids
+                or dictionary.dictionary_id in configured_dictionary_ids
+                or f"{dictionary.dictionary_id}.{dictionary.version}" in configured_dictionary_ids
+            )
+            and required_groups.issubset({*dictionary.values.values(), dictionary.null_group})
+        ]
+        selected_dictionary_fields = {
+            dictionary.source_field_id for dictionary in compatible_dictionaries
+        }
+        missing_dictionary_fields = selected_dictionary_fields - canonical_field_ids
+        missing_source_fields = set(metric.source_field_ids) - canonical_field_ids
+        dictionary_binding_invalid = bool(required_groups) and len(compatible_dictionaries) != 1
+        if dictionary_binding_invalid or missing_dictionary_fields or missing_source_fields:
             invalid_metric_bindings.append(metric.versioned_id)
             issues.append(
                 ImportIssue(
                     code="INVALID_METRIC_BINDING",
                     severity="FATAL",
-                    message="metric formula references unavailable status groups or source fields",
+                    message=(
+                        "metric formula requires one compatible value dictionary and available "
+                        "source fields"
+                    ),
                     field_path=metric.versioned_id,
                     details={
-                        "missing_status_groups": sorted(required_groups - available_status_groups),
+                        "required_value_groups": sorted(required_groups),
+                        "compatible_dictionary_count": len(compatible_dictionaries),
                         "missing_dictionary_fields": sorted(missing_dictionary_fields),
+                        "missing_source_fields": sorted(missing_source_fields),
                     },
                 )
             )

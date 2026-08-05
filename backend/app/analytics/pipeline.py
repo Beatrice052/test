@@ -114,17 +114,19 @@ class AnalyticsPipeline:
             self.metrics[item] for item in requested_metric_ids if item in self.metrics
         )
         if requested_metrics and not self.qa.has_blocking(base_qa):
-            status_dictionary = self._status_dictionary(query)
-            requires_status = any(
-                item.numerator is not None or item.denominator is not None
+            status_dictionary = self._value_dictionary_for_metrics(query, requested_metrics)
+            requires_dictionary = any(
+                item.value_dictionary_ids
+                or item.numerator is not None
+                or item.denominator is not None
                 for item in requested_metrics
             )
-            if requires_status and status_dictionary is None:
+            if requires_dictionary and status_dictionary is None:
                 missing = DataQARecord(
                     rule_id="qa_dimension_present",
                     severity="FATAL",
                     passed=False,
-                    message="ratio metric requires a registered status dimension",
+                    message="filtered metric requires its registered value-dictionary dimension",
                     dataset_id=base.dataset_id,
                 )
                 all_qa.append(missing)
@@ -216,12 +218,26 @@ class AnalyticsPipeline:
         )
         return AnalyticsPipelineResult(bundle=bundle, feature_summaries=summaries, fatal=fatal)
 
-    def _status_dictionary(self, query: CompiledQuery) -> ValueDictionary | None:
+    def _value_dictionary_for_metrics(
+        self,
+        query: CompiledQuery,
+        metrics: tuple[MetricDefinition, ...],
+    ) -> ValueDictionary | None:
         dimensions = {item.dimension_id for item in query.semantics.bucket_path}
-        return next(
-            (item for item in self.value_dictionaries if item.source_field_id in dimensions),
-            None,
+        configured_ids = {
+            dictionary_id for metric in metrics for dictionary_id in metric.value_dictionary_ids
+        }
+        matches = tuple(
+            item
+            for item in self.value_dictionaries
+            if item.source_field_id in dimensions
+            and (
+                not configured_ids
+                or item.dictionary_id in configured_ids
+                or f"{item.dictionary_id}.{item.version}" in configured_ids
+            )
         )
+        return matches[0] if len(matches) == 1 else None
 
     @staticmethod
     def _metric_view_grains(

@@ -518,6 +518,7 @@ class EvidenceBuilder:
                 else None
             ),
             "source_field_ids": list(definition.source_field_ids),
+            "value_dictionary_ids": list(definition.value_dictionary_ids),
             "dimensions": list(definition.dimensions),
             "aggregation_semantics": definition.aggregation_semantics.value,
             "unit": definition.unit,

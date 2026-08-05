@@ -9,6 +9,8 @@ numerator:
 denominator:
   type: filtered_count
   status_groups: [success, failure]
+value_dictionary_ids: [status_group.v1]
+source_field_ids: [sub_message.status]
 time_semantics:
   capability_id: terminal_event_time
   timezone: Asia/Hong_Kong

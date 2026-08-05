@@ -205,6 +205,7 @@ class MetricDefinition(StrictModel):
     unit: Literal["count", "ratio", "milliseconds", "number"] = "number"
     precision: int = Field(default=4, ge=0, le=12)
     source_field_ids: tuple[Identifier, ...] = ()
+    value_dictionary_ids: tuple[Identifier, ...] = ()
     aggregation_semantics: AggregationSemantics = AggregationSemantics.NON_ADDITIVE
     approximate: bool = False
     owner: str | None = None

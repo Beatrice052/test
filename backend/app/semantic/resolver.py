@@ -316,25 +316,47 @@ class AnalysisPlanResolver:
         )
 
     def _metric_required_fields(self, metric: MetricDefinition) -> tuple[str, ...]:
-        status_needed = any(
+        dictionary_needed = any(
             self._contains_filtered_count(node)
             for node in (metric.numerator, metric.denominator, metric.formula)
             if node is not None
         )
-        if not status_needed:
-            return ()
-        sources = tuple(
-            dictionary.source_field_id
+        required = list(metric.source_field_ids)
+        if not dictionary_needed:
+            return tuple(dict.fromkeys(required))
+        required_groups = set()
+        for node in (metric.numerator, metric.denominator, metric.formula):
+            if node is not None:
+                required_groups.update(self._filtered_count_groups(node))
+        configured = set(metric.value_dictionary_ids)
+        matches = [
+            dictionary
             for dictionary in self.values
-            if {"success", "failure"}.intersection(dictionary.values.values())
-        )
-        return tuple(dict.fromkeys(sources))
+            if (
+                not configured
+                or dictionary.dictionary_id in configured
+                or f"{dictionary.dictionary_id}.{dictionary.version}" in configured
+            )
+            and required_groups.issubset({*dictionary.values.values(), dictionary.null_group})
+        ]
+        if len(matches) != 1:
+            raise SemanticResolutionError(
+                f"metric requires exactly one compatible value dictionary: {metric.versioned_id}"
+            )
+        required.append(matches[0].source_field_id)
+        return tuple(dict.fromkeys(required))
 
     @classmethod
     def _contains_filtered_count(cls, node: FormulaNode) -> bool:
         return node.operator == "filtered_count" or any(
             cls._contains_filtered_count(child) for child in node.operands
         )
+
+    @classmethod
+    def _filtered_count_groups(cls, node: FormulaNode) -> set[str]:
+        return set(node.status_groups) | {
+            group for child in node.operands for group in cls._filtered_count_groups(child)
+        }
 
     @staticmethod
     def _matches_dataset_prefix(index_name: str, index_pattern: str) -> bool:
