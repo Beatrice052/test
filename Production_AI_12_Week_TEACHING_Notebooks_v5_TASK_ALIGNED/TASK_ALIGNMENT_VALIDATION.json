@@ -1,0 +1,110 @@
+[
+  {
+    "week": 1,
+    "file": "W01_HTTP_FastAPI_Pydantic_TEACHING_v5.ipynb",
+    "all_5_excel_tasks_named": true,
+    "has_reference_section": true,
+    "has_chatbi_task": true,
+    "has_interview_answers": true,
+    "code_syntax_ok": true
+  },
+  {
+    "week": 2,
+    "file": "W02_Architecture_ToolCalling_TEACHING_v5.ipynb",
+    "all_5_excel_tasks_named": true,
+    "has_reference_section": true,
+    "has_chatbi_task": true,
+    "has_interview_answers": true,
+    "code_syntax_ok": true
+  },
+  {
+    "week": 3,
+    "file": "W03_AsyncIO_Concurrency_TEACHING_v5.ipynb",
+    "all_5_excel_tasks_named": true,
+    "has_reference_section": true,
+    "has_chatbi_task": true,
+    "has_interview_answers": true,
+    "code_syntax_ok": true
+  },
+  {
+    "week": 4,
+    "file": "W04_DB_State_Schema_TEACHING_v5.ipynb",
+    "all_5_excel_tasks_named": true,
+    "has_reference_section": true,
+    "has_chatbi_task": true,
+    "has_interview_answers": true,
+    "code_syntax_ok": true
+  },
+  {
+    "week": 5,
+    "file": "W05_Transaction_Lock_Pool_TEACHING_v5.ipynb",
+    "all_5_excel_tasks_named": true,
+    "has_reference_section": true,
+    "has_chatbi_task": true,
+    "has_interview_answers": true,
+    "code_syntax_ok": true
+  },
+  {
+    "week": 6,
+    "file": "W06_NL2SQL_Guardrails_TEACHING_v5.ipynb",
+    "all_5_excel_tasks_named": true,
+    "has_reference_section": true,
+    "has_chatbi_task": true,
+    "has_interview_answers": true,
+    "code_syntax_ok": true
+  },
+  {
+    "week": 7,
+    "file": "W07_Docker_MCP_TEACHING_v5.ipynb",
+    "all_5_excel_tasks_named": true,
+    "has_reference_section": true,
+    "has_chatbi_task": true,
+    "has_interview_answers": true,
+    "code_syntax_ok": true
+  },
+  {
+    "week": 8,
+    "file": "W08_Queue_Worker_TEACHING_v5.ipynb",
+    "all_5_excel_tasks_named": true,
+    "has_reference_section": true,
+    "has_chatbi_task": true,
+    "has_interview_answers": true,
+    "code_syntax_ok": true
+  },
+  {
+    "week": 9,
+    "file": "W09_Reliability_Idempotency_TEACHING_v5.ipynb",
+    "all_5_excel_tasks_named": true,
+    "has_reference_section": true,
+    "has_chatbi_task": true,
+    "has_interview_answers": true,
+    "code_syntax_ok": true
+  },
+  {
+    "week": 10,
+    "file": "W10_Observability_Evaluation_TEACHING_v5.ipynb",
+    "all_5_excel_tasks_named": true,
+    "has_reference_section": true,
+    "has_chatbi_task": true,
+    "has_interview_answers": true,
+    "code_syntax_ok": true
+  },
+  {
+    "week": 11,
+    "file": "W11_Performance_Quality_TEACHING_v5.ipynb",
+    "all_5_excel_tasks_named": true,
+    "has_reference_section": true,
+    "has_chatbi_task": true,
+    "has_interview_answers": true,
+    "code_syntax_ok": true
+  },
+  {
+    "week": 12,
+    "file": "W12_Capstone_System_Design_TEACHING_v5.ipynb",
+    "all_5_excel_tasks_named": true,
+    "has_reference_section": true,
+    "has_chatbi_task": true,
+    "has_interview_answers": true,
+    "code_syntax_ok": true
+  }
+]

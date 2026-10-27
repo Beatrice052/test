@@ -1,0 +1,110 @@
+[
+  {
+    "file": "W01_HTTP_FastAPI_Pydantic_TEACHING_v4.ipynb",
+    "answers": true,
+    "observe_guidance": true,
+    "chatbi_task": true,
+    "interview_qas": true,
+    "syntax_ok": true,
+    "code_cells": 3
+  },
+  {
+    "file": "W02_Architecture_ToolCalling_TEACHING_v4.ipynb",
+    "answers": true,
+    "observe_guidance": true,
+    "chatbi_task": true,
+    "interview_qas": true,
+    "syntax_ok": true,
+    "code_cells": 4
+  },
+  {
+    "file": "W03_AsyncIO_Concurrency_TEACHING_v4.ipynb",
+    "answers": true,
+    "observe_guidance": true,
+    "chatbi_task": true,
+    "interview_qas": true,
+    "syntax_ok": true,
+    "code_cells": 4
+  },
+  {
+    "file": "W04_DB_State_Schema_TEACHING_v4.ipynb",
+    "answers": true,
+    "observe_guidance": true,
+    "chatbi_task": true,
+    "interview_qas": true,
+    "syntax_ok": true,
+    "code_cells": 4
+  },
+  {
+    "file": "W05_Transaction_Lock_Pool_TEACHING_v4.ipynb",
+    "answers": true,
+    "observe_guidance": true,
+    "chatbi_task": true,
+    "interview_qas": true,
+    "syntax_ok": true,
+    "code_cells": 3
+  },
+  {
+    "file": "W06_NL2SQL_Guardrails_TEACHING_v4.ipynb",
+    "answers": true,
+    "observe_guidance": true,
+    "chatbi_task": true,
+    "interview_qas": true,
+    "syntax_ok": true,
+    "code_cells": 3
+  },
+  {
+    "file": "W07_Docker_MCP_TEACHING_v4.ipynb",
+    "answers": true,
+    "observe_guidance": true,
+    "chatbi_task": true,
+    "interview_qas": true,
+    "syntax_ok": true,
+    "code_cells": 2
+  },
+  {
+    "file": "W08_Queue_Worker_TEACHING_v4.ipynb",
+    "answers": true,
+    "observe_guidance": true,
+    "chatbi_task": true,
+    "interview_qas": true,
+    "syntax_ok": true,
+    "code_cells": 2
+  },
+  {
+    "file": "W09_Reliability_Idempotency_TEACHING_v4.ipynb",
+    "answers": true,
+    "observe_guidance": true,
+    "chatbi_task": true,
+    "interview_qas": true,
+    "syntax_ok": true,
+    "code_cells": 2
+  },
+  {
+    "file": "W10_Observability_Evaluation_TEACHING_v4.ipynb",
+    "answers": true,
+    "observe_guidance": true,
+    "chatbi_task": true,
+    "interview_qas": true,
+    "syntax_ok": true,
+    "code_cells": 2
+  },
+  {
+    "file": "W11_Performance_Quality_TEACHING_v4.ipynb",
+    "answers": true,
+    "observe_guidance": true,
+    "chatbi_task": true,
+    "interview_qas": true,
+    "syntax_ok": true,
+    "code_cells": 2
+  },
+  {
+    "file": "W12_Capstone_System_Design_TEACHING_v4.ipynb",
+    "answers": true,
+    "observe_guidance": true,
+    "chatbi_task": true,
+    "interview_qas": true,
+    "syntax_ok": true,
+    "code_cells": 0
+  }
+]
